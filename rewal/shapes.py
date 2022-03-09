@@ -185,3 +185,37 @@ class OgPos:
                         coface_data[n][i][a].add(k)
 
         return coface_data
+
+
+class OgMap():
+    """
+    Class for (partial) maps of oriented graded posets.
+    """
+
+    def __init__(self, source, target, mapping=None):
+        for x in (source, target):
+            utils.typecheck(x, {'type': OgPos})
+
+        self._source = source
+        self._target = target
+        self._mapping = mapping if mapping is not None \
+            else [[None for _ in range(source.size[n])]
+                  for n in range(source.dim + 1)]
+
+    @property
+    def source(self):
+        return self._source
+
+    @property
+    def target(self):
+        return self._target
+
+    @property
+    def mapping(self):
+        return self._mapping
+
+    def __eq__(self, other):
+        t1 = self.source == other.source
+        t2 = self.target == other.target
+        t3 = self.mapping == other.mapping
+        return t1 and t2 and t3

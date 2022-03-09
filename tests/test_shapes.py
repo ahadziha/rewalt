@@ -2,8 +2,10 @@ import numpy as np
 from pytest import raises
 
 from rewal import utils
-from rewal.shapes import El, OgPos
+from rewal.shapes import El, OgPos, OgMap
 
+
+# El tests
 
 def test_El_init():
     assert El(2, 3) == El(2, 3)
@@ -29,6 +31,8 @@ def test_El_shift():
         El(2, 3).shift(-4)
     assert str(err.value) == utils.value_err(-4, 'out of bounds')
 
+
+# OgPos tests
 
 def test_OgPos_init():
     test_face = [
@@ -115,9 +119,9 @@ def test_OgPos_init():
     assert str(err.value) == utils.type_err(list, {0})
 
 
-# Test on the "right-whiskered 2-globe".
+# The next tests will be done on the "right-whiskered 2-globe".
 
-test_face = [
+whisker_face = [
         [
             {'-': set(), '+': set()},
             {'-': set(), '+': set()},
@@ -129,7 +133,7 @@ test_face = [
         ], [
             {'-': {0}, '+': {1}}
         ]]
-test_coface = [
+whisker_coface = [
         [
             {'-': {0, 1}, '+': set()},
             {'-': {2}, '+': {0, 1}},
@@ -142,15 +146,15 @@ test_coface = [
             {'-': set(), '+': set()}
         ]]
 
-test_ogpos = OgPos(test_face, test_coface)
+whisker = OgPos(whisker_face, whisker_coface)
 
 
 def test_OgPos_size():
-    assert test_ogpos.size == [3, 3, 1]
+    assert whisker.size == [3, 3, 1]
 
 
 def test_OgPos_dim():
-    assert test_ogpos.dim == 2
+    assert whisker.dim == 2
 
 
 def test_OgPos_chain():
@@ -158,22 +162,45 @@ def test_OgPos_chain():
             np.array([[-1, -1, 0], [1, 1, -1], [0, 0, 1]]),
             np.array([[-1], [1], [0]])
             ]
-    test_chain = test_ogpos.chain
+    test_chain = whisker.chain
     assert (test_chain[0] == chain[0]).all() and \
         (test_chain[1] == chain[1]).all()
 
 
 def test_OgPos_getitem():
-    assert test_ogpos[1] == [0, 1, 2]
+    assert whisker[1] == [0, 1, 2]
 
     with raises(TypeError) as err:
-        test_ogpos['x']
+        whisker['x']
     assert str(err.value) == utils.type_err(int, 'x')
 
     with raises(ValueError) as err:
-        test_ogpos[3]
+        whisker[3]
     assert str(err.value) == utils.value_err(3, 'out of bounds')
 
 
 def test_OgPos_from_face_data():
-    assert test_ogpos == OgPos.from_face_data(test_face)
+    assert whisker == OgPos.from_face_data(whisker_face)
+
+
+# Introducing the interval (1-globe).
+
+interval_face = [
+        [
+            {'-': set(), '+': set()},
+            {'-': set(), '+': set()},
+        ], [
+            {'-': {0}, '+': {1}},
+        ]]
+
+interval = OgPos.from_face_data(interval_face)
+
+
+# Tests on OgMap
+
+def test_OgMap_init():
+    assert OgMap(whisker, interval) == OgMap(whisker, interval)
+
+
+def test_OgMap_mapping():
+    assert OgMap(interval, whisker).mapping == [[None, None], [None]]
