@@ -47,6 +47,34 @@ def test_OgPos_init():
 
     assert OgPos(test_face, test_coface) == OgPos(test_face, test_coface)
 
+    test_face[0][0]['-'] = {0}
+    with raises(ValueError) as err:
+        OgPos(test_face, test_coface)
+    assert str(err.value) == utils.value_err(0, 'out of bounds')
+
+    test_face[0][0]['-'] = set()
+    test_face[1][0]['-'] = {2}
+    with raises(ValueError) as err:
+        OgPos(test_face, test_coface)
+    assert str(err.value) == utils.value_err(2, 'out of bounds')
+
+    test_face[1][0]['-'] = {1}
+    with raises(ValueError) as err:
+        OgPos(test_face, test_coface)
+    assert str(err.value) == 'Input and output faces must be disjoint.'
+
+    test_face[1][0]['-'] = set()
+    test_face[1][0]['+'] = set()
+    with raises(ValueError) as err:
+        OgPos(test_face, test_coface)
+    assert str(err.value) == 'The element must have at least one face.'
+
+    test_face[1][0]['-'] = {1}
+    test_face[1][0]['+'] = {0}
+    with raises(ValueError) as err:
+        OgPos(test_face, test_coface)
+    assert str(err.value) == 'Face and coface data do not match.'
+
     test_face[1][0]['-'] = {'x'}
     with raises(TypeError) as err:
         OgPos(test_face, test_coface)
@@ -73,7 +101,7 @@ def test_OgPos_init():
     with raises(ValueError) as err:
         OgPos(test_face, test_coface)
     assert str(err.value) == utils.value_err(
-            [], 'expecting non-empty list of elements')
+            [], 'expecting non-empty list')
 
     test_face[1] = {0}
     with raises(TypeError) as err:
@@ -84,3 +112,31 @@ def test_OgPos_init():
     with raises(TypeError) as err:
         OgPos(test_face, test_coface)
     assert str(err.value) == utils.type_err(list, {0})
+
+
+test_face = [
+        [
+            {'-': set(), '+': set()},
+            {'-': set(), '+': set()},
+        ], [
+            {'-': {0}, '+': {1}}
+        ]]
+test_coface = [
+        [
+            {'-': {0}, '+': set()},
+            {'-': set(), '+': {0}},
+        ], [
+            {'-': set(), '+': set()}
+        ]]
+
+
+def test_OgPos_size():
+    assert OgPos(test_face, test_coface).size == [2, 1]
+
+
+def test_OgPos_dim():
+    assert OgPos(test_face, test_coface).dim == 1
+
+
+def test_OgPos_from_face_data():
+    assert OgPos(test_face, test_coface) == OgPos.from_face_data(test_face)
