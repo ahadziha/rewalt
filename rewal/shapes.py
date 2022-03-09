@@ -9,7 +9,7 @@ from rewal import utils
 
 class El:
     """
-    Defines an element of an oriented graded poset.
+    Class for elements of an oriented graded poset.
     """
 
     def __init__(self, dim, pos):
@@ -56,7 +56,7 @@ class El:
 
 class OgPos:
     """
-    Defines an oriented graded poset.
+    Class for oriented graded posets.
     """
 
     def __init__(self, face_data, coface_data,
@@ -79,8 +79,6 @@ class OgPos:
     @property
     def coface_data(self):
         return self._coface_data
-
-    # TODO: __getitem__
 
     @property
     def size(self):
@@ -109,6 +107,16 @@ class OgPos:
         return chain
 
     # TODO: __repr__, __str__?
+
+    def __getitem__(self, key):
+        utils.typecheck(key, {
+            'type': int,
+            'st': lambda x: x in range(self.dim + 1),
+            'why': 'out of bounds'
+            })
+
+        # TODO: may not be the most useful format
+        return list(range(self.size[key]))
 
     def __eq__(self, other):
         return self.face_data == other.face_data

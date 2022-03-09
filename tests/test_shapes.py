@@ -163,5 +163,17 @@ def test_OgPos_chain():
         (test_chain[1] == chain[1]).all()
 
 
+def test_OgPos_getitem():
+    assert test_ogpos[1] == [0, 1, 2]
+
+    with raises(TypeError) as err:
+        test_ogpos['x']
+    assert str(err.value) == utils.type_err(int, 'x')
+
+    with raises(ValueError) as err:
+        test_ogpos[3]
+    assert str(err.value) == utils.value_err(3, 'out of bounds')
+
+
 def test_OgPos_from_face_data():
     assert test_ogpos == OgPos.from_face_data(test_face)
