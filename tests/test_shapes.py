@@ -1,3 +1,4 @@
+import numpy as np
 from pytest import raises
 
 from rewal import utils
@@ -114,29 +115,53 @@ def test_OgPos_init():
     assert str(err.value) == utils.type_err(list, {0})
 
 
+# Test on the "right-whiskered 2-globe".
+
 test_face = [
         [
             {'-': set(), '+': set()},
             {'-': set(), '+': set()},
+            {'-': set(), '+': set()}
+        ], [
+            {'-': {0}, '+': {1}},
+            {'-': {0}, '+': {1}},
+            {'-': {1}, '+': {2}}
         ], [
             {'-': {0}, '+': {1}}
         ]]
 test_coface = [
         [
+            {'-': {0, 1}, '+': set()},
+            {'-': {2}, '+': {0, 1}},
+            {'-': set(), '+': {2}}
+        ], [
             {'-': {0}, '+': set()},
             {'-': set(), '+': {0}},
+            {'-': set(), '+': set()}
         ], [
             {'-': set(), '+': set()}
         ]]
 
+test_ogpos = OgPos(test_face, test_coface)
+
 
 def test_OgPos_size():
-    assert OgPos(test_face, test_coface).size == [2, 1]
+    assert test_ogpos.size == [3, 3, 1]
 
 
 def test_OgPos_dim():
-    assert OgPos(test_face, test_coface).dim == 1
+    assert test_ogpos.dim == 2
+
+
+def test_OgPos_chain():
+    chain = [
+            np.array([[-1, -1, 0], [1, 1, -1], [0, 0, 1]]),
+            np.array([[-1], [1], [0]])
+            ]
+    test_chain = test_ogpos.chain
+    assert (test_chain[0] == chain[0]).all() and \
+        (test_chain[1] == chain[1]).all()
 
 
 def test_OgPos_from_face_data():
-    assert OgPos(test_face, test_coface) == OgPos.from_face_data(test_face)
+    assert test_ogpos == OgPos.from_face_data(test_face)

@@ -2,6 +2,8 @@
 Implements oriented graded posets and molecules.
 """
 
+import numpy as np
+
 from rewal import utils
 
 
@@ -89,6 +91,22 @@ class OgPos:
     def dim(self):
         """ Returns the dimension of the oriented graded poset. """
         return len(self.face_data) - 1
+
+    @property
+    def chain(self):
+        """ Returns chain complex representation. """
+        size, dim = self.size, self.dim
+        chain = [
+                np.zeros((size[i], size[i+1]), dtype=int) for i in range(dim)
+                ]
+        for n, n_data in enumerate(self.coface_data):
+            for i, x in enumerate(n_data):
+                for j in x['-']:
+                    chain[n][i][j] = -1
+                for j in x['+']:
+                    chain[n][i][j] = 1
+
+        return chain
 
     # TODO: __repr__, __str__?
 
