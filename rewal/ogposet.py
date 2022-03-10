@@ -1,0 +1,348 @@
+"""
+Implements oriented graded posets and molecules.
+"""
+
+import numpy as np
+
+from rewal import utils
+
+
+class El:
+    """
+    Class for elements of an oriented graded poset.
+    """
+
+    def __init__(self, dim, pos):
+        for x in (dim, pos):
+            utils.typecheck(x, {
+                'type': int,
+                'st': lambda x: x >= 0,
+                'why': 'expecting non-negative integer'
+                })
+        self._dim = dim
+        self._pos = pos
+
+    def __repr__(self):
+        return "El({}, {})".format(repr(self.dim), repr(self.pos))
+
+    def __str__(self):
+        return repr(self)
+
+    def __eq__(self, other):
+        return isinstance(other, El) and \
+                self.dim == other.dim and self.pos == other.pos
+
+    def __hash__(self):
+        return hash(repr(self))
+
+    @property
+    def dim(self):
+        """
+        The dimension of an element is immutable.
+        """
+        return self._dim
+
+    @property
+    def pos(self):
+        """
+        The position of an element is immutable.
+        """
+        return self._pos
+
+    def shift(self, k):
+        utils.typecheck(k, {
+            'type': int,
+            'st': lambda x: self.pos + x >= 0,
+            'why': 'shifted position must be non-negative'
+            })
+        return El(self.dim, self.pos + k)
+
+
+class OgPoset:
+    """
+    Class for oriented graded posets.
+    """
+
+    def __init__(self, face_data, coface_data,
+                 wfcheck=True, matchcheck=True):
+        if wfcheck:
+            self._wfcheck(face_data)
+
+        if matchcheck:
+            if not coface_data == self._coface_from_face(face_data):
+                raise ValueError("Face and coface data do not match.")
+
+        self._face_data = face_data
+        self._coface_data = coface_data
+
+    def __repr__(self):
+        return "OgPoset{}".format(repr(self.face_data))
+
+    def __str__(self):
+        return "OgPoset{}".format(str(self.face_data))
+
+    def __getitem__(self, key):
+        # TODO: should accept slices.
+
+        # TODO: should be a graded set instead.
+        return list(range(self.size[key]))
+
+    def __eq__(self, other):
+        return isinstance(other, OgPoset) and \
+                self.face_data == other.face_data and \
+                self.coface_data == other.coface_data
+
+    @property
+    def face_data(self):
+        return self._face_data
+
+    @property
+    def coface_data(self):
+        return self._coface_data
+
+    @property
+    def size(self):
+        """ Returns the number of elements in each dimension as a list. """
+        return [len(_) for _ in self.face_data]
+
+    @property
+    def dim(self):
+        """ Returns the dimension of the oriented graded poset. """
+        return len(self.face_data) - 1
+
+    @property
+    def chain(self):
+        """ Returns chain complex representation. """
+        size, dim = self.size, self.dim
+        chain = [
+                np.zeros((size[i], size[i+1]), dtype=int) for i in range(dim)
+                ]
+        for n, n_data in enumerate(self.coface_data):
+            for i, x in enumerate(n_data):
+                for j in x['-']:
+                    chain[n][i][j] = -1
+                for j in x['+']:
+                    chain[n][i][j] = 1
+
+        return chain
+
+    # Class methods
+    @classmethod
+    def from_face_data(cls, face_data, wfcheck=True):
+        if wfcheck:
+            cls._wfcheck(face_data)
+        coface_data = cls._coface_from_face(face_data)
+
+        return cls(face_data, coface_data, wfcheck=False, matchcheck=False)
+
+    # Internal methods
+    @staticmethod
+    def _wfcheck(face_data):
+        """ Internal method checking that face data is well-formed. """
+
+        utils.typecheck(face_data, {'type': list}, {
+            'type': list,
+            'st': lambda x: len(x) > 0,
+            'why': 'expecting non-empty list'
+            }, {
+            'type': dict,
+            'st': lambda x: x.keys() == {'-', '+'},
+            'why': "expecting dict with keys '-', '+'"
+            }, {'type': set}, {
+            'type': int,
+            'st': lambda x: x >= 0,
+            'why': 'expecting non-negative int'})
+
+        sizes = [len(_) for _ in face_data]
+        for n, n_data in enumerate(face_data):
+            # Check that faces are within bounds.
+            k = max([i for x in n_data for a in x for i in x[a]], default=-1)
+            if (n == 0 and k >= 0) or k >= sizes[n-1]:
+                raise ValueError(utils.value_err(k, 'out of bounds'))
+
+            # Check that input/output are inhabited and disjoint.
+            for x in n_data:
+                if not x['-'].isdisjoint(x['+']):
+                    raise ValueError(
+                            'Input and output faces must be disjoint.')
+                if n > 0 and x['-'] == x['+'] == set():
+                    raise ValueError(
+                            'The element must have at least one face.')
+
+    @staticmethod
+    def _coface_from_face(face_data):
+        """
+        Internal method constructing coface data from face data.
+        Face data is presumed to be well-formed.
+        """
+
+        coface_data = [
+                [
+                    {'-': set(), '+': set()}
+                    for _ in face_data[n]
+                ]
+                for n in range(len(face_data))]
+
+        for n, sn_data in enumerate(face_data[1:]):
+            for k, x in enumerate(sn_data):
+                for a in ('-', '+'):
+                    for i in x[a]:
+                        coface_data[n][i][a].add(k)
+
+        return coface_data
+
+
+class GrSet:
+    """
+    Class for graded sets of elements of an oriented graded poset.
+    """
+
+    def __init__(self, *elements):
+        self._elements = {}
+        for x in elements:
+            self.add(x)
+
+    def __repr__(self):
+        return "GrSet{}".format(repr(self.as_set))
+
+    def __str__(self):
+        return repr(self)
+
+    def __contains__(self, item):
+        if isinstance(item, El):
+            if item.dim in self.grades:
+                if item.pos in self._elements[item.dim]:
+                    return True
+        return False
+
+    def __iter__(self):
+        """ The iterator is the iterator of the element list. """
+        return iter(self.as_list)
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            if key >= 0:
+                if key in self.grades:
+                    return GrSet(*[El(key, k) for k in self._elements[key]])
+                else:
+                    return GrSet()
+            else:
+                raise IndexError
+        if isinstance(key, slice):
+            stop = key.stop if key.stop is not None else self.dim + 1
+            indices = list(range(stop)[key])
+            return GrSet().union(*[self[n] for n in indices])
+
+    def __eq__(self, other):
+        return isinstance(other, GrSet) and \
+                self._elements == other._elements
+
+    @property
+    def grades(self):
+        """
+        Returns the list of dimensions in which the graded set is not empty.
+        """
+        return sorted(self._elements.keys())
+
+    @property
+    def dim(self):
+        """
+        Returns the maximal dimension in which the graded set is not empty,
+        or -1 if it is empty.
+        """
+        return max(self.grades, default=-1)
+
+    @property
+    def as_set(self):
+        """ Returns a non-graded set containing the same elements. """
+        return {El(n, k) for n in self._elements for k in self._elements[n]}
+
+    @property
+    def as_list(self):
+        """ Returns the list of elements in increasing order. """
+        return [El(n, k) for n in sorted(self._elements)
+                for k in sorted(self._elements[n])]
+
+    def add(self, element):
+        """ Adds an element. """
+        utils.typecheck(element, {'type': El})
+
+        if element.dim in self.grades:
+            self._elements[element.dim].add(element.pos)
+        else:
+            self._elements[element.dim] = {element.pos}
+
+    def remove(self, element):
+        """ Removes an element. """
+        if element in self:
+            self._elements[element.dim].remove(element.pos)
+            if self._elements[element.dim] == set():
+                del self._elements[element.dim]
+        else:
+            raise ValueError('{} not in GrSet.'.format(repr(element)))
+
+    def union(self, *others):
+        """
+        Returns a graded set obtained as the union of itself
+        with other graded sets.
+        """
+        union = GrSet(*self)
+        for item in others:
+            utils.typecheck(item, {'type': GrSet})
+            for x in item:
+                union.add(x)
+        return union
+
+    def is_compatible(self, ogposet):
+        """
+        Returns True if the graded set defines a valid subset of
+        an oriented graded poset.
+        """
+        utils.typecheck(ogposet, {'type': OgPoset})
+        if self.dim > ogposet.dim:
+            return False
+        for n in self.grades:
+            if max(self._elements[n]) > ogposet.size[n]:
+                return False
+        return True
+
+
+class OgMap:
+    """
+    Class for (partial) maps of oriented graded posets.
+    """
+
+    def __init__(self, source, target, mapping=None,
+                 wfcheck=True):
+        if wfcheck:
+            self._wfcheck(source, target, mapping)
+
+        self._source = source
+        self._target = target
+        self._mapping = mapping if mapping is not None \
+            else [[None for _ in range(source.size[n])]
+                  for n in range(source.dim + 1)]
+
+    @property
+    def source(self):
+        return self._source
+
+    @property
+    def target(self):
+        return self._target
+
+    @property
+    def mapping(self):
+        return self._mapping
+
+    def __eq__(self, other):
+        t1 = self.source == other.source
+        t2 = self.target == other.target
+        t3 = self.mapping == other.mapping
+        return isinstance(other, OgMap) and t1 and t2 and t3
+
+    # Internal methods.
+    @staticmethod
+    def _wfcheck(source, target, mapping):
+        for x in (source, target):
+            utils.typecheck(x, {'type': OgPoset})
