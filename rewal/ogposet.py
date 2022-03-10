@@ -126,6 +126,11 @@ class OgPoset:
 
         return chain
 
+    @property
+    def all_elements(self):
+        return GrSet(*[El(n, k) for n in range(len(self.size))
+                       for k in range(self.size[n])])
+
     # Class methods
     @classmethod
     def from_face_data(cls, face_data, wfcheck=True):

@@ -180,6 +180,13 @@ def test_OgPoset_chain():
         (test_chain[1] == chain[1]).all()
 
 
+def test_OgPoset_all_elements():
+    assert whisker.all_elements == \
+            GrSet(El(0, 0), El(0, 1), El(0, 2),
+                  El(1, 0), El(1, 1), El(1, 2),
+                  El(2, 0))
+
+
 def test_OgPoset_from_face_data():
     assert whisker == OgPoset.from_face_data(whisker_face)
 
@@ -262,6 +269,7 @@ def test_GrSet_is_compatible():
     assert not test_grset.is_compatible(whisker)
 
     assert GrSet(El(0, 2), El(2, 0)).is_compatible(whisker)
+    assert GrSet().is_compatible(OgPoset([], []))
 
 
 # Tests on OgMap
