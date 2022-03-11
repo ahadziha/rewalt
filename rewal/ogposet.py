@@ -231,18 +231,15 @@ class GrSet:
         return iter(self.as_list)
 
     def __getitem__(self, key):
-        if isinstance(key, int):
-            if key >= 0:
-                if key in self.grades:
-                    return GrSet(*[El(key, k) for k in self._elements[key]])
-                else:
-                    return GrSet()
-            else:
-                raise IndexError
+        if isinstance(key, int) and key >= 0:
+            if key in self.grades:
+                return GrSet(*[El(key, k) for k in self._elements[key]])
+            return GrSet()
         if isinstance(key, slice):
             stop = key.stop if key.stop is not None else self.dim + 1
             indices = list(range(stop)[key])
             return GrSet().union(*[self[n] for n in indices])
+        raise KeyError(str(key))
 
     def __eq__(self, other):
         return isinstance(other, GrSet) and \
@@ -322,32 +319,42 @@ class GrSet:
 class GrSubset:
     """
     Class for pairs of a GrSet and an "ambient" OgPoset, where the
-    GrSet is seen as a subset of the OgPoset, and made immutable.
+    GrSet is seen as a subset of the OgPoset.
     (This avoids passing the ambient as an argument every time we perform
     face-data-dependent operations on a GrSet.)
     """
 
-    def __init__(self, element_set, ambient,
+    def __init__(self, graded_set, ambient,
                  wfcheck=True, mkfresh=True):
         if wfcheck:
-            self._wfcheck(element_set, ambient)
+            self._wfcheck(graded_set, ambient)
 
-        self._element_set = GrSet(*element_set) if mkfresh else element_set
+        self._graded_set = GrSet(*graded_set) if mkfresh else graded_set
         self._ambient = ambient
 
     def __eq__(self, other):
         return isinstance(other, GrSubset) and \
-                self.element_set == other.element_set and \
+                self.proj == other.proj and \
                 self.ambient == other.ambient
 
     def __str__(self):
         return 'GrSubset with {} elements in {}'.format(
-                str(len(self.element_set)), str(self.ambient))
+                str(len(self.proj)), str(self.ambient))
+
+    def __contains__(self, item):
+        return item in self.proj
+
+    def __getitem__(self, key):
+        return GrSubset(self.proj[key], self.ambient,
+                        wfcheck=False, mkfresh=False)
+
+    def __iter__(self):
+        return iter(self.proj)
 
     @property
-    def element_set(self):
-        """ The element set is read-only. """
-        return self._element_set
+    def proj(self):
+        """ Returns the underlying graded set. """
+        return self._graded_set
 
     @property
     def ambient(self):
@@ -356,14 +363,14 @@ class GrSubset:
 
     # Internal methods
     @staticmethod
-    def _wfcheck(element_set, ambient):
-        utils.typecheck(element_set, {'type': GrSet})
+    def _wfcheck(graded_set, ambient):
+        utils.typecheck(graded_set, {'type': GrSet})
         utils.typecheck(ambient, {'type': OgPoset})
 
-        if element_set.dim > ambient.dim:
+        if graded_set.dim > ambient.dim:
             raise ValueError('Not a valid graded subset.')
-        for n in element_set.grades:
-            if max(element_set._elements[n]) > ambient.size[n]:
+        for n in graded_set.grades:
+            if max([x.pos for x in graded_set[n]]) > ambient.size[n]:
                 raise ValueError('Not a valid graded subset.')
 
 
@@ -374,6 +381,7 @@ class OgMap:
 
     def __init__(self, source, target, mapping=None,
                  wfcheck=True):
+        # TODO: whole thing needs rewriting.
         if wfcheck:
             self._wfcheck(source, target, mapping)
 
@@ -406,3 +414,6 @@ class OgMap:
     def _wfcheck(source, target, mapping):
         for x in (source, target):
             utils.typecheck(x, {'type': OgPoset})
+
+        # TODO: all the actual checks...
+        # Have this call “single extension” checks.

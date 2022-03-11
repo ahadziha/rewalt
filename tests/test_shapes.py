@@ -239,6 +239,10 @@ def test_GrSet_getitem():
     assert test_grset[1:] == test_grset[2]
     assert test_grset[:] == test_grset
 
+    with raises(KeyError) as err:
+        test_grset[-1]
+    assert str(err.value) == "'-1'"
+
 
 def test_GrSet_grades():
     assert test_grset.grades == [0, 2]
@@ -316,6 +320,19 @@ def test_GrSubset_init():
 def test_GrSubset_str():
     assert str(GrSubset(GrSet(El(0, 1)), interval)) == \
             'GrSubset with 1 elements in OgPoset with [2, 1] elements'
+
+
+test_grsubset = GrSubset(GrSet(El(0, 2), El(2, 0)), whisker)
+
+
+def test_GrSubset_contains():
+    assert El(0, 2) in test_grsubset
+    assert El(1, 1) not in test_grsubset
+
+
+def test_GrSubset_getitem():
+    assert test_grsubset[0] == GrSubset(GrSet(El(0, 2)), whisker)
+    assert test_grsubset[1:] == GrSubset(GrSet(El(2, 0)), whisker)
 
 
 # Tests on OgMap

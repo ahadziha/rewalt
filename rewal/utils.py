@@ -30,4 +30,4 @@ def type_err(expected, got):
 
 def value_err(got, why):
     """ Value error. """
-    return "{} is not valid ({}).".format(repr(got), why)
+    return "{} is not a valid value ({}).".format(repr(got), why)
