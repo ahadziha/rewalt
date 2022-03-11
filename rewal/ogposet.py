@@ -127,8 +127,11 @@ class OgPoset:
 
     @property
     def all_elements(self):
-        return GrSet(*[El(n, k) for n in range(len(self.size))
-                       for k in range(self.size[n])])
+        """ Returns the GrSubset of all elements. """
+        return GrSubset(
+                GrSet(*[El(n, k) for n in range(len(self.size))
+                        for k in range(self.size[n])]),
+                self, wfcheck=False, mkfresh=False)
 
     # Class methods
     @classmethod
@@ -207,7 +210,7 @@ class GrSet:
             self.add(x)
 
     def __repr__(self):
-        return "GrSet{}".format(repr(self.as_list))
+        return "GrSet{}".format(repr(tuple(self.as_list)))
 
     def __str__(self):
         return repr(self)
@@ -218,6 +221,10 @@ class GrSet:
                 if item.pos in self._elements[item.dim]:
                     return True
         return False
+
+    def __len__(self):
+        """ Returns the total number of elements. """
+        return len(self.as_list)
 
     def __iter__(self):
         """ The iterator is the iterator of the element list. """
@@ -278,24 +285,33 @@ class GrSet:
 
     def remove(self, element):
         """ Removes an element. """
-        if element in self:
-            self._elements[element.dim].remove(element.pos)
-            if self._elements[element.dim] == set():
-                del self._elements[element.dim]
-        else:
+        if element not in self:
             raise ValueError('{} not in graded set.'.format(repr(element)))
+
+        self._elements[element.dim].remove(element.pos)
+        if self._elements[element.dim] == set():
+            del self._elements[element.dim]
 
     def union(self, *others):
         """
-        Returns a graded set obtained as the union of the graded set with
-        other graded sets.
+        Returns the union of the graded set with other graded sets.
         """
-        union = GrSet(*self)
-        for item in others:
-            utils.typecheck(item, {'type': GrSet})
-            for x in item:
-                union.add(x)
-        return union
+        for x in others:
+            utils.typecheck(x, {'type': GrSet})
+
+        union_as_set = self.as_set.union(*[x.as_set for x in others])
+        return GrSet(*union_as_set)
+
+    def intersection(self, *others):
+        """
+        Returns the intersection of the graded set with other graded sets.
+        """
+        for x in others:
+            utils.typecheck(x, {'type': GrSet})
+
+        intersection_as_set = self.as_set.intersection(
+                *[x.as_set for x in others])
+        return GrSet(*intersection_as_set)
 
     def is_subset(self, other):
         """ Returns True iff the graded set is a subset of another. """
@@ -312,18 +328,21 @@ class GrSubset:
     """
 
     def __init__(self, element_set, ambient,
-                 wfcheck=True):
+                 wfcheck=True, mkfresh=True):
         if wfcheck:
             self._wfcheck(element_set, ambient)
 
-        # Make a fresh GrSet to avoid external changes
-        self._element_set = GrSet(*element_set)
+        self._element_set = GrSet(*element_set) if mkfresh else element_set
         self._ambient = ambient
 
     def __eq__(self, other):
         return isinstance(other, GrSubset) and \
                 self.element_set == other.element_set and \
                 self.ambient == other.ambient
+
+    def __str__(self):
+        return 'GrSubset with {} elements in {}'.format(
+                str(len(self.element_set)), str(self.ambient))
 
     @property
     def element_set(self):

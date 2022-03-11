@@ -187,10 +187,11 @@ def test_OgPoset_chain():
 
 
 def test_OgPoset_all_elements():
-    assert whisker.all_elements == \
+    assert whisker.all_elements == GrSubset(
             GrSet(El(0, 0), El(0, 1), El(0, 2),
                   El(1, 0), El(1, 1), El(1, 2),
-                  El(2, 0))
+                  El(2, 0)),
+            whisker)
 
 
 def test_OgPoset_from_face_data():
@@ -211,11 +212,19 @@ def test_GrSet_init():
 test_grset = GrSet(El(0, 2), El(2, 0), El(0, 5))
 
 
+def test_GrSet_str():
+    assert str(test_grset) == 'GrSet(El(0, 2), El(0, 5), El(2, 0))'
+
+
 def test_GrSet_contains():
     assert El(0, 5) in test_grset
     assert El(0, 4) not in test_grset
     assert El(1, 0) not in test_grset
     assert 'x' not in test_grset
+
+
+def test_GrSet_len():
+    assert len(test_grset) == 3
 
 
 def test_GrSet_iter():
@@ -270,6 +279,17 @@ def test_GrSet_remove():
     assert str(err.value) == 'El(3, 6) not in graded set.'
 
 
+def test_GrSet_union():
+    assert test_grset.union(GrSet(El(1, 3), El(2, 0))) == \
+            GrSet(El(0, 2), El(0, 5), El(1, 3), El(2, 0))
+
+
+def test_GrSet_intersection():
+    assert test_grset.intersection(GrSet(El(1, 3), El(2, 0))) == \
+            GrSet(El(2, 0))
+    assert test_grset.intersection(GrSet(El(1, 3))) == GrSet()
+
+
 def test_GrSet_is_subset():
     assert test_grset.is_subset(test_grset)
     assert GrSet(El(0, 2), El(2, 0)).is_subset(test_grset)
@@ -291,6 +311,11 @@ def test_GrSubset_init():
     with raises(ValueError) as err:
         GrSubset(test_grset, whisker)
     assert str(err.value) == 'Not a valid graded subset.'
+
+
+def test_GrSubset_str():
+    assert str(GrSubset(GrSet(El(0, 1)), interval)) == \
+            'GrSubset with 1 elements in OgPoset with [2, 1] elements'
 
 
 # Tests on OgMap
