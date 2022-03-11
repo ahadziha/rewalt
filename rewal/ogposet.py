@@ -403,13 +403,13 @@ class GrSubset:
         """ The ambient OgPoset is read-only. """
         return self._ambient
 
-    def maximal(self):
+    def maximal(self, close_first=True):
         """
         Returns the subset of elements that are not below any other
         elements in the graded set.
         """
         maximal = GrSet()
-        closed_self = self.closure()
+        closed_self = self.closure() if close_first else self
 
         for x in closed_self:
             if self.ambient.cofaces(x).isdisjoint(
@@ -437,7 +437,8 @@ class GrSubset:
         """ Returns whether the subset is closed. """
         return self.closure() == self
 
-    def boundary(self, sign, dim=None):
+    def boundary(self, sign, dim=None,
+                 close_first=True):
         """
         Returns the input or output dim-boundary of (the closure of)
         the graded set.
@@ -445,7 +446,7 @@ class GrSubset:
         sign = utils.make_sign(sign)
         if dim is None:
             dim = self.proj.dim - 1
-        closed_self = self.closure()
+        closed_self = self.closure() if close_first else self
 
         # Add lower-dim maximal elements
         boundary = self.maximal().proj[:dim]
