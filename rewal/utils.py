@@ -13,7 +13,7 @@ def typecheck(x, constraint, *more_constraints):
         if not constraint['st'](x):
             raise ValueError(value_err(x, constraint['why']))
 
-    if more_constraints:
+    if more_constraints and hasattr(x, '__iter__'):
         for y in x:
             if isinstance(x, dict):
                 typecheck(x[y], *more_constraints)
@@ -30,4 +30,4 @@ def type_err(expected, got):
 
 def value_err(got, why):
     """ Value error. """
-    return "The value {} is not valid ({}).".format(repr(got), why)
+    return "{} is not valid ({}).".format(repr(got), why)

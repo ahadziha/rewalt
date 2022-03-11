@@ -75,11 +75,8 @@ class OgPoset:
         self._face_data = face_data
         self._coface_data = coface_data
 
-    def __repr__(self):
-        return "OgPoset{}".format(repr(self.face_data))
-
     def __str__(self):
-        return "OgPoset{}".format(str(self.face_data))
+        return "OgPoset with {} elements".format(str(self.size))
 
     def __getitem__(self, key):
         # TODO: should accept slices.
@@ -94,10 +91,12 @@ class OgPoset:
 
     @property
     def face_data(self):
+        """ Face data are read-only. """
         return self._face_data
 
     @property
     def coface_data(self):
+        """ Coface data are read-only. """
         return self._coface_data
 
     @property
@@ -208,7 +207,7 @@ class GrSet:
             self.add(x)
 
     def __repr__(self):
-        return "GrSet{}".format(repr(self.as_set))
+        return "GrSet{}".format(repr(self.as_list))
 
     def __str__(self):
         return repr(self)
@@ -284,12 +283,12 @@ class GrSet:
             if self._elements[element.dim] == set():
                 del self._elements[element.dim]
         else:
-            raise ValueError('{} not in GrSet.'.format(repr(element)))
+            raise ValueError('{} not in graded set.'.format(repr(element)))
 
     def union(self, *others):
         """
-        Returns a graded set obtained as the union of itself
-        with other graded sets.
+        Returns a graded set obtained as the union of the graded set with
+        other graded sets.
         """
         union = GrSet(*self)
         for item in others:
@@ -298,18 +297,55 @@ class GrSet:
                 union.add(x)
         return union
 
-    def is_compatible(self, ogposet):
-        """
-        Returns True if the graded set defines a valid subset of
-        an oriented graded poset.
-        """
-        utils.typecheck(ogposet, {'type': OgPoset})
-        if self.dim > ogposet.dim:
-            return False
-        for n in self.grades:
-            if max(self._elements[n]) > ogposet.size[n]:
-                return False
-        return True
+    def is_subset(self, other):
+        """ Returns True iff the graded set is a subset of another. """
+        utils.typecheck(other, {'type': GrSet})
+        return self.as_set.issubset(other.as_set)
+
+
+class GrSubset:
+    """
+    Class for pairs of a GrSet and an "ambient" OgPoset, where the
+    GrSet is seen as a subset of the OgPoset, and made immutable.
+    (This avoids passing the ambient as an argument every time we perform
+    face-data-dependent operations on a GrSet.)
+    """
+
+    def __init__(self, element_set, ambient,
+                 wfcheck=True):
+        if wfcheck:
+            self._wfcheck(element_set, ambient)
+
+        # Make a fresh GrSet to avoid external changes
+        self._element_set = GrSet(*element_set)
+        self._ambient = ambient
+
+    def __eq__(self, other):
+        return isinstance(other, GrSubset) and \
+                self.element_set == other.element_set and \
+                self.ambient == other.ambient
+
+    @property
+    def element_set(self):
+        """ The element set is read-only. """
+        return self._element_set
+
+    @property
+    def ambient(self):
+        """ The ambient OgPoset is read-only. """
+        return self._ambient
+
+    # Internal methods
+    @staticmethod
+    def _wfcheck(element_set, ambient):
+        utils.typecheck(element_set, {'type': GrSet})
+        utils.typecheck(ambient, {'type': OgPoset})
+
+        if element_set.dim > ambient.dim:
+            raise ValueError('Not a valid graded subset.')
+        for n in element_set.grades:
+            if max(element_set._elements[n]) > ambient.size[n]:
+                raise ValueError('Not a valid graded subset.')
 
 
 class OgMap:
@@ -341,10 +377,10 @@ class OgMap:
         return self._mapping
 
     def __eq__(self, other):
-        t1 = self.source == other.source
-        t2 = self.target == other.target
-        t3 = self.mapping == other.mapping
-        return isinstance(other, OgMap) and t1 and t2 and t3
+        return isinstance(other, OgMap) and \
+                self.source == other.source and \
+                self.target == other.target and \
+                self.mapping == other.mapping
 
     # Internal methods.
     @staticmethod

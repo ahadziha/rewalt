@@ -2,13 +2,15 @@ import numpy as np
 from pytest import raises
 
 from rewal import utils
-from rewal.ogposet import El, OgPoset, GrSet, OgMap
+from rewal.ogposet import El, OgPoset, GrSet, GrSubset, OgMap
 
 
 # El tests
 
 def test_El_init():
     assert El(2, 3) == El(2, 3)
+    assert El(2, 3) != El(1, 3)
+    assert El(2, 3) != El(2, 2)
 
     with raises(TypeError) as err:
         El('x', 2)
@@ -162,6 +164,10 @@ interval_face = [
 interval = OgPoset.from_face_data(interval_face)
 
 
+def test_OgPoset_str():
+    assert str(whisker) == 'OgPoset with [3, 3, 1] elements'
+
+
 def test_OgPoset_size():
     assert whisker.size == [3, 3, 1]
 
@@ -261,15 +267,30 @@ def test_GrSet_remove():
 
     with raises(ValueError) as err:
         test_grset.remove(El(3, 6))
-    assert str(err.value) == 'El(3, 6) not in GrSet.'
+    assert str(err.value) == 'El(3, 6) not in graded set.'
 
 
-def test_GrSet_is_compatible():
-    assert not test_grset.is_compatible(interval)
-    assert not test_grset.is_compatible(whisker)
+def test_GrSet_is_subset():
+    assert test_grset.is_subset(test_grset)
+    assert GrSet(El(0, 2), El(2, 0)).is_subset(test_grset)
+    assert not GrSet(El(0, 3)).is_subset(test_grset)
 
-    assert GrSet(El(0, 2), El(2, 0)).is_compatible(whisker)
-    assert GrSet().is_compatible(OgPoset([], []))
+
+# Tests on GrSubset
+
+def test_GrSubset():
+    assert GrSubset(GrSet(El(0, 2), El(2, 0)), whisker) == \
+        GrSubset(GrSet(El(0, 2), El(2, 0)), whisker)
+    assert GrSubset(GrSet(El(0, 1)), interval) != \
+        GrSubset(GrSet(El(0, 1)), whisker)
+    assert GrSubset(GrSet(El(0, 1)), whisker) != \
+        GrSubset(GrSet(El(0, 2)), whisker)
+
+
+def test_GrSubset_init():
+    with raises(ValueError) as err:
+        GrSubset(test_grset, whisker)
+    assert str(err.value) == 'Not a valid graded subset.'
 
 
 # Tests on OgMap
