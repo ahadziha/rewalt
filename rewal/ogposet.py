@@ -440,8 +440,7 @@ class GrSubset:
     def boundary(self, sign, dim=None,
                  close_first=True):
         """
-        Returns the input or output dim-boundary of (the closure of)
-        the graded set.
+        Returns the input or output n-boundary of the graded set.
         """
         sign = utils.make_sign(sign)
         if dim is None:
