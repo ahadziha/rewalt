@@ -31,3 +31,24 @@ def type_err(expected, got):
 def value_err(got, why):
     """ Value error. """
     return "{} is not a valid value ({}).".format(repr(got), why)
+
+
+def make_sign(key):
+    """ Used to turn various expressions into '-' or '+' """
+    if isinstance(key, str):
+        if key in ['-', 'i', 'in', 'input', 's', 'source']:
+            return '-'
+        if key in ['+', 'o', 'out', 'output', 't', 'target']:
+            return '+'
+    if isinstance(key, int):
+        if key == 0:
+            return '-'
+        if key == 1:
+            return '+'
+    raise KeyError(str(key))
+
+
+def flip(sign):
+    """ Flips the sign. """
+    flipped = '-' if sign == '+' else '+'
+    return flipped

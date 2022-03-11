@@ -168,6 +168,10 @@ def test_OgPoset_str():
     assert str(whisker) == 'OgPoset with [3, 3, 1] elements'
 
 
+def test_OgPoset_getitem():
+    assert whisker[2] == GrSubset(GrSet(El(2, 0)), whisker)
+
+
 def test_OgPoset_size():
     assert whisker.size == [3, 3, 1]
 
@@ -194,6 +198,13 @@ def test_OgPoset_all_elements():
             whisker)
 
 
+def test_OgPoset_faces():
+    assert whisker.faces(El(2, 0), '-') == GrSet(El(1, 0))
+    assert whisker.faces(El(2, 0), '+') == GrSet(El(1, 1))
+    assert whisker.faces(El(0, 0), 0) == GrSet()
+    assert whisker.faces(El(1, 2)) == GrSet(El(0, 1), El(0, 2))
+
+
 def test_OgPoset_from_face_data():
     assert whisker == OgPoset.from_face_data(whisker_face)
 
@@ -213,7 +224,7 @@ test_grset = GrSet(El(0, 2), El(2, 0), El(0, 5))
 
 
 def test_GrSet_str():
-    assert str(test_grset) == 'GrSet(El(0, 2), El(0, 5), El(2, 0))'
+    assert str(test_grset) == 'GrSet[El(0, 2), El(0, 5), El(2, 0)]'
 
 
 def test_GrSet_contains():
@@ -240,8 +251,8 @@ def test_GrSet_getitem():
     assert test_grset[:] == test_grset
 
     with raises(KeyError) as err:
-        test_grset[-1]
-    assert str(err.value) == "'-1'"
+        test_grset['x']
+    assert str(err.value) == "'x'"
 
 
 def test_GrSet_grades():
@@ -294,10 +305,15 @@ def test_GrSet_intersection():
     assert test_grset.intersection(GrSet(El(1, 3))) == GrSet()
 
 
-def test_GrSet_is_subset():
-    assert test_grset.is_subset(test_grset)
-    assert GrSet(El(0, 2), El(2, 0)).is_subset(test_grset)
-    assert not GrSet(El(0, 3)).is_subset(test_grset)
+def test_GrSet_issubset():
+    assert test_grset.issubset(test_grset)
+    assert GrSet(El(0, 2), El(2, 0)).issubset(test_grset)
+    assert not GrSet(El(0, 3)).issubset(test_grset)
+
+
+def test_GrSet_isdisjoint():
+    assert test_grset.isdisjoint(GrSet(El(1, 3), El(0, 4)))
+    assert not test_grset.isdisjoint(GrSet(El(0, 2), El(1, 3)))
 
 
 # Tests on GrSubset
@@ -324,6 +340,8 @@ def test_GrSubset_str():
 
 test_grsubset = GrSubset(GrSet(El(0, 2), El(2, 0)), whisker)
 
+whisker_all = whisker.all_elements
+
 
 def test_GrSubset_contains():
     assert El(0, 2) in test_grsubset
@@ -333,6 +351,54 @@ def test_GrSubset_contains():
 def test_GrSubset_getitem():
     assert test_grsubset[0] == GrSubset(GrSet(El(0, 2)), whisker)
     assert test_grsubset[1:] == GrSubset(GrSet(El(2, 0)), whisker)
+
+
+def test_GrSubset_proj():
+    assert test_grsubset.proj == GrSet(El(0, 2), El(2, 0))
+
+
+def test_GrSubset_ambient():
+    assert test_grsubset.ambient == whisker
+
+
+def test_GrSubset_maximal():
+    assert whisker_all.maximal() == GrSubset(
+            GrSet(El(2, 0), El(1, 2)), whisker)
+
+
+def test_GrSubset_closure():
+    assert test_grsubset.closure() == GrSubset(
+            GrSet(El(0, 0), El(0, 1), El(0, 2),
+                  El(1, 0), El(1, 1), El(2, 0)),
+            whisker)
+    assert whisker_all.maximal().closure() == \
+        whisker_all
+
+
+def test_GrSubset_isclosed():
+    assert not test_grsubset.isclosed
+    assert whisker_all.isclosed
+
+
+def test_GrSubset_boundary():
+    assert whisker_all.boundary('-', 0) == GrSubset(
+            GrSet(El(0, 0)), whisker)
+    assert whisker_all.boundary('+', 0) == GrSubset(
+            GrSet(El(0, 2)), whisker)
+    assert whisker_all.boundary('s', 1) == GrSubset(
+            GrSet(El(1, 0), El(1, 2)), whisker).closure()
+    assert whisker_all.boundary('+') == GrSubset(
+            GrSet(El(1, 1), El(1, 2)), whisker).closure()
+    assert whisker_all.boundary(0, 2) == whisker_all
+
+    assert whisker_all.boundary('-', 3) == whisker_all
+    assert whisker_all.boundary('-', -1) == GrSubset(
+            GrSet(), whisker)
+
+    assert GrSubset(GrSet(El(0, 0)), whisker).boundary('-') == \
+        GrSubset(GrSet(), whisker)
+    assert GrSubset(GrSet(), whisker).boundary('-') == \
+        GrSubset(GrSet(), whisker)
 
 
 # Tests on OgMap

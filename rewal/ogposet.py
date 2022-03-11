@@ -79,10 +79,11 @@ class OgPoset:
         return "OgPoset with {} elements".format(str(self.size))
 
     def __getitem__(self, key):
-        # TODO: should accept slices.
+        """ Returns a GrSubset. """
+        return self.all_elements[key]
 
-        # TODO: should be a graded set instead.
-        return list(range(self.size[key]))
+    def __iter__(self):
+        return iter(self.all_elements)
 
     def __eq__(self, other):
         return isinstance(other, OgPoset) and \
@@ -133,6 +134,36 @@ class OgPoset:
                         for k in range(self.size[n])]),
                 self, wfcheck=False, mkfresh=False)
 
+    def faces(self, element, sign=None):
+        """
+        Returns the graded set of faces of an element with given sign.
+        """
+        if sign is None:
+            return self.faces(element, '-').union(
+                self.faces(element, '+'))
+        sign = utils.make_sign(sign)
+        utils.typecheck(element, {'type': El})
+        n = element.dim
+        k = element.pos
+        if n <= self.dim and k <= self.size[n]:
+            return GrSet(*[El(n-1, i)
+                           for i in self.face_data[n][k][sign]])
+
+    def cofaces(self, element, sign=None):
+        """
+        Returns the graded set of cofaces of an element with given sign.
+        """
+        if sign is None:
+            return self.cofaces(element, '-').union(
+                self.cofaces(element, '+'))
+        sign = utils.make_sign(sign)
+        utils.typecheck(element, {'type': El})
+        n = element.dim
+        k = element.pos
+        if n <= self.dim and k <= self.size[n]:
+            return GrSet(*[El(n+1, i)
+                           for i in self.coface_data[n][k][sign]])
+
     # Class methods
     @classmethod
     def from_face_data(cls, face_data, wfcheck=True):
@@ -163,7 +194,8 @@ class OgPoset:
         sizes = [len(_) for _ in face_data]
         for n, n_data in enumerate(face_data):
             # Check that faces are within bounds.
-            k = max([i for x in n_data for a in x for i in x[a]], default=-1)
+            k = max([i for x in n_data for sign in x for i in x[sign]],
+                    default=-1)
             if (n == 0 and k >= 0) or k >= sizes[n-1]:
                 raise ValueError(utils.value_err(k, 'out of bounds'))
 
@@ -210,7 +242,7 @@ class GrSet:
             self.add(x)
 
     def __repr__(self):
-        return "GrSet{}".format(repr(tuple(self.as_list)))
+        return "GrSet{}".format(repr(self.as_list))
 
     def __str__(self):
         return repr(self)
@@ -231,7 +263,7 @@ class GrSet:
         return iter(self.as_list)
 
     def __getitem__(self, key):
-        if isinstance(key, int) and key >= 0:
+        if isinstance(key, int) and key >= -2:
             if key in self.grades:
                 return GrSet(*[El(key, k) for k in self._elements[key]])
             return GrSet()
@@ -310,18 +342,25 @@ class GrSet:
                 *[x.as_set for x in others])
         return GrSet(*intersection_as_set)
 
-    def is_subset(self, other):
-        """ Returns True iff the graded set is a subset of another. """
+    def issubset(self, other):
+        """ Returns whether the graded set is a subset of another. """
         utils.typecheck(other, {'type': GrSet})
         return self.as_set.issubset(other.as_set)
+
+    def isdisjoint(self, other):
+        """ Returns whether the graded set is disjoint from another. """
+        utils.typecheck(other, {'type': GrSet})
+        return self.as_set.isdisjoint(other.as_set)
+
+    def copy(self):
+        """ Returns a copy of the graded set. """
+        return GrSet(*self)
 
 
 class GrSubset:
     """
-    Class for pairs of a GrSet and an "ambient" OgPoset, where the
-    GrSet is seen as a subset of the OgPoset.
-    (This avoids passing the ambient as an argument every time we perform
-    face-data-dependent operations on a GrSet.)
+    Class for pairs of a GrSet and an "ambient" OgPoset, where the GrSet
+    is seen as a subset of the ambient.
     """
 
     def __init__(self, graded_set, ambient,
@@ -329,7 +368,7 @@ class GrSubset:
         if wfcheck:
             self._wfcheck(graded_set, ambient)
 
-        self._graded_set = GrSet(*graded_set) if mkfresh else graded_set
+        self._graded_set = graded_set.copy() if mkfresh else graded_set
         self._ambient = ambient
 
     def __eq__(self, other):
@@ -343,6 +382,9 @@ class GrSubset:
 
     def __contains__(self, item):
         return item in self.proj
+
+    def __len__(self):
+        return len(self.proj)
 
     def __getitem__(self, key):
         return GrSubset(self.proj[key], self.ambient,
@@ -360,6 +402,61 @@ class GrSubset:
     def ambient(self):
         """ The ambient OgPoset is read-only. """
         return self._ambient
+
+    def maximal(self):
+        """
+        Returns the subset of elements that are not below any other
+        elements in the graded set.
+        """
+        maximal = GrSet()
+        closed_self = self.closure()
+
+        for x in closed_self:
+            if self.ambient.cofaces(x).isdisjoint(
+                    closed_self.proj[x.dim + 1]):
+                maximal.add(x)
+        return GrSubset(maximal, self.ambient,
+                        wfcheck=False, mkfresh=False)
+
+    def closure(self):
+        """
+        Returns the closure of the subset in the oriented graded poset.
+        """
+        closure = self.proj.copy()
+
+        for n in range(self.proj.dim, 0, -1):
+            for element in closure[n]:
+                for face in self.ambient.faces(element):
+                    closure.add(face)
+
+        return GrSubset(closure, self.ambient,
+                        wfcheck=False, mkfresh=False)
+
+    @property
+    def isclosed(self):
+        """ Returns whether the subset is closed. """
+        return self.closure() == self
+
+    def boundary(self, sign, dim=None):
+        """
+        Returns the input or output dim-boundary of (the closure of)
+        the graded set.
+        """
+        sign = utils.make_sign(sign)
+        if dim is None:
+            dim = self.proj.dim - 1
+        closed_self = self.closure()
+
+        # Add lower-dim maximal elements
+        boundary = self.maximal().proj[:dim]
+
+        for x in closed_self[dim]:
+            if self.ambient.cofaces(x, utils.flip(sign)).isdisjoint(
+                    closed_self.proj[x.dim + 1]):
+                boundary.add(x)
+
+        return GrSubset(boundary, self.ambient,
+                        wfcheck=False, mkfresh=False).closure()
 
     # Internal methods
     @staticmethod
