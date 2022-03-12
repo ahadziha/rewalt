@@ -562,10 +562,17 @@ class OgMap:
                 self.target == other.target and \
                 self.mapping == other.mapping
 
-    def __getitem__(self, key):
-        if key in self.source:
-            return self.mapping[key.dim][key.pos]
-        raise KeyError(str(key))
+    def __getitem__(self, element):
+        if element in self.source:
+            return self.mapping[element.dim][element.pos]
+        raise ValueError('{} not in source.'.format(repr(element)))
+
+    def __setitem__(self, element, image):
+        if element in self.source:
+            self._extensioncheck(element, image)
+            self._mapping[element.dim][element.pos] = image
+        else:
+            raise ValueError('{} not in source.'.format(repr(element)))
 
     @property
     def source(self):
@@ -579,6 +586,13 @@ class OgMap:
     def mapping(self):
         return self._mapping
 
+    @property
+    def istotal(self):
+        for n_data in self.mapping:
+            if not all(n_data):
+                return False
+        return True
+
     def isdefined(self, element):
         """ Returns whether the map is defined on an element. """
         if element in self.source and self[element] is not None:
@@ -588,26 +602,38 @@ class OgMap:
     # Internal methods.
     def _extensioncheck(self, element, image,
                         check_below=True):
-        if element not in self.source:
-            raise ValueError('{} not in source.'.format(repr(element)))
         if image not in self.target:
             raise ValueError('{} not in target.'.format(repr(image)))
         if self.isdefined(element):
             raise ValueError('Already defined on {}.'.format(repr(element)))
+
+        el_underset = GrSubset(GrSet(element), self.source).closure()
         if check_below:
-            below = GrSubset(
-                    GrSet(element), self.source).closure()
-            for x in below[:element.dim]:
+            for x in el_underset[:element.dim]:
                 if not self.isdefined(x):
                     raise ValueError(
                         'Not defined on element {} below {}.'.format(
                             repr(x), repr(element)))
-        for sign in '-', '+':
-            for n in range(element.dim):
-                pass  # TODO
+
+        img_underset = GrSubset(GrSet(image), self.target).closure()
+        for n in range(element.dim):
+            for sign in '-', '+':
+                if el_underset.boundary(sign, n).image(self) != \
+                        img_underset.boundary(sign, n):
+                    raise ValueError(
+                        'Assignment incompatible with boundaries.')
 
     @staticmethod
     def _wfcheck(source, target, mapping):
         for x in source, target:
             utils.typecheck(x, {'type': OgPoset})
-        pass
+        if mapping is not None:  # otherwise nothing else to check
+            utils.typecheck(mapping, {'type': list}, {'type': list})
+
+            mapping_size = [len(_) for _ in mapping]
+            if mapping_size != source.size:
+                raise ValueError('Mapping data has the wrong size.')
+
+            check_map = OgMap(source, target)
+            for x in source:
+                check_map[x] = mapping[x.dim][x.pos]

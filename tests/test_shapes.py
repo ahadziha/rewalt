@@ -462,13 +462,18 @@ def test_OgMap_getitem():
     assert test_injection[El(0, 0)] == El(0, 1)
     assert test_collapse[El(2, 0)] == El(1, 0)
 
-    with raises(KeyError) as err:
+    with raises(ValueError) as err:
         test_injection[El(0, 2)]
-    assert str(err.value) == "'El(0, 2)'"
+    assert str(err.value) == 'El(0, 2) not in source.'
 
 
 def test_OgMap_mapping():
     assert OgMap(interval, whisker).mapping == [[None, None], [None]]
+
+
+def test_OgMap_istotal():
+    assert test_injection.istotal
+    assert not OgMap(interval, whisker).istotal
 
 
 def test_OgMap_isdefined():
