@@ -172,6 +172,12 @@ def test_OgPoset_getitem():
     assert whisker[2] == GrSubset(GrSet(El(2, 0)), whisker)
 
 
+def test_OgPoset_contains():
+    assert El(1, 2) in whisker
+    assert El(1, 3) not in whisker
+    assert El(3, 0) not in whisker
+
+
 def test_OgPoset_size():
     assert whisker.size == [3, 3, 1]
 
@@ -339,7 +345,7 @@ def test_GrSubset_str():
 
 
 test_grsubset = GrSubset(GrSet(El(0, 2), El(2, 0)), whisker)
-
+interval_grsubset = GrSubset(GrSet(El(0, 1)), interval)
 whisker_all = whisker.all_elements
 
 
@@ -359,6 +365,25 @@ def test_GrSubset_proj():
 
 def test_GrSubset_ambient():
     assert test_grsubset.ambient == whisker
+
+
+def test_GrSubset_union():
+    assert test_grsubset.union(GrSubset(
+        GrSet(El(0, 2), El(1, 1)), whisker), GrSubset(
+        GrSet(El(2, 0), El(1, 2)), whisker)) == GrSubset(
+        GrSet(El(0, 2), El(2, 0), El(1, 1), El(1, 2)), whisker)
+
+    with raises(ValueError) as err:
+        test_grsubset.union(interval_grsubset)
+    assert str(err.value) == utils.value_err(
+            interval_grsubset,
+            'not a subset of the same OgPoset')
+
+
+def test_GrSubset_intersection():
+    assert test_grsubset.intersection(GrSubset(
+        GrSet(El(0, 2), El(1, 1)), whisker)) == GrSubset(
+        GrSet(El(0, 2)), whisker)
 
 
 def test_GrSubset_maximal():
@@ -391,6 +416,10 @@ def test_GrSubset_boundary():
             GrSet(El(1, 1), El(1, 2)), whisker).closure()
     assert whisker_all.boundary(0, 2) == whisker_all
 
+    assert whisker_all.boundary() == whisker_all[:2]
+    assert whisker_all.boundary(None, 0) == GrSubset(
+            GrSet(El(0, 0), El(0, 2)), whisker)
+
     assert whisker_all.boundary('-', 3) == whisker_all
     assert whisker_all.boundary('-', -1) == GrSubset(
             GrSet(), whisker)
@@ -401,6 +430,26 @@ def test_GrSubset_boundary():
         GrSubset(GrSet(), whisker)
 
 
+test_injection = OgMap(interval, whisker, [
+    [El(0, 1), El(0, 2)],
+    [El(1, 2)]])
+
+test_collapse = OgMap(whisker, interval, [
+    [El(0, 0), El(0, 1), El(0, 1)],
+    [El(1, 0), El(1, 0), El(0, 1)],
+    [El(1, 0)]])
+
+
+def test_GrSubset_image():
+    assert test_grsubset.image(test_collapse) == GrSubset(
+            GrSet(El(0, 1), El(1, 0)), interval)
+
+    with raises(ValueError) as err:
+        test_grsubset.image(test_injection)
+    assert str(err.value) == utils.value_err(
+            test_injection, 'OgMap source does not match ambient OgPoset')
+
+
 # Tests on OgMap
 
 def test_OgMap_init():
@@ -409,5 +458,20 @@ def test_OgMap_init():
     # TODO: tests for well-formedness
 
 
+def test_OgMap_getitem():
+    assert test_injection[El(0, 0)] == El(0, 1)
+    assert test_collapse[El(2, 0)] == El(1, 0)
+
+    with raises(KeyError) as err:
+        test_injection[El(0, 2)]
+    assert str(err.value) == "'El(0, 2)'"
+
+
 def test_OgMap_mapping():
     assert OgMap(interval, whisker).mapping == [[None, None], [None]]
+
+
+def test_OgMap_isdefined():
+    assert test_injection.isdefined(El(0, 1))
+    assert not OgMap(interval, whisker).isdefined(El(0, 1))
+    assert not test_injection.isdefined(El(0, 2))

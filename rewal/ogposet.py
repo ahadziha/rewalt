@@ -82,6 +82,13 @@ class OgPoset:
         """ Returns a GrSubset. """
         return self.all_elements[key]
 
+    def __contains__(self, item):
+        if isinstance(item, El):
+            if item.dim <= self.dim:
+                if item.pos < self.size[item.dim]:
+                    return True
+        return False
+
     def __iter__(self):
         return iter(self.all_elements)
 
@@ -141,7 +148,7 @@ class OgPoset:
         if sign is None:
             return self.faces(element, '-').union(
                 self.faces(element, '+'))
-        sign = utils.make_sign(sign)
+        sign = utils.mksign(sign)
         utils.typecheck(element, {'type': El})
         n = element.dim
         k = element.pos
@@ -156,7 +163,7 @@ class OgPoset:
         if sign is None:
             return self.cofaces(element, '-').union(
                 self.cofaces(element, '+'))
-        sign = utils.make_sign(sign)
+        sign = utils.mksign(sign)
         utils.typecheck(element, {'type': El})
         n = element.dim
         k = element.pos
@@ -395,15 +402,48 @@ class GrSubset:
 
     @property
     def proj(self):
-        """ Returns the underlying graded set. """
-        return self._graded_set
+        """ Returns a copy of the underlying graded set. """
+        return self._graded_set.copy()
 
     @property
     def ambient(self):
         """ The ambient OgPoset is read-only. """
         return self._ambient
 
-    def maximal(self, close_first=True):
+    def union(self, *others):
+        """
+        Returns the union with other subsets of the same OgPoset.
+        """
+        others_proj = []
+        for x in others:
+            utils.typecheck(x, {
+                'type': GrSubset,
+                'st': lambda x: x.ambient == self.ambient,
+                'why': 'not a subset of the same OgPoset'
+                })
+            others_proj.append(x.proj)
+
+        return GrSubset(self.proj.union(*others_proj), self.ambient,
+                        wfcheck=False, mkfresh=False)
+
+    def intersection(self, *others):
+        """
+        Returns the intersection with other subsets of the same OgPoset.
+        """
+        others_proj = []
+        for x in others:
+            utils.typecheck(x, {
+                'type': GrSubset,
+                'st': lambda x: x.ambient == self.ambient,
+                'why': 'not a subset of the same OgPoset'
+                })
+            others_proj.append(x.proj)
+
+        return GrSubset(self.proj.intersection(*others_proj), self.ambient,
+                        wfcheck=False, mkfresh=False)
+
+    def maximal(self,
+                close_first=True):
         """
         Returns the subset of elements that are not below any other
         elements in the graded set.
@@ -437,26 +477,54 @@ class GrSubset:
         """ Returns whether the subset is closed. """
         return self.closure() == self
 
-    def boundary(self, sign, dim=None,
-                 close_first=True):
+    def boundary_max(self, sign=None, dim=None,
+                     close_first=True):
         """
-        Returns the input or output n-boundary of the graded set.
+        Returns the set of maximal elements of the input or output
+        n-boundary of (the closure of) the graded set.
         """
-        sign = utils.make_sign(sign)
-        if dim is None:
-            dim = self.proj.dim - 1
+        _sign = utils.flip(utils.mksign(sign)) if sign is not None else '-'
+        dim = self.proj.dim - 1 if dim is None else dim
         closed_self = self.closure() if close_first else self
 
         # Add lower-dim maximal elements
-        boundary = self.maximal().proj[:dim]
+        boundary_max = self.maximal().proj[:dim]
 
         for x in closed_self[dim]:
-            if self.ambient.cofaces(x, utils.flip(sign)).isdisjoint(
+            if self.ambient.cofaces(x, _sign).isdisjoint(
                     closed_self.proj[x.dim + 1]):
-                boundary.add(x)
+                boundary_max.add(x)
+            if sign is None and self.ambient.cofaces(x, '+').isdisjoint(
+                    closed_self.proj[x.dim + 1]):
+                boundary_max.add(x)
 
-        return GrSubset(boundary, self.ambient,
-                        wfcheck=False, mkfresh=False).closure()
+        return GrSubset(boundary_max, self.ambient,
+                        wfcheck=False, mkfresh=False)
+
+    def boundary(self, sign=None, dim=None,
+                 close_first=True):
+        """
+        Returns the input or output n-boundary of (the closure of) the
+        graded set.
+        """
+
+        return self.boundary_max(sign, dim, close_first).closure()
+
+    def image(self, ogmap):
+        """
+        Returns the image of the graded subset through an OgMap.
+        """
+        utils.typecheck(ogmap, {
+            'type': OgMap,
+            'st': lambda x: x.source == self.ambient,
+            'why': 'OgMap source does not match ambient OgPoset'})
+
+        image = GrSet()
+        for x in self:
+            if ogmap.isdefined(x):
+                image.add(ogmap[x])
+        return GrSubset(image, ogmap.target,
+                        wfcheck=False, mkfresh=False)
 
     # Internal methods
     @staticmethod
@@ -467,7 +535,7 @@ class GrSubset:
         if graded_set.dim > ambient.dim:
             raise ValueError('Not a valid graded subset.')
         for n in graded_set.grades:
-            if max([x.pos for x in graded_set[n]]) > ambient.size[n]:
+            if max([x.pos for x in graded_set[n]]) >= ambient.size[n]:
                 raise ValueError('Not a valid graded subset.')
 
 
@@ -478,15 +546,26 @@ class OgMap:
 
     def __init__(self, source, target, mapping=None,
                  wfcheck=True):
-        # TODO: whole thing needs rewriting.
         if wfcheck:
             self._wfcheck(source, target, mapping)
 
         self._source = source
         self._target = target
-        self._mapping = mapping if mapping is not None \
-            else [[None for _ in range(source.size[n])]
-                  for n in range(source.dim + 1)]
+        if mapping is None:
+            mapping = [[None for _ in range(source.size[n])]
+                       for n in range(len(source.size))]
+        self._mapping = mapping
+
+    def __eq__(self, other):
+        return isinstance(other, OgMap) and \
+                self.source == other.source and \
+                self.target == other.target and \
+                self.mapping == other.mapping
+
+    def __getitem__(self, key):
+        if key in self.source:
+            return self.mapping[key.dim][key.pos]
+        raise KeyError(str(key))
 
     @property
     def source(self):
@@ -500,17 +579,18 @@ class OgMap:
     def mapping(self):
         return self._mapping
 
-    def __eq__(self, other):
-        return isinstance(other, OgMap) and \
-                self.source == other.source and \
-                self.target == other.target and \
-                self.mapping == other.mapping
+    def isdefined(self, element):
+        """ Returns whether the map is defined on an element. """
+        if element in self.source and self[element] is not None:
+            return True
+        return False
 
     # Internal methods.
     @staticmethod
     def _wfcheck(source, target, mapping):
         for x in (source, target):
             utils.typecheck(x, {'type': OgPoset})
+        pass
 
-        # TODO: all the actual checks...
-        # Have this call “single extension” checks.
+    def _extensioncheck(element, image):
+        pass

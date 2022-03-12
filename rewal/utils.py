@@ -33,8 +33,8 @@ def value_err(got, why):
     return "{} is not a valid value ({}).".format(repr(got), why)
 
 
-def make_sign(key):
-    """ Used to turn various expressions into '-' or '+' """
+def mksign(key):
+    """ Used to turn various expressions into '-' or '+'. """
     if isinstance(key, str):
         if key in ['-', 'i', 'in', 'input', 's', 'source']:
             return '-'
