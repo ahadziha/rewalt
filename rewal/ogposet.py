@@ -13,7 +13,7 @@ class El:
     """
 
     def __init__(self, dim, pos):
-        for x in (dim, pos):
+        for x in dim, pos:
             utils.typecheck(x, {
                 'type': int,
                 'st': lambda x: x >= 0,
@@ -231,9 +231,9 @@ class OgPoset:
 
         for n, sn_data in enumerate(face_data[1:]):
             for k, x in enumerate(sn_data):
-                for a in ('-', '+'):
-                    for i in x[a]:
-                        coface_data[n][i][a].add(k)
+                for sign in '-', '+':
+                    for i in x[sign]:
+                        coface_data[n][i][sign].add(k)
 
         return coface_data
 
@@ -586,11 +586,28 @@ class OgMap:
         return False
 
     # Internal methods.
+    def _extensioncheck(self, element, image,
+                        check_below=True):
+        if element not in self.source:
+            raise ValueError('{} not in source.'.format(repr(element)))
+        if image not in self.target:
+            raise ValueError('{} not in target.'.format(repr(image)))
+        if self.isdefined(element):
+            raise ValueError('Already defined on {}.'.format(repr(element)))
+        if check_below:
+            below = GrSubset(
+                    GrSet(element), self.source).closure()
+            for x in below[:element.dim]:
+                if not self.isdefined(x):
+                    raise ValueError(
+                        'Not defined on element {} below {}.'.format(
+                            repr(x), repr(element)))
+        for sign in '-', '+':
+            for n in range(element.dim):
+                pass  # TODO
+
     @staticmethod
     def _wfcheck(source, target, mapping):
-        for x in (source, target):
+        for x in source, target:
             utils.typecheck(x, {'type': OgPoset})
-        pass
-
-    def _extensioncheck(element, image):
         pass
