@@ -69,13 +69,15 @@ def test_OgPoset_init():
     test_face[1][0]['-'] = {1}
     with raises(ValueError) as err:
         OgPoset(test_face, test_coface)
-    assert str(err.value) == 'Input and output faces must be disjoint.'
+    assert str(err.value) == utils.value_err(
+            test_face, 'input and output faces of El(1, 0) are not disjoint')
 
     test_face[1][0]['-'] = set()
     test_face[1][0]['+'] = set()
     with raises(ValueError) as err:
         OgPoset(test_face, test_coface)
-    assert str(err.value) == 'The element must have at least one face.'
+    assert str(err.value) == utils.value_err(
+            test_face, 'El(1, 0) must have at least one face')
 
     test_face[1][0]['-'] = {1}
     test_face[1][0]['+'] = {0}
@@ -297,7 +299,8 @@ def test_GrSet_remove():
 
     with raises(ValueError) as err:
         test_grset.remove(El(3, 6))
-    assert str(err.value) == 'El(3, 6) not in graded set.'
+    assert str(err.value) == utils.value_err(
+            El(3, 6), 'not in graded set')
 
 
 def test_GrSet_union():
@@ -336,7 +339,8 @@ def test_GrSubset():
 def test_GrSubset_init():
     with raises(ValueError) as err:
         GrSubset(test_grset, whisker)
-    assert str(err.value) == 'Not a valid graded subset.'
+    assert str(err.value) == utils.value_err(
+            test_grset, 'does not define a subset')
 
 
 def test_GrSubset_str():
@@ -465,7 +469,45 @@ def test_OgMap_getitem():
 
     with raises(ValueError) as err:
         test_injection[El(0, 2)]
-    assert str(err.value) == 'El(0, 2) not in source.'
+    assert str(err.value) == utils.value_err(
+            El(0, 2), 'not in source')
+
+
+def test_OgMap_setitem():
+    test_setitem = OgMap(interval, whisker)
+    test_setitem[El(0, 0)] = El(0, 1)
+
+    with raises(ValueError) as err:
+        test_setitem[El(0, 1)] = El(0, 3)
+    assert str(err.value) == utils.value_err(
+            El(0, 3), 'not in target')
+
+    with raises(ValueError) as err:
+        test_setitem[El(0, 0)] = El(0, 2)
+    assert str(err.value) == utils.value_err(
+            El(0, 0), 'already defined on element')
+
+    with raises(ValueError) as err:
+        test_setitem[El(0, 1)] = El(1, 0)
+    assert str(err.value) == utils.value_err(
+            El(1, 0), 'exceeds dimension of El(0, 1)')
+
+    with raises(ValueError) as err:
+        test_setitem[El(1, 0)] = El(1, 2)
+    assert str(err.value) == utils.value_err(
+            El(1, 0), 'map undefined on El(0, 1) below El(1, 0)')
+
+    test_setitem[El(0, 1)] = El(0, 2)
+
+    with raises(ValueError) as err:
+        test_setitem[El(1, 0)] = El(1, 1)
+    assert str(err.value) == utils.value_err(
+            El(1, 1),
+            'assignment does not respect (-, 0)-boundary')
+
+    test_setitem[El(1, 0)] = El(1, 2)
+
+    assert test_setitem == test_injection
 
 
 def test_OgMap_mapping():

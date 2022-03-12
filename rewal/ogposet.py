@@ -207,13 +207,18 @@ class OgPoset:
                 raise ValueError(utils.value_err(k, 'out of bounds'))
 
             # Check that input/output are inhabited and disjoint.
-            for x in n_data:
+            for i, x in enumerate(n_data):
                 if not x['-'].isdisjoint(x['+']):
-                    raise ValueError(
-                            'Input and output faces must be disjoint.')
+                    raise ValueError(utils.value_err(
+                        face_data,
+                        'input and output faces of El({}, {}) '
+                        'are not disjoint'.format(
+                            repr(n), repr(i))))
                 if n > 0 and x['-'] == x['+'] == set():
-                    raise ValueError(
-                            'The element must have at least one face.')
+                    raise ValueError(utils.value_err(
+                        face_data,
+                        'El({}, {}) must have at least one face'.format(
+                            repr(n), repr(i))))
 
     @staticmethod
     def _coface_from_face(face_data):
@@ -322,7 +327,8 @@ class GrSet:
     def remove(self, element):
         """ Removes an element. """
         if element not in self:
-            raise ValueError('{} not in graded set.'.format(repr(element)))
+            raise ValueError(utils.value_err(
+                element, 'not in graded set'))
 
         self._elements[element.dim].remove(element.pos)
         if self._elements[element.dim] == set():
@@ -534,10 +540,12 @@ class GrSubset:
         utils.typecheck(ambient, {'type': OgPoset})
 
         if graded_set.dim > ambient.dim:
-            raise ValueError('Not a valid graded subset.')
+            raise ValueError(utils.value_err(
+                graded_set, 'does not define a subset'))
         for n in graded_set.grades:
             if max([x.pos for x in graded_set[n]]) >= ambient.size[n]:
-                raise ValueError('Not a valid graded subset.')
+                raise ValueError(utils.value_err(
+                    graded_set, 'does not define a subset'))
 
 
 class OgMap:
@@ -566,14 +574,16 @@ class OgMap:
     def __getitem__(self, element):
         if element in self.source:
             return self.mapping[element.dim][element.pos]
-        raise ValueError('{} not in source.'.format(repr(element)))
+        raise ValueError(utils.value_err(
+            element, 'not in source'))
 
     def __setitem__(self, element, image):
         if element in self.source:
             self._extensioncheck(element, image)
             self._mapping[element.dim][element.pos] = image
         else:
-            raise ValueError('{} not in source.'.format(repr(element)))
+            raise ValueError(utils.value_err(
+                element, 'not in source'))
 
     @property
     def source(self):
@@ -604,25 +614,33 @@ class OgMap:
     def _extensioncheck(self, element, image,
                         check_below=True):
         if image not in self.target:
-            raise ValueError('{} not in target.'.format(repr(image)))
+            raise ValueError(utils.value_err(
+                image, 'not in target'))
         if self.isdefined(element):
-            raise ValueError('Already defined on {}.'.format(repr(element)))
+            raise ValueError(utils.value_err(
+                element, 'already defined on element'))
+        if image.dim > element.dim:
+            raise ValueError(utils.value_err(
+                image, 'exceeds dimension of {}'.format(
+                    repr(element))))
 
         el_underset = GrSubset(GrSet(element), self.source).closure()
         if check_below:
             for x in el_underset[:element.dim]:
                 if not self.isdefined(x):
-                    raise ValueError(
-                        'Not defined on element {} below {}.'.format(
-                            repr(x), repr(element)))
+                    raise ValueError(utils.value_err(
+                        element, 'map undefined on {} below {}'.format(
+                            repr(x), repr(element))))
 
         img_underset = GrSubset(GrSet(image), self.target).closure()
         for n in range(element.dim):
             for sign in '-', '+':
                 if el_underset.boundary(sign, n).image(self) != \
                         img_underset.boundary(sign, n):
-                    raise ValueError(
-                        'Assignment incompatible with boundaries.')
+                    raise ValueError(utils.value_err(
+                        image,
+                        'assignment does not respect ({}, {})-boundary'.format(
+                            sign, repr(n))))
 
     @staticmethod
     def _wfcheck(source, target, mapping):
@@ -633,7 +651,8 @@ class OgMap:
 
             mapping_size = [len(_) for _ in mapping]
             if mapping_size != source.size:
-                raise ValueError('Mapping data has the wrong size.')
+                raise ValueError(utils.value_err(
+                    mapping, 'wrong size'))
 
             check_map = OgMap(source, target)
             # Extend check_map one element at a time according to data in
