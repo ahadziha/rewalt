@@ -490,6 +490,7 @@ class GrSubset:
         # Add lower-dim maximal elements
         boundary_max = self.maximal().proj[:dim]
 
+        # Add top-dim elements
         for x in closed_self[dim]:
             if self.ambient.cofaces(x, _sign).isdisjoint(
                     closed_self.proj[x.dim + 1]):
@@ -635,5 +636,7 @@ class OgMap:
                 raise ValueError('Mapping data has the wrong size.')
 
             check_map = OgMap(source, target)
+            # Extend check_map one element at a time according to data in
+            # mapping, if it does not fail the check is passed.
             for x in source:
                 check_map[x] = mapping[x.dim][x.pos]

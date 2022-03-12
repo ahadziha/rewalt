@@ -461,6 +461,7 @@ def test_OgMap_init():
 def test_OgMap_getitem():
     assert test_injection[El(0, 0)] == El(0, 1)
     assert test_collapse[El(2, 0)] == El(1, 0)
+    assert OgMap(interval, whisker)[El(0, 1)] is None
 
     with raises(ValueError) as err:
         test_injection[El(0, 2)]
