@@ -443,6 +443,10 @@ test_collapse = OgMap(whisker, interval, [
     [El(1, 0), El(1, 0), El(0, 1)],
     [El(1, 0)]])
 
+test_composite = OgMap(interval, interval, [
+    [El(0, 1), El(0, 1)],
+    [El(0, 1)]])
+
 
 def test_GrSubset_image():
     assert test_grsubset.image(test_collapse) == GrSubset(
@@ -519,7 +523,31 @@ def test_OgMap_istotal():
     assert not OgMap(interval, whisker).istotal
 
 
+def test_OgMap_isinjective():
+    assert test_injection.isinjective
+    assert not test_collapse.isinjective
+
+
+def test_OgMap_issurjective():
+    assert not test_injection.issurjective
+    assert test_collapse.issurjective
+
+
 def test_OgMap_isdefined():
     assert test_injection.isdefined(El(0, 1))
     assert not OgMap(interval, whisker).isdefined(El(0, 1))
     assert not test_injection.isdefined(El(0, 2))
+
+
+def test_OgMap_then():
+    assert test_injection.then(test_collapse) == test_composite
+    assert test_injection.then(OgMap(whisker, whisker)) == \
+        OgMap(interval, whisker)
+    assert test_injection.then(
+            test_collapse, OgMap(interval, interval)) == \
+        OgMap(interval, interval)
+
+    with raises(ValueError) as err:
+        test_injection.then(test_injection)
+    assert str(err.value) == utils.value_err(
+            test_injection, 'source does not match target of first map')

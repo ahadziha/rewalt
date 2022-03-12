@@ -79,7 +79,6 @@ class OgPoset:
         return "OgPoset with {} elements".format(str(self.size))
 
     def __getitem__(self, key):
-        """ Returns a GrSubset. """
         return self.all_elements[key]
 
     def __contains__(self, item):
@@ -599,10 +598,29 @@ class OgMap:
 
     @property
     def istotal(self):
+        """ Returns whether the map is total. """
         for n_data in self.mapping:
             if not all(n_data):
                 return False
         return True
+
+    @property
+    def isinjective(self):
+        """ Returns whether the map is injective. """
+        image_list = [x for n_data in self.mapping for x in n_data
+                      if x is not None]
+        if len(image_list) == len(set(image_list)):
+            return True
+        return False
+
+    @property
+    def issurjective(self):
+        """ Returns whether the map is surjective. """
+        image_set = {x for n_data in self.mapping for x in n_data
+                     if x is not None}
+        if len(image_set) == sum(self.target.size):
+            return True
+        return False
 
     def isdefined(self, element):
         """ Returns whether the map is defined on an element. """
@@ -610,9 +628,23 @@ class OgMap:
             return True
         return False
 
+    def then(self, other, *others):
+        """ Returns the composite with other maps. """
+        if others:
+            return self.then(other).then(*others)
+
+        utils.typecheck(other, {
+            'type': OgMap,
+            'st': lambda x: x.source == self.target,
+            'why': 'source does not match target of first map'})
+        mapping = [[other.mapping[x.dim][x.pos] if x is not None
+                    else None for x in n_data]
+                   for n_data in self.mapping]
+        return OgMap(self.source, other.target, mapping,
+                     wfcheck=False)
+
     # Internal methods.
-    def _extensioncheck(self, element, image,
-                        check_below=True):
+    def _extensioncheck(self, element, image):
         if image not in self.target:
             raise ValueError(utils.value_err(
                 image, 'not in target'))
@@ -625,12 +657,12 @@ class OgMap:
                     repr(element))))
 
         el_underset = GrSubset(GrSet(element), self.source).closure()
-        if check_below:
-            for x in el_underset[:element.dim]:
-                if not self.isdefined(x):
-                    raise ValueError(utils.value_err(
-                        element, 'map undefined on {} below {}'.format(
-                            repr(x), repr(element))))
+
+        for x in el_underset[:element.dim]:
+            if not self.isdefined(x):
+                raise ValueError(utils.value_err(
+                    element, 'map undefined on {} below {}'.format(
+                        repr(x), repr(element))))
 
         img_underset = GrSubset(GrSet(image), self.target).closure()
         for n in range(element.dim):
@@ -658,4 +690,5 @@ class OgMap:
             # Extend check_map one element at a time according to data in
             # mapping, if it does not fail the check is passed.
             for x in source:
-                check_map[x] = mapping[x.dim][x.pos]
+                if mapping[x.dim][x.pos] is not None:
+                    check_map[x] = mapping[x.dim][x.pos]
