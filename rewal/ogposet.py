@@ -37,16 +37,12 @@ class El:
 
     @property
     def dim(self):
-        """
-        The dimension of an element is immutable.
-        """
+        """ The dimension of an element is immutable. """
         return self._dim
 
     @property
     def pos(self):
-        """
-        The position of an element is immutable.
-        """
+        """ The position of an element is immutable. """
         return self._pos
 
     def shift(self, k):
@@ -87,6 +83,9 @@ class OgPoset:
                 if item.pos < self.size[item.dim]:
                     return True
         return False
+
+    def __len__(self):
+        return sum(self.size)
 
     def __iter__(self):
         return iter(self.all_elements)
@@ -147,12 +146,14 @@ class OgPoset:
             return self.faces(element, '-').union(
                 self.faces(element, '+'))
         sign = utils.mksign(sign)
-        utils.typecheck(element, {'type': El})
-        n = element.dim
-        k = element.pos
-        if n <= self.dim and k <= self.size[n]:
-            return GrSet(*[El(n-1, i)
-                           for i in self.face_data[n][k][sign]])
+        utils.typecheck(element, {
+            'type': El,
+            'st': lambda x: x.dim <= self.dim and x.pos <= self.size[x.dim],
+            'why': 'out of bounds'})
+        return GrSet(
+                *[El(element.dim - 1, i)
+                  for i in self.face_data[element.dim][element.pos][sign]]
+                )
 
     def cofaces(self, element, sign=None):
         """
@@ -162,12 +163,14 @@ class OgPoset:
             return self.cofaces(element, '-').union(
                 self.cofaces(element, '+'))
         sign = utils.mksign(sign)
-        utils.typecheck(element, {'type': El})
-        n = element.dim
-        k = element.pos
-        if n <= self.dim and k <= self.size[n]:
-            return GrSet(*[El(n+1, i)
-                           for i in self.coface_data[n][k][sign]])
+        utils.typecheck(element, {
+            'type': El,
+            'st': lambda x: x.dim <= self.dim and x.pos <= self.size[x.dim],
+            'why': 'out of bounds'})
+        return GrSet(
+                *[El(element.dim + 1, i)
+                  for i in self.coface_data[element.dim][element.pos][sign]]
+                )
 
     def image(self, ogmap):
         """ Returns the image of the whole OgPoset through an OgMap. """
@@ -180,7 +183,8 @@ class OgPoset:
             cls._wfcheck(face_data)
         coface_data = cls._coface_from_face(face_data)
 
-        return cls(face_data, coface_data, wfcheck=False, matchcheck=False)
+        return cls(face_data, coface_data,
+                   wfcheck=False, matchcheck=False)
 
     # Internal methods
     @staticmethod
@@ -228,20 +232,17 @@ class OgPoset:
         Internal method constructing coface data from face data.
         Face data is presumed to be well-formed.
         """
-
         coface_data = [
                 [
                     {'-': set(), '+': set()}
-                    for _ in face_data[n]
+                    for _ in n_data
                 ]
-                for n in range(len(face_data))]
-
+                for n_data in face_data]
         for n, sn_data in enumerate(face_data[1:]):
             for k, x in enumerate(sn_data):
                 for sign in '-', '+':
                     for i in x[sign]:
                         coface_data[n][i][sign].add(k)
-
         return coface_data
 
 
@@ -424,8 +425,8 @@ class GrSubset:
     def isclosed(self):
         """ Returns whether the subset is closed. """
         for n in range(self.proj.dim, 0, -1):
-            for element in self[n]:
-                for face in self.ambient.faces(element):
+            for x in self[n]:
+                for face in self.ambient.faces(x):
                     if face not in self:
                         return False
         return True
@@ -562,12 +563,13 @@ class Closed(GrSubset):
                         face_data[n][i][sign].add(mapping[n-1].index(y))
         source = OgPoset.from_face_data(face_data, wfcheck=False)
 
-        return OgMap(source, self.ambient, mapping)
+        return OgMap(source, self.ambient, mapping,
+                     wfcheck=False)
 
     def maximal(self):
         """
         Returns the subset of elements that are not below any other
-        elements in the set.
+        element in the graded set.
         """
         maximal = GrSet()
         for x in self:
@@ -678,7 +680,7 @@ class OgMap:
         """ Returns whether the map is surjective. """
         image_set = {x for n_data in self.mapping for x in n_data
                      if x is not None}
-        if len(image_set) == sum(self.target.size):
+        if len(image_set) == len(self.target):
             return True
         return False
 
@@ -748,7 +750,7 @@ class OgMap:
 
             check_map = OgMap(source, target)
             # Extend check_map one element at a time according to data in
-            # mapping, if it does not fail the check is passed.
+            # mapping, if this gives no error the check is passed.
             for x in source:
                 if mapping[x.dim][x.pos] is not None:
                     check_map[x] = mapping[x.dim][x.pos]

@@ -202,6 +202,11 @@ def test_OgPoset_contains():
     assert El(3, 0) not in whisker
 
 
+def test_OgPoset_len():
+    assert len(whisker) == 7
+    assert len(interval) == 3
+
+
 def test_OgPoset_size():
     assert whisker.size == [3, 3, 1]
 
