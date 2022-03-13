@@ -169,6 +169,10 @@ class OgPoset:
             return GrSet(*[El(n+1, i)
                            for i in self.coface_data[n][k][sign]])
 
+    def image(self, ogmap):
+        """ Returns the image of the whole OgPoset through an OgMap. """
+        return self.all_elements.image(ogmap)
+
     # Class methods
     @classmethod
     def from_face_data(cls, face_data, wfcheck=True):
@@ -563,7 +567,7 @@ class Closed(GrSubset):
     def maximal(self):
         """
         Returns the subset of elements that are not below any other
-        elements in the graded set.
+        elements in the set.
         """
         maximal = GrSet()
         for x in self:

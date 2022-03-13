@@ -471,6 +471,11 @@ def test_Closed_as_map():
             GrSet(El(0, 1), El(0, 2), El(1, 2)),
             whisker).as_map == test_injection
 
+    assert test_closed.as_map.source.image(
+            test_closed.as_map) == test_closed
+
+    assert interval.image(test_injection).as_map == test_injection
+
 
 def test_Closed_maximal():
     assert whisker_all.maximal() == GrSubset(
