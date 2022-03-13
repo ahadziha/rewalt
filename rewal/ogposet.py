@@ -138,7 +138,7 @@ class OgPoset:
         return GrSubset(
                 GrSet(*[El(n, k) for n in range(len(self.size))
                         for k in range(self.size[n])]),
-                self, wfcheck=False, mkfresh=False)
+                self, wfcheck=False)
 
     def faces(self, element, sign=None):
         """
@@ -376,11 +376,11 @@ class GrSubset:
     """
 
     def __init__(self, graded_set, ambient,
-                 wfcheck=True, mkfresh=True):
+                 wfcheck=True):
         if wfcheck:
             self._wfcheck(graded_set, ambient)
 
-        self._graded_set = graded_set.copy() if mkfresh else graded_set
+        self._graded_set = graded_set
         self._ambient = ambient
 
     def __eq__(self, other):
@@ -400,15 +400,15 @@ class GrSubset:
 
     def __getitem__(self, key):
         return GrSubset(self.proj[key], self.ambient,
-                        wfcheck=False, mkfresh=False)
+                        wfcheck=False)
 
     def __iter__(self):
         return iter(self.proj)
 
     @property
     def proj(self):
-        """ Returns a copy of the underlying graded set. """
-        return self._graded_set.copy()
+        """ Returns the underlying graded set. """
+        return self._graded_set
 
     @property
     def ambient(self):
@@ -429,7 +429,7 @@ class GrSubset:
             others_proj.append(x.proj)
 
         return GrSubset(self.proj.union(*others_proj), self.ambient,
-                        wfcheck=False, mkfresh=False)
+                        wfcheck=False)
 
     def intersection(self, *others):
         """
@@ -445,7 +445,7 @@ class GrSubset:
             others_proj.append(x.proj)
 
         return GrSubset(self.proj.intersection(*others_proj), self.ambient,
-                        wfcheck=False, mkfresh=False)
+                        wfcheck=False)
 
     def maximal(self,
                 close_first=True):
@@ -461,7 +461,7 @@ class GrSubset:
                     closed_self.proj[x.dim + 1]):
                 maximal.add(x)
         return GrSubset(maximal, self.ambient,
-                        wfcheck=False, mkfresh=False)
+                        wfcheck=False)
 
     def closure(self):
         """
@@ -475,7 +475,7 @@ class GrSubset:
                     closure.add(face)
 
         return GrSubset(closure, self.ambient,
-                        wfcheck=False, mkfresh=False)
+                        wfcheck=False)
 
     @property
     def isclosed(self):
@@ -505,7 +505,7 @@ class GrSubset:
                 boundary_max.add(x)
 
         return GrSubset(boundary_max, self.ambient,
-                        wfcheck=False, mkfresh=False)
+                        wfcheck=False)
 
     def boundary(self, sign=None, dim=None,
                  close_first=True):
@@ -530,7 +530,7 @@ class GrSubset:
             if ogmap.isdefined(x):
                 image.add(ogmap[x])
         return GrSubset(image, ogmap.target,
-                        wfcheck=False, mkfresh=False)
+                        wfcheck=False)
 
     # Internal methods
     @staticmethod
