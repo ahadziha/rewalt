@@ -389,30 +389,30 @@ class GrSubset:
 
     def __eq__(self, other):
         return type(self) == type(other) and \
-                self.proj == other.proj and \
+                self.support == other.support and \
                 self.ambient == other.ambient
 
     def __str__(self):
         return '{} with {} elements in {}'.format(
                 type(self).__name__,
-                str(len(self.proj)),
+                str(len(self.support)),
                 str(self.ambient))
 
     def __contains__(self, item):
-        return item in self.proj
+        return item in self.support
 
     def __len__(self):
-        return len(self.proj)
+        return len(self.support)
 
     def __getitem__(self, key):
-        return GrSubset(self.proj[key], self.ambient,
+        return GrSubset(self.support[key], self.ambient,
                         wfcheck=False)
 
     def __iter__(self):
-        return iter(self.proj)
+        return iter(self.support)
 
     @property
-    def proj(self):
+    def support(self):
         """ Returns the underlying graded set. """
         return self._graded_set
 
@@ -424,7 +424,7 @@ class GrSubset:
     @property
     def isclosed(self):
         """ Returns whether the subset is closed. """
-        for n in range(self.proj.dim, 0, -1):
+        for n in range(self.support.dim, 0, -1):
             for x in self[n]:
                 for face in self.ambient.faces(x):
                     if face not in self:
@@ -435,7 +435,7 @@ class GrSubset:
         """
         Returns the union with other subsets of the same OgPoset.
         """
-        others_proj = []
+        others_support = []
         same_type = True
         for x in others:
             utils.typecheck(x, {
@@ -445,9 +445,9 @@ class GrSubset:
                 })
             if type(x) is not type(self):
                 same_type = False
-            others_proj.append(x.proj)
+            others_support.append(x.support)
 
-        union = self.proj.union(*others_proj)
+        union = self.support.union(*others_support)
 
         if same_type:  # return a Closed iff all are Closed
             return self.__class__(union, self.ambient,
@@ -458,7 +458,7 @@ class GrSubset:
         """
         Returns the intersection with other subsets of the same OgPoset.
         """
-        others_proj = []
+        others_support = []
         same_type = True
         for x in others:
             utils.typecheck(x, {
@@ -468,9 +468,9 @@ class GrSubset:
                 })
             if type(x) is not type(self):
                 same_type = False
-            others_proj.append(x.proj)
+            others_support.append(x.support)
 
-        intersection = self.proj.intersection(*others_proj)
+        intersection = self.support.intersection(*others_support)
 
         if same_type:  # return a Closed iff all are Closed
             return self.__class__(intersection, self.ambient,
@@ -481,9 +481,9 @@ class GrSubset:
         """
         Returns the closure of the subset as an object of type Closed.
         """
-        closure = self.proj.copy()
+        closure = self.support.copy()
 
-        for n in range(self.proj.dim, 0, -1):
+        for n in range(self.support.dim, 0, -1):
             for element in closure[n]:
                 for face in self.ambient.faces(element):
                     closure.add(face)
@@ -496,8 +496,8 @@ class GrSubset:
         Returns itself as a Closed, if closed as a subset.
         """
         if not self.isclosed:
-            raise ValueError(self.proj, 'not a closed subset')
-        return Closed(self.proj, self.ambient,
+            raise ValueError(self.support, 'not a closed subset')
+        return Closed(self.support, self.ambient,
                       wfcheck=False)
 
     def image(self, ogmap):
@@ -552,7 +552,8 @@ class Closed(GrSubset):
         Returns an injective OgMap representing the inclusion of
         the closed subset in the ambient.
         """
-        mapping = [self.proj[n].as_list for n in range(self.proj.dim + 1)]
+        mapping = [self.support[n].as_list
+                   for n in range(self.support.dim + 1)]
 
         face_data = [[{'-': set(), '+': set()} for _ in n_data]
                      for n_data in mapping]
@@ -574,7 +575,7 @@ class Closed(GrSubset):
         maximal = GrSet()
         for x in self:
             if self.ambient.cofaces(x).isdisjoint(
-                    self.proj[x.dim + 1]):
+                    self.support[x.dim + 1]):
                 maximal.add(x)
         return GrSubset(maximal, self.ambient,
                         wfcheck=False)
@@ -585,18 +586,18 @@ class Closed(GrSubset):
         n-boundary of the closed set.
         """
         _sign = utils.flip(utils.mksign(sign)) if sign is not None else '-'
-        dim = self.proj.dim - 1 if dim is None else dim
+        dim = self.support.dim - 1 if dim is None else dim
 
         # Add lower-dim maximal elements
-        boundary_max = self.maximal().proj[:dim]
+        boundary_max = self.maximal().support[:dim]
 
         # Add top-dim elements
         for x in self[dim]:
             if self.ambient.cofaces(x, _sign).isdisjoint(
-                    self.proj[x.dim + 1]):
+                    self.support[x.dim + 1]):
                 boundary_max.add(x)
             if sign is None and self.ambient.cofaces(x, '+').isdisjoint(
-                    self.proj[x.dim + 1]):
+                    self.support[x.dim + 1]):
                 boundary_max.add(x)
 
         return GrSubset(boundary_max, self.ambient,

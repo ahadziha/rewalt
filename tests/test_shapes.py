@@ -384,8 +384,8 @@ def test_GrSubset_getitem():
     assert test_grsubset[1:] == GrSubset(GrSet(El(2, 0)), whisker)
 
 
-def test_GrSubset_proj():
-    assert test_grsubset.proj == GrSet(El(0, 2), El(2, 0))
+def test_GrSubset_support():
+    assert test_grsubset.support == GrSet(El(0, 2), El(2, 0))
 
 
 def test_GrSubset_ambient():
