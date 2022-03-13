@@ -379,12 +379,12 @@ class GrSubset:
     is seen as a subset of the ambient.
     """
 
-    def __init__(self, graded_set, ambient,
+    def __init__(self, support, ambient,
                  wfcheck=True):
         if wfcheck:
-            self._wfcheck(graded_set, ambient)
+            self._wfcheck(support, ambient)
 
-        self._graded_set = graded_set
+        self._support = support
         self._ambient = ambient
 
     def __eq__(self, other):
@@ -413,12 +413,14 @@ class GrSubset:
 
     @property
     def support(self):
-        """ Returns the underlying graded set. """
-        return self._graded_set
+        """ 
+        Returns the underlying GrSet (the 'support' of the subset).
+        """
+        return self._support
 
     @property
     def ambient(self):
-        """ The ambient OgPoset is read-only. """
+        """ Returns the ambient OgPoset. """
         return self._ambient
 
     @property
@@ -520,31 +522,31 @@ class GrSubset:
 
     # Internal methods
     @staticmethod
-    def _wfcheck(graded_set, ambient):
-        utils.typecheck(graded_set, {'type': GrSet})
+    def _wfcheck(support, ambient):
+        utils.typecheck(support, {'type': GrSet})
         utils.typecheck(ambient, {'type': OgPoset})
 
-        if graded_set.dim > ambient.dim:
+        if support.dim > ambient.dim:
             raise ValueError(utils.value_err(
-                graded_set, 'does not define a subset'))
-        for n in graded_set.grades:
-            if max([x.pos for x in graded_set[n]]) >= ambient.size[n]:
+                support, 'does not define a subset'))
+        for n in support.grades:
+            if max([x.pos for x in support[n]]) >= ambient.size[n]:
                 raise ValueError(utils.value_err(
-                    graded_set, 'does not define a subset'))
+                    support, 'does not define a subset'))
 
 
 class Closed(GrSubset):
     """
     Subclass of GrSubset for closed subsets of oriented graded posets.
     """
-    def __init__(self, graded_set, ambient,
+    def __init__(self, support, ambient,
                  wfcheck=True):
-        super().__init__(graded_set, ambient, wfcheck=wfcheck)
+        super().__init__(support, ambient, wfcheck=wfcheck)
 
         if wfcheck:
             if not self.isclosed:
                 raise ValueError(utils.value_err(
-                    graded_set, 'not a closed subset'))
+                    support, 'not a closed subset'))
 
     @property
     def as_map(self):
