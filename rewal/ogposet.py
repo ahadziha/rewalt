@@ -134,8 +134,8 @@ class OgPoset:
 
     @property
     def all_elements(self):
-        """ Returns the GrSubset of all elements. """
-        return GrSubset(
+        """ Returns the Closed subset of all elements. """
+        return Closed(
                 GrSet(*[El(n, k) for n in range(len(self.size))
                         for k in range(self.size[n])]),
                 self, wfcheck=False)
@@ -384,13 +384,15 @@ class GrSubset:
         self._ambient = ambient
 
     def __eq__(self, other):
-        return isinstance(other, GrSubset) and \
+        return type(self) == type(other) and \
                 self.proj == other.proj and \
                 self.ambient == other.ambient
 
     def __str__(self):
-        return 'GrSubset with {} elements in {}'.format(
-                str(len(self.proj)), str(self.ambient))
+        return '{} with {} elements in {}'.format(
+                type(self).__name__,
+                str(len(self.proj)),
+                str(self.ambient))
 
     def __contains__(self, item):
         return item in self.proj
@@ -415,57 +417,65 @@ class GrSubset:
         """ The ambient OgPoset is read-only. """
         return self._ambient
 
+    @property
+    def isclosed(self):
+        """ Returns whether the subset is closed. """
+        for n in range(self.proj.dim, 0, -1):
+            for element in self[n]:
+                for face in self.ambient.faces(element):
+                    if face not in self:
+                        return False
+        return True
+
     def union(self, *others):
         """
         Returns the union with other subsets of the same OgPoset.
         """
         others_proj = []
+        same_type = True
         for x in others:
             utils.typecheck(x, {
                 'type': GrSubset,
                 'st': lambda x: x.ambient == self.ambient,
                 'why': 'not a subset of the same OgPoset'
                 })
+            if type(x) is not type(self):
+                same_type = False
             others_proj.append(x.proj)
 
-        return GrSubset(self.proj.union(*others_proj), self.ambient,
-                        wfcheck=False)
+        union = self.proj.union(*others_proj)
+
+        if same_type:  # return a Closed iff all are Closed
+            return self.__class__(union, self.ambient,
+                                  wfcheck=False)
+        return GrSubset(union, self.ambient, wfcheck=False)
 
     def intersection(self, *others):
         """
         Returns the intersection with other subsets of the same OgPoset.
         """
         others_proj = []
+        same_type = True
         for x in others:
             utils.typecheck(x, {
                 'type': GrSubset,
                 'st': lambda x: x.ambient == self.ambient,
                 'why': 'not a subset of the same OgPoset'
                 })
+            if type(x) is not type(self):
+                same_type = False
             others_proj.append(x.proj)
 
-        return GrSubset(self.proj.intersection(*others_proj), self.ambient,
-                        wfcheck=False)
+        intersection = self.proj.intersection(*others_proj)
 
-    def maximal(self,
-                close_first=True):
-        """
-        Returns the subset of elements that are not below any other
-        elements in the graded set.
-        """
-        maximal = GrSet()
-        closed_self = self.closure() if close_first else self
-
-        for x in closed_self:
-            if self.ambient.cofaces(x).isdisjoint(
-                    closed_self.proj[x.dim + 1]):
-                maximal.add(x)
-        return GrSubset(maximal, self.ambient,
-                        wfcheck=False)
+        if same_type:  # return a Closed iff all are Closed
+            return self.__class__(intersection, self.ambient,
+                                  wfcheck=False)
+        return GrSubset(intersection, self.ambient, wfcheck=False)
 
     def closure(self):
         """
-        Returns the closure of the subset in the oriented graded poset.
+        Returns the closure of the subset as an object of type Closed.
         """
         closure = self.proj.copy()
 
@@ -474,47 +484,17 @@ class GrSubset:
                 for face in self.ambient.faces(element):
                     closure.add(face)
 
-        return GrSubset(closure, self.ambient,
-                        wfcheck=False)
+        return Closed(closure, self.ambient,
+                      wfcheck=False)
 
-    @property
-    def isclosed(self):
-        """ Returns whether the subset is closed. """
-        return self.closure() == self
-
-    def boundary_max(self, sign=None, dim=None,
-                     close_first=True):
+    def closed(self):
         """
-        Returns the set of maximal elements of the input or output
-        n-boundary of (the closure of) the graded set.
+        Casts itself as a Closed, if closed as a subset.
         """
-        _sign = utils.flip(utils.mksign(sign)) if sign is not None else '-'
-        dim = self.proj.dim - 1 if dim is None else dim
-        closed_self = self.closure() if close_first else self
-
-        # Add lower-dim maximal elements
-        boundary_max = self.maximal().proj[:dim]
-
-        # Add top-dim elements
-        for x in closed_self[dim]:
-            if self.ambient.cofaces(x, _sign).isdisjoint(
-                    closed_self.proj[x.dim + 1]):
-                boundary_max.add(x)
-            if sign is None and self.ambient.cofaces(x, '+').isdisjoint(
-                    closed_self.proj[x.dim + 1]):
-                boundary_max.add(x)
-
-        return GrSubset(boundary_max, self.ambient,
-                        wfcheck=False)
-
-    def boundary(self, sign=None, dim=None,
-                 close_first=True):
-        """
-        Returns the input or output n-boundary of (the closure of) the
-        graded set.
-        """
-
-        return self.boundary_max(sign, dim, close_first).closure()
+        if not self.isclosed:
+            raise ValueError(self.proj, 'not a closed subset')
+        return Closed(self.proj, self.ambient,
+                      wfcheck=False)
 
     def image(self, ogmap):
         """
@@ -547,6 +527,62 @@ class GrSubset:
             if max([x.pos for x in graded_set[n]]) >= ambient.size[n]:
                 raise ValueError(utils.value_err(
                     graded_set, 'does not define a subset'))
+
+
+class Closed(GrSubset):
+    """
+    Subclass of GrSubset for closed subsets of oriented graded posets.
+    """
+    def __init__(self, graded_set, ambient,
+                 wfcheck=True):
+        super().__init__(graded_set, ambient, wfcheck=wfcheck)
+
+        if wfcheck:
+            if not self.isclosed:
+                raise ValueError(utils.value_err(
+                    graded_set, 'not a closed subset'))
+
+    def maximal(self):
+        """
+        Returns the subset of elements that are not below any other
+        elements in the graded set.
+        """
+        maximal = GrSet()
+        for x in self:
+            if self.ambient.cofaces(x).isdisjoint(
+                    self.proj[x.dim + 1]):
+                maximal.add(x)
+        return GrSubset(maximal, self.ambient,
+                        wfcheck=False)
+
+    def boundary_max(self, sign=None, dim=None):
+        """
+        Returns the set of maximal elements of the input or output
+        n-boundary of the closed set.
+        """
+        _sign = utils.flip(utils.mksign(sign)) if sign is not None else '-'
+        dim = self.proj.dim - 1 if dim is None else dim
+
+        # Add lower-dim maximal elements
+        boundary_max = self.maximal().proj[:dim]
+
+        # Add top-dim elements
+        for x in self[dim]:
+            if self.ambient.cofaces(x, _sign).isdisjoint(
+                    self.proj[x.dim + 1]):
+                boundary_max.add(x)
+            if sign is None and self.ambient.cofaces(x, '+').isdisjoint(
+                    self.proj[x.dim + 1]):
+                boundary_max.add(x)
+
+        return GrSubset(boundary_max, self.ambient,
+                        wfcheck=False)
+
+    def boundary(self, sign=None, dim=None):
+        """
+        Returns the input or output n-boundary of the closed set.
+        """
+        return self.boundary_max(sign, dim).closure()
 
 
 class OgMap:

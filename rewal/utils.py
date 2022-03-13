@@ -35,16 +35,16 @@ def value_err(got, why):
 
 def mksign(key):
     """ Used to turn various expressions into '-' or '+'. """
-    if isinstance(key, str):
-        if key in ['-', 'i', 'in', 'input', 's', 'source']:
-            return '-'
-        if key in ['+', 'o', 'out', 'output', 't', 'target']:
-            return '+'
-    if isinstance(key, int):
-        if key == 0:
-            return '-'
-        if key == 1:
-            return '+'
+    if key in ['-', 0,
+               'i', 'in', 'input',
+               'd', 'dom', 'domain',
+               's', 'src', 'source']:
+        return '-'
+    if key in ['+', 1,
+               'c', 'cod', 'codomain',
+               'o', 'out', 'output', 
+               't', 'tgt', 'target']:
+        return '+'
     raise KeyError(str(key))
 
 
