@@ -529,8 +529,10 @@ class GrSubset:
         for x in self:
             if ogmap.isdefined(x):
                 image.add(ogmap[x])
-        return GrSubset(image, ogmap.target,
-                        wfcheck=False)
+
+        # image of a Closed through an OgMap is Closed
+        return self.__class__(image, ogmap.target,
+                              wfcheck=False)
 
     # Internal methods
     @staticmethod
