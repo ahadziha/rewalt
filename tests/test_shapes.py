@@ -210,12 +210,12 @@ def test_OgPoset_dim():
     assert whisker.dim == 2
 
 
-def test_OgPoset_chain():
+def test_OgPoset_as_chain():
     chain = [
             np.array([[-1, -1, 0], [1, 1, -1], [0, 0, 1]]),
             np.array([[-1], [1], [0]])
             ]
-    test_chain = whisker.chain
+    test_chain = whisker.as_chain
     assert (test_chain[0] == chain[0]).all() and \
         (test_chain[1] == chain[1]).all()
 
@@ -464,6 +464,12 @@ def test_Closed():
         Closed(GrSet(El(1, 1)), whisker)
     assert str(err.value) == utils.value_err(
             GrSet(El(1, 1)), 'not a closed subset')
+
+
+def test_Closed_as_map():
+    assert Closed(
+            GrSet(El(0, 1), El(0, 2), El(1, 2)),
+            whisker).as_map == test_injection
 
 
 def test_Closed_maximal():

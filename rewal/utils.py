@@ -41,8 +41,8 @@ def mksign(key):
                's', 'src', 'source']:
         return '-'
     if key in ['+', 1,
+               'o', 'out', 'output',
                'c', 'cod', 'codomain',
-               'o', 'out', 'output', 
                't', 'tgt', 'target']:
         return '+'
     raise KeyError(str(key))

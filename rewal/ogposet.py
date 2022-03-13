@@ -117,7 +117,7 @@ class OgPoset:
         return len(self.face_data) - 1
 
     @property
-    def chain(self):
+    def as_chain(self):
         """ Returns chain complex representation. """
         size, dim = self.size, self.dim
         chain = [
@@ -129,7 +129,6 @@ class OgPoset:
                     chain[n][i][j] = -1
                 for j in x['+']:
                     chain[n][i][j] = 1
-
         return chain
 
     @property
@@ -489,7 +488,7 @@ class GrSubset:
 
     def closed(self):
         """
-        Casts itself as a Closed, if closed as a subset.
+        Returns itself as a Closed, if closed as a subset.
         """
         if not self.isclosed:
             raise ValueError(self.proj, 'not a closed subset')
@@ -541,6 +540,25 @@ class Closed(GrSubset):
             if not self.isclosed:
                 raise ValueError(utils.value_err(
                     graded_set, 'not a closed subset'))
+
+    @property
+    def as_map(self):
+        """
+        Returns an injective OgMap representing the inclusion of
+        the closed subset in the ambient.
+        """
+        mapping = [self.proj[n].as_list for n in range(self.proj.dim + 1)]
+
+        face_data = [[{'-': set(), '+': set()} for _ in n_data]
+                     for n_data in mapping]
+        for n, n_data in enumerate(mapping):
+            for i, x in enumerate(n_data):
+                for sign in '-', '+':
+                    for y in self.ambient.faces(x, sign):
+                        face_data[n][i][sign].add(mapping[n-1].index(y))
+        source = OgPoset.from_face_data(face_data, wfcheck=False)
+
+        return OgMap(source, self.ambient, mapping)
 
     def maximal(self):
         """
