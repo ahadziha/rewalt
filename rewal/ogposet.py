@@ -413,7 +413,7 @@ class GrSubset:
 
     @property
     def support(self):
-        """ 
+        """
         Returns the underlying GrSet (the 'support' of the subset).
         """
         return self._support
@@ -557,8 +557,9 @@ class Closed(GrSubset):
         mapping = [self.support[n].as_list
                    for n in range(self.support.dim + 1)]
 
-        face_data = [[{'-': set(), '+': set()} for _ in n_data]
-                     for n_data in mapping]
+        face_data = [
+                [{'-': set(), '+': set()} for _ in n_data]
+                for n_data in mapping]
         for n, n_data in enumerate(mapping):
             for i, x in enumerate(n_data):
                 for sign in '-', '+':
@@ -590,10 +591,8 @@ class Closed(GrSubset):
         _sign = utils.flip(utils.mksign(sign)) if sign is not None else '-'
         dim = self.support.dim - 1 if dim is None else dim
 
-        # Add lower-dim maximal elements
         boundary_max = self.maximal().support[:dim]
 
-        # Add top-dim elements
         for x in self[dim]:
             if self.ambient.cofaces(x, _sign).isdisjoint(
                     self.support[x.dim + 1]):
@@ -702,9 +701,11 @@ class OgMap:
             'type': OgMap,
             'st': lambda x: x.source == self.target,
             'why': 'source does not match target of first map'})
-        mapping = [[other.mapping[x.dim][x.pos] if x is not None
-                    else None for x in n_data]
-                   for n_data in self.mapping]
+        mapping = [
+                [other.mapping[x.dim][x.pos] if x is not None
+                 else None for x in n_data]
+                for n_data in self.mapping]
+
         return OgMap(self.source, other.target, mapping,
                      wfcheck=False)
 
