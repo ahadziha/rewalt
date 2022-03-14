@@ -7,20 +7,19 @@ import numpy as np
 from rewal import utils
 
 
-class El:
+class El(tuple):
     """
     Class for elements of an oriented graded poset.
     """
 
-    def __init__(self, dim, pos):
+    def __new__(self, dim, pos):
         for x in dim, pos:
             utils.typecheck(x, {
                 'type': int,
-                'st': lambda x: x >= 0,
+                'st': lambda n: n >= 0,
                 'why': 'expecting non-negative integer'
                 })
-        self._dim = dim
-        self._pos = pos
+        return tuple.__new__(El, (dim, pos))
 
     def __repr__(self):
         return "El({}, {})".format(repr(self.dim), repr(self.pos))
@@ -38,17 +37,17 @@ class El:
     @property
     def dim(self):
         """ The dimension of an element is immutable. """
-        return self._dim
+        return self[0]
 
     @property
     def pos(self):
         """ The position of an element is immutable. """
-        return self._pos
+        return self[1]
 
     def shift(self, k):
         utils.typecheck(k, {
             'type': int,
-            'st': lambda x: self.pos + x >= 0,
+            'st': lambda n: self.pos + n >= 0,
             'why': 'shifted position must be non-negative'
             })
         return El(self.dim, self.pos + k)
@@ -234,8 +233,7 @@ class OgPoset:
         """
         coface_data = [
                 [
-                    {'-': set(), '+': set()}
-                    for _ in n_data
+                    {'-': set(), '+': set()} for _ in n_data
                 ]
                 for n_data in face_data]
         for n, sn_data in enumerate(face_data[1:]):
@@ -558,7 +556,9 @@ class Closed(GrSubset):
                    for n in range(self.support.dim + 1)]
 
         face_data = [
-                [{'-': set(), '+': set()} for _ in n_data]
+                [
+                    {'-': set(), '+': set()} for _ in n_data
+                ]
                 for n_data in mapping]
         for n, n_data in enumerate(mapping):
             for i, x in enumerate(n_data):
