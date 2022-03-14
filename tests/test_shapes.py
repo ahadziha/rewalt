@@ -173,7 +173,7 @@ test_closed = test_grsubset.closure()
 
 interval_grsubset = GrSubset(GrSet(El(0, 1)), interval)
 
-whisker_all = whisker.all_elements
+whisker_all = whisker.all
 
 test_injection = OgMap(interval, whisker, [
     [El(0, 1), El(0, 2)],
@@ -226,8 +226,8 @@ def test_OgPoset_as_chain():
         (test_chain[1] == chain[1]).all()
 
 
-def test_OgPoset_all_elements():
-    assert whisker.all_elements == Closed(
+def test_OgPoset_all():
+    assert whisker.all == Closed(
             GrSet(El(0, 0), El(0, 1), El(0, 2),
                   El(1, 0), El(1, 1), El(1, 2),
                   El(2, 0)),
@@ -246,7 +246,7 @@ def test_OgPoset_from_face_data():
 
 
 def test_OgPoset_id():
-    assert whisker.image(whisker.id()) == whisker.all_elements
+    assert whisker.image(whisker.id()) == whisker.all
 
 
 """ Tests for GrSet """
@@ -415,10 +415,10 @@ def test_GrSubset_union():
             'not a subset of the same OgPoset')
 
     assert not isinstance(
-            test_grsubset.union(whisker.all_elements),
+            test_grsubset.union(whisker.all),
             Closed)
     assert isinstance(
-            test_grsubset.closure().union(whisker.all_elements),
+            test_grsubset.closure().union(whisker.all),
             Closed)
 
 
@@ -428,10 +428,10 @@ def test_GrSubset_intersection():
         GrSet(El(0, 2)), whisker)
 
     assert not isinstance(
-            test_grsubset.intersection(whisker.all_elements),
+            test_grsubset.intersection(whisker.all),
             Closed)
     assert isinstance(
-            test_grsubset.closure().intersection(whisker.all_elements),
+            test_grsubset.closure().intersection(whisker.all),
             Closed)
 
 
