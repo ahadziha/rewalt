@@ -74,7 +74,7 @@ class OgPoset:
         return "OgPoset with {} elements".format(str(self.size))
 
     def __getitem__(self, key):
-        return self.all_elements[key]
+        return self.all[key]
 
     def __contains__(self, item):
         if isinstance(item, El):
@@ -87,7 +87,7 @@ class OgPoset:
         return sum(self.size)
 
     def __iter__(self):
-        return iter(self.all_elements)
+        return iter(self.all)
 
     def __eq__(self, other):
         return isinstance(other, OgPoset) and \
@@ -130,16 +130,21 @@ class OgPoset:
         return chain
 
     @property
-    def all_elements(self):
+    def all(self):
         """ Returns the Closed subset of all elements. """
         return Closed(
                 GrSet(*[El(n, k) for n in range(len(self.size))
                         for k in range(self.size[n])]),
                 self, wfcheck=False)
 
+    @property
+    def maximal(self):
+        """ Returns the GrSubset of maximal elements. """
+        return self.all.maximal
+
     def faces(self, element, sign=None):
         """
-        Returns the graded set of faces of an element with given sign.
+        Returns the faces of an element as a graded set.
         """
         if sign is None:
             return self.faces(element, '-').union(
@@ -156,7 +161,7 @@ class OgPoset:
 
     def cofaces(self, element, sign=None):
         """
-        Returns the graded set of cofaces of an element with given sign.
+        Returns the cofaces of an element as a graded set.
         """
         if sign is None:
             return self.cofaces(element, '-').union(
@@ -182,18 +187,25 @@ class OgPoset:
 
     def image(self, ogmap):
         """ Returns the image of the whole OgPoset through an OgMap. """
-        return self.all_elements.image(ogmap)
+        return self.all.image(ogmap)
 
-    # Class methods
-    @classmethod
-    def from_face_data(cls, face_data,
+    def boundary_inclusion(self, sign=None, dim=None):
+        """ Returns the inclusion of the n-boundary into the OgPoset. """
+        return self.all.boundary(sign, dim).as_map
+
+    def boundary(self, sign=None, dim=None):
+        """ Returns the n-boundary as another OgPoset. """
+        return self.boundary_inclusion(sign, dim).source
+
+    @staticmethod
+    def from_face_data(face_data,
                        wfcheck=True):
         if wfcheck:
-            cls._wfcheck(face_data)
-        coface_data = cls._coface_from_face(face_data)
+            OgPoset._wfcheck(face_data)
+        coface_data = OgPoset._coface_from_face(face_data)
 
-        return cls(face_data, coface_data,
-                   wfcheck=False, matchcheck=False)
+        return OgPoset(face_data, coface_data,
+                       wfcheck=False, matchcheck=False)
 
     # Internal methods
     @staticmethod
@@ -580,6 +592,7 @@ class Closed(GrSubset):
         return OgMap(source, self.ambient, mapping,
                      wfcheck=False)
 
+    @property
     def maximal(self):
         """
         Returns the subset of elements that are not below any other
@@ -595,14 +608,14 @@ class Closed(GrSubset):
 
     def boundary_max(self, sign=None, dim=None):
         """
-        Returns the set of maximal elements of the input or output
-        n-boundary of the closed set.
+        Returns the set of maximal elements of the n-boundary of
+        the closed set.
         """
         _sign = utils.flip(
                 utils.mksign(sign)) if sign is not None else '-'
         dim = self.support.dim - 1 if dim is None else dim
 
-        boundary_max = self.maximal().support[:dim]
+        boundary_max = self.maximal.support[:dim]
 
         for x in self[dim]:
             if self.ambient.cofaces(x, _sign).isdisjoint(
@@ -617,7 +630,7 @@ class Closed(GrSubset):
 
     def boundary(self, sign=None, dim=None):
         """
-        Returns the input or output n-boundary of the closed set.
+        Returns the n-boundary of the closed set.
         """
         return self.boundary_max(sign, dim).closure()
 

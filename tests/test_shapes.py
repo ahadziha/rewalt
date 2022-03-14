@@ -2,8 +2,8 @@ import numpy as np
 from pytest import raises
 
 from rewal import utils
-from rewal.ogposet import (El, OgPoset, GrSet, GrSubset, Closed, 
-        OgMap, OgMapPair)
+from rewal.ogposet import (El, OgPoset, GrSet, GrSubset, Closed,
+                           OgMap, OgMapPair)
 
 
 """ Tests for El """
@@ -156,6 +156,10 @@ whisker_coface = [
 
 whisker = OgPoset(whisker_face, whisker_coface)
 
+point = OgPoset.from_face_data([
+    [{'-': set(), '+': set()}]
+    ])
+
 interval_face = [
         [
             {'-': set(), '+': set()},
@@ -247,6 +251,17 @@ def test_OgPoset_from_face_data():
 
 def test_OgPoset_id():
     assert whisker.image(whisker.id()) == whisker.all
+
+
+def test_OgPoset_boundary_inclusion():
+    assert whisker.boundary_inclusion('-', 0).target == whisker
+    assert whisker.boundary_inclusion('-', 0).source == point
+
+
+def test_OgPoset_boundary():
+    assert whisker.boundary().size == [3, 3]
+    assert whisker.boundary('-', 3) == whisker
+    assert whisker.boundary('+', 1).size == [3, 2]
 
 
 """ Tests for GrSet """
@@ -440,7 +455,7 @@ def test_GrSubset_closure():
             GrSet(El(0, 0), El(0, 1), El(0, 2),
                   El(1, 0), El(1, 1), El(2, 0)),
             whisker)
-    assert whisker_all.maximal().closure() == \
+    assert whisker_all.maximal.closure() == \
         whisker_all
 
 
@@ -488,10 +503,10 @@ def test_Closed_as_map():
 
 
 def test_Closed_maximal():
-    assert whisker_all.maximal() == GrSubset(
+    assert whisker_all.maximal == GrSubset(
             GrSet(El(2, 0), El(1, 2)), whisker)
 
-    assert test_closed.maximal() == test_grsubset
+    assert test_closed.maximal == test_grsubset
 
 
 def test_Closed_boundary():
@@ -622,7 +637,7 @@ def test_OgMapPair():
     assert OgMapPair(test_injection, test_collapse) == \
             OgMapPair(test_injection, test_collapse)
     assert OgMapPair(test_injection, test_collapse) != \
-            OgMapPair(test_collapse, test_injection)
+        OgMapPair(test_collapse, test_injection)
 
 
 def test_OgMapPair_isspan():
