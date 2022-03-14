@@ -2,8 +2,7 @@
 Implements shapes of cells and diagrams.
 """
 
-from rewal import utils, ogposet
-from rewal.ogposet import OgPoset, OgMap, OgMapPair
+from rewal.ogposets import OgPoset
 
 
 class Shape(OgPoset):

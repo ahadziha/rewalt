@@ -1,6 +1,3 @@
-from pytest import raises
-
-from rewal import utils
 from rewal.shapes import Shape
 
 

@@ -2,7 +2,7 @@ import numpy as np
 from pytest import raises
 
 from rewal import utils
-from rewal.ogposet import (El, OgPoset, GrSet, GrSubset, Closed,
+from rewal.ogposets import (El, OgPoset, GrSet, GrSubset, Closed,
                            OgMap, OgMapPair)
 
 
