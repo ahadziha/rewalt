@@ -1,5 +1,5 @@
 """
-Implements oriented graded posets and molecules.
+Implements oriented graded posets, their subsets, and their maps.
 """
 
 import numpy as np
@@ -794,6 +794,11 @@ class OgMap:
         if others:
             return self.then(other).then(*others)
 
+        if isinstance(other, OgMapPair):
+            return OgMapPair(
+                    self.then(other.fst),
+                    self.then(other.snd))
+
         utils.typecheck(other, {
             'type': OgMap,
             'st': lambda x: x.source == self.target,
@@ -905,3 +910,81 @@ class OgMapPair(tuple):
     @property
     def isparallel(self):
         return self.isspan and self.iscospan
+
+    @property
+    def istotal(self):
+        return self.fst.istotal and self.snd.istotal
+
+    @property
+    def isinjective(self):
+        return self.fst.isinjective and self.snd.isinjective
+
+    def then(self, other, *others):
+        """ Returns the composite with other pairs or maps. """
+        if others:
+            return self.then(other).then(*others)
+
+        if isinstance(other, OgMapPair):
+            return OgMapPair(
+                    self.fst.then(other.fst),
+                    self.snd.then(other.snd))
+
+        return OgMapPair(
+                self.fst.then(other),
+                self.snd.then(other))
+
+    def coequaliser(self,
+                    wfcheck=True):
+        """
+        Returns the coequaliser of a pair of injective total maps,
+        if it exists.
+        """
+        if not (self.isparallel and self.istotal and self.isinjective):
+            raise ValueError(utils.value_err(
+                self,
+                'expecting a parallel pair of injective total maps'))
+
+        mapping = self.target.id().mapping
+        to_delete = GrSet()
+        for x in self.source:
+            if self.fst[x] != self.snd[x]:
+                to_delete.add(self.snd[x])
+                mapping[self.snd[x].dim][self.snd[x].pos] = self.fst[x]
+
+        # Shift assignments following deletion of elements
+        shift_list = [[0 for _ in n_data]
+                      for n_data in mapping]
+        for x in to_delete:
+            for k, y in enumerate(mapping[x.dim]):
+                if y.pos >= x.pos:
+                    shift_list[x.dim][k] -= 1
+        mapping = [
+                [x.shifted(k) for x, k in zip(n_data, n_shifts)]
+                for n_data, n_shifts in zip(mapping, shift_list)]
+
+        face_data = [
+                [
+                    {sign: set(map(lambda j: mapping[n-1][j].pos, faces))
+                     for sign, faces in x.items()}
+                    for k, x in enumerate(n_data) if El(n, k) not in to_delete
+                ]
+                for n, n_data in enumerate(self.target.face_data)]
+        quotient = OgPoset.from_face_data(face_data, wfcheck=wfcheck)
+
+        return OgMap(self.target, quotient, mapping, wfcheck=False)
+
+    def pushout(self,
+                wfcheck=True):
+        """
+        Returns the pushout of a span of injective total maps, if it
+        exists.
+        """
+        if not (self.isspan and self.istotal and self.isinjective):
+            raise ValueError(utils.value_err(
+                self,
+                'expecting a span of injective total maps'))
+
+        coproduct = OgPoset.coproduct(self.fst.target, self.snd.target)
+        coequaliser = self.then(coproduct).coequaliser(wfcheck=wfcheck)
+
+        return coproduct.then(coequaliser)
