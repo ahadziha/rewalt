@@ -5,7 +5,7 @@ Utility functions for rewal.
 
 def typecheck(x, constraint, *more_constraints):
     """
-    Type & constraint checking function.
+    Type and constraint checking function.
     """
     if not isinstance(x, constraint['type']):
         raise TypeError(type_err(constraint['type'], x))
@@ -22,14 +22,14 @@ def typecheck(x, constraint, *more_constraints):
 
 
 def type_err(expected, got):
-    """ Type error. """
+    """ Type error message. """
     return "Expected {}.{}, got {} of type {}.{} instead.".format(
            expected.__module__, expected.__name__,
            repr(got), type(got).__module__, type(got).__name__)
 
 
 def value_err(got, why):
-    """ Value error. """
+    """ Value error message. """
     return "{} is not a valid value ({}).".format(repr(got), why)
 
 

@@ -2,7 +2,8 @@ import numpy as np
 from pytest import raises
 
 from rewal import utils
-from rewal.ogposet import El, OgPoset, GrSet, GrSubset, Closed, OgMap
+from rewal.ogposet import (El, OgPoset, GrSet, GrSubset, Closed, 
+        OgMap, OgMapPair)
 
 
 """ Tests for El """
@@ -242,6 +243,10 @@ def test_OgPoset_faces():
 
 def test_OgPoset_from_face_data():
     assert whisker == OgPoset.from_face_data(whisker_face)
+
+
+def test_OgPoset_id():
+    assert whisker.image(whisker.id()) == whisker.all_elements
 
 
 """ Tests for GrSet """
@@ -608,3 +613,29 @@ def test_OgMap_then():
         test_injection.then(test_injection)
     assert str(err.value) == utils.value_err(
             test_injection, 'source does not match target of first map')
+
+
+""" Tests for OgMapPair """
+
+
+def test_OgMapPair():
+    assert OgMapPair(test_injection, test_collapse) == \
+            OgMapPair(test_injection, test_collapse)
+    assert OgMapPair(test_injection, test_collapse) != \
+            OgMapPair(test_collapse, test_injection)
+
+
+def test_OgMapPair_isspan():
+    assert OgMapPair(
+            test_injection, test_injection.then(test_collapse)).isspan
+    assert not OgMapPair(test_injection, test_collapse).isspan
+
+
+def test_OgMapPair_iscospan():
+    assert OgMapPair(
+            test_injection, test_collapse.then(test_injection)).iscospan
+    assert not OgMapPair(test_injection, test_collapse).iscospan
+
+
+def test_OgMapPair_isparallel():
+    assert OgMapPair(test_composite, interval.id()).isparallel

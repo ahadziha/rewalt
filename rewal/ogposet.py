@@ -171,13 +171,23 @@ class OgPoset:
                   for i in self.coface_data[element.dim][element.pos][sign]]
                 )
 
+    def id(self):
+        """ Returns the identity map on the OgPoset. """
+        mapping = [
+                [El(n, k) for k in range(self.size[n])]
+                for n in range(self.dim + 1)
+                ]
+        return OgMap(self, self, mapping,
+                     wfcheck=False)
+
     def image(self, ogmap):
         """ Returns the image of the whole OgPoset through an OgMap. """
         return self.all_elements.image(ogmap)
 
     # Class methods
     @classmethod
-    def from_face_data(cls, face_data, wfcheck=True):
+    def from_face_data(cls, face_data,
+                       wfcheck=True):
         if wfcheck:
             cls._wfcheck(face_data)
         coface_data = cls._coface_from_face(face_data)
@@ -588,7 +598,8 @@ class Closed(GrSubset):
         Returns the set of maximal elements of the input or output
         n-boundary of the closed set.
         """
-        _sign = utils.flip(utils.mksign(sign)) if sign is not None else '-'
+        _sign = utils.flip(
+                utils.mksign(sign)) if sign is not None else '-'
         dim = self.support.dim - 1 if dim is None else dim
 
         boundary_max = self.maximal().support[:dim]
@@ -633,6 +644,10 @@ class OgMap:
                 self.source == other.source and \
                 self.target == other.target and \
                 self.mapping == other.mapping
+
+    def __str__(self):
+        return 'OgMap from {} to {}'.format(
+                str(self.source), str(self.target))
 
     def __getitem__(self, element):
         if element in self.source:
@@ -758,3 +773,41 @@ class OgMap:
             for x in source:
                 if mapping[x.dim][x.pos] is not None:
                     check_map[x] = mapping[x.dim][x.pos]
+
+
+class OgMapPair(tuple):
+    """
+    Class for pairs of maps.
+    """
+
+    def __new__(self, fst, snd):
+        for x in fst, snd:
+            utils.typecheck(x, {'type': OgMap})
+        return tuple.__new__(OgMapPair, (fst, snd))
+
+    def __str__(self):
+        return '({}, {})'.format(str(self.fst), str(self.snd))
+
+    def __eq__(self, other):
+        return isinstance(other, OgMapPair) and \
+                self.fst == other.fst and self.snd == other.snd
+
+    @property
+    def fst(self):
+        return self[0]
+
+    @property
+    def snd(self):
+        return self[1]
+
+    @property
+    def isspan(self):
+        return self.fst.source == self.snd.source
+
+    @property
+    def iscospan(self):
+        return self.fst.target == self.snd.target
+
+    @property
+    def isparallel(self):
+        return self.isspan and self.iscospan
