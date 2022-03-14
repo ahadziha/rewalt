@@ -44,7 +44,7 @@ class El(tuple):
         """ The position of an element is immutable. """
         return self[1]
 
-    def shift(self, k):
+    def shifted(self, k):
         utils.typecheck(k, {
             'type': int,
             'st': lambda n: self.pos + n >= 0,
@@ -93,6 +93,9 @@ class OgPoset:
         return isinstance(other, OgPoset) and \
                 self.face_data == other.face_data and \
                 self.coface_data == other.coface_data
+
+    def __add__(self, other):
+        return OgPoset.disjoint_union(self, other)
 
     @property
     def face_data(self):
@@ -206,6 +209,72 @@ class OgPoset:
 
         return OgPoset(face_data, coface_data,
                        wfcheck=False, matchcheck=False)
+
+    @staticmethod
+    def coproduct(fst, snd):
+        for x in fst, snd:
+            utils.typecheck(x, {'type': OgPoset})
+
+        # Need to ensure all the data have the same length.
+        offset1 = max(snd.dim - fst.dim, 0)
+        offset2 = max(fst.dim - snd.dim, 0)
+
+        shift = fst.size
+        shift = shift + [0 for _ in range(offset1)]
+
+        face_data_fst = [
+                [
+                    {sign: faces for sign, faces in x.items()}
+                    for x in n_data
+                ]
+                for n_data in fst.face_data] + [[] for _ in range(offset1)]
+        face_data_snd = [
+                [
+                    {sign: set(map(lambda k: k + shift[n-1], faces))
+                     for sign, faces in x.items()}
+                    for x in n_data
+                ]
+                for n, n_data in enumerate(snd.face_data)] + [
+                        [] for _ in range(offset2)]
+        face_data = [x + y
+                     for x, y in zip(face_data_fst, face_data_snd)]
+
+        coface_data_fst = [
+                [
+                    {sign: cofaces for sign, cofaces in x.items()}
+                    for x in n_data
+                ]
+                for n_data in fst.coface_data] + [
+                        [] for _ in range(offset1)]
+        coface_data_snd = [
+                [
+                   {sign: set(map(lambda k: k + shift[n+1], cofaces))
+                    for sign, cofaces in x.items()}
+                   for x in n_data
+                ]
+                for n, n_data in enumerate(snd.coface_data)] + [
+                        [] for _ in range(offset2)]
+        coface_data = [x + y
+                       for x, y in zip(coface_data_fst, coface_data_snd)]
+
+        disjoint_union = OgPoset(face_data, coface_data,
+                                 wfcheck=False, matchcheck=False)
+
+        mapping_fst = fst.id().mapping
+        mapping_snd = [
+                [x.shifted(shift[n]) for x in n_data]
+                for n, n_data in enumerate(snd.id().mapping)
+                ]
+        inclusion_fst = OgMap(fst, disjoint_union, mapping_fst,
+                              wfcheck=False)
+        inclusion_snd = OgMap(snd, disjoint_union, mapping_snd,
+                              wfcheck=False)
+
+        return OgMapPair(inclusion_fst, inclusion_snd)
+
+    @staticmethod
+    def disjoint_union(fst, snd):
+        return OgPoset.coproduct(fst, snd).target
 
     # Internal methods
     @staticmethod
@@ -812,6 +881,18 @@ class OgMapPair(tuple):
     @property
     def snd(self):
         return self[1]
+
+    @property
+    def source(self):
+        if self.isspan:
+            return self.fst.source
+        return self.fst.source, self.snd.source
+
+    @property
+    def target(self):
+        if self.iscospan:
+            return self.fst.target
+        return self.fst.target, self.snd.target
 
     @property
     def isspan(self):

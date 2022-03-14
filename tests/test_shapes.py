@@ -24,15 +24,15 @@ def test_El_init():
             -1, 'expecting non-negative integer')
 
 
-def test_El_shift():
-    assert El(2, 3).shift(4) == El(2, 7)
+def test_El_shifted():
+    assert El(2, 3).shifted(4) == El(2, 7)
 
     with raises(TypeError) as err:
-        El(2, 3).shift('x')
+        El(2, 3).shifted('x')
     assert str(err.value) == utils.type_err(int, 'x')
 
     with raises(ValueError) as err:
-        El(2, 3).shift(-4)
+        El(2, 3).shifted(-4)
     assert str(err.value) == utils.value_err(
             -4, 'shifted position must be non-negative')
 
@@ -156,6 +156,8 @@ whisker_coface = [
 
 whisker = OgPoset(whisker_face, whisker_coface)
 
+empty = OgPoset([], [])
+
 point = OgPoset.from_face_data([
     [{'-': set(), '+': set()}]
     ])
@@ -262,6 +264,17 @@ def test_OgPoset_boundary():
     assert whisker.boundary().size == [3, 3]
     assert whisker.boundary('-', 3) == whisker
     assert whisker.boundary('+', 1).size == [3, 2]
+
+
+def test_OgPoset_coproduct():
+    assert OgPoset.coproduct(point, point).iscospan
+    assert OgPoset.coproduct(point, whisker).snd.isinjective
+
+
+def test_OgPoset_disjoint_union():
+    assert OgPoset.disjoint_union(point, interval).size == [3, 1]
+    assert OgPoset.disjoint_union(interval, whisker).size == [5, 4, 1]
+    assert whisker + empty == empty + whisker == whisker
 
 
 """ Tests for GrSet """
@@ -638,6 +651,14 @@ def test_OgMapPair():
             OgMapPair(test_injection, test_collapse)
     assert OgMapPair(test_injection, test_collapse) != \
         OgMapPair(test_collapse, test_injection)
+
+
+def test_OgMapPair_source():
+    assert OgMapPair(test_injection, interval.id()).source == interval
+
+
+def test_OgMapPair_target():
+    assert OgMapPair(test_collapse, interval.id()).target == interval
 
 
 def test_OgMapPair_isspan():
