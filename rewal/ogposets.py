@@ -36,12 +36,10 @@ class El(tuple):
 
     @property
     def dim(self):
-        """ The dimension of an element is immutable. """
         return self[0]
 
     @property
     def pos(self):
-        """ The position of an element is immutable. """
         return self[1]
 
     def shifted(self, k):
@@ -61,10 +59,10 @@ class OgPoset:
     def __init__(self, face_data, coface_data,
                  wfcheck=True, matchcheck=True):
         if wfcheck:
-            self._wfcheck(face_data)
+            OgPoset._wfcheck(face_data)
 
         if matchcheck:
-            if not coface_data == self._coface_from_face(face_data):
+            if not coface_data == OgPoset._coface_from_face(face_data):
                 raise ValueError("Face and coface data do not match.")
 
         self._face_data = face_data
@@ -471,7 +469,7 @@ class GrSubset:
     def __init__(self, support, ambient,
                  wfcheck=True):
         if wfcheck:
-            self._wfcheck(support, ambient)
+            GrSubset._wfcheck(support, ambient)
 
         self._support = support
         self._ambient = ambient
@@ -712,7 +710,7 @@ class OgMap:
     def __init__(self, source, target, mapping=None,
                  wfcheck=True):
         if wfcheck:
-            self._wfcheck(source, target, mapping)
+            OgMap._wfcheck(source, target, mapping)
 
         self._source = source
         self._target = target

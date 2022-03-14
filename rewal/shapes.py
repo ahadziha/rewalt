@@ -2,6 +2,7 @@
 Implements shapes of cells and diagrams.
 """
 
+from rewal import utils
 from rewal.ogposets import OgPoset
 
 
@@ -11,25 +12,33 @@ class Shape(OgPoset):
     """
 
     def __init__(self):
-        self._face_data = [
+        self._face_data = []
+        self._coface_data = []
+
+    # Class methods
+    @classmethod
+    def point(cls):
+        """
+        Generates the point shape.
+        This is a class method because the point also belongs to all
+        specialised shape classes.
+        """
+        point = cls.__new__(cls)
+        point._face_data = [
                 [{'-': set(), '+': set()}]
                 ]
-        self._coface_data = [
+        point._coface_data = [
                 [{'-': set(), '+': set()}]
                 ]
+        return point
 
-    @staticmethod
-    def point():
-        return Shape()
-
-    # Private methods
-    @staticmethod
-    def __force(ogposet):
+    @classmethod
+    def __upgrade(cls, ogposet):
         """
-        Private method to 'force' upgrade of an OgPoset to a Shape.
+        Private method 'forcing' upgrade of an OgPoset to a shape class.
         """
-        shape = Shape()
+        utils.typecheck(ogposet, {'type': OgPoset})
+        shape = cls.__new__(cls)
         shape._face_data = ogposet.face_data
         shape._coface_data = ogposet.coface_data
-
         return shape
