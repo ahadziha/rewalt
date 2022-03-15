@@ -23,8 +23,23 @@ class Shape(OgPoset):
     def isatom(self):
         """
         Returns whether the shape is an atom (has a greatest element).
+        We let this be recorded by the constructors to avoid computing
+        the maximal elements at every call.
         """
         return self._isatom
+
+    @property
+    def isround(self):
+        """ Returns whether the shape has spherical boundary. """
+        boundary_in, boundary_out = self.boundary('-'), self.boundary('+')
+        intersection = boundary_in.intersection(boundary_out)
+        for k in range(self.dim-2, -1, -1):
+            boundary_in = boundary_in.boundary('-')
+            boundary_out = boundary_out.boundary('+')
+            if not intersection.issubset(boundary_in.union(boundary_out)):
+                return False
+            intersection = boundary_in.intersection(boundary_out)
+        return True
 
     @classmethod
     def point(cls):
@@ -40,6 +55,17 @@ class Shape(OgPoset):
                 ]
         point._isatom = True
         return point
+
+    def boundary_inclusion(self, sign=None, dim=None):
+        """
+        Input and output boundaries of Shapes are Shapes.
+        """
+        boundary_ogmap = super().boundary_inclusion(sign, dim)
+        if sign is None:
+            return boundary_ogmap
+        reordering = self.__reorder(boundary_ogmap.source)
+        return ShapeMap.from_ogmap(
+                reordering.then(boundary_ogmap))
 
     def id(self):
         return ShapeMap.from_ogmap(super().id())
@@ -120,11 +146,12 @@ class Shape(OgPoset):
                     for x in n_data
                 ]
                 for n_data in mapping]
-        reordered_shape = OgPoset(face_data, coface_data,
-                                  wfcheck=False)
+        reordered_shape = Shape.__upgrade(
+                OgPoset(face_data, coface_data,
+                        wfcheck=False))
 
-        return ShapeMap(reordered_shape, shape, mapping,
-                        wfcheck=False)
+        return OgMap(reordered_shape, shape, mapping,
+                     wfcheck=False)
 
     @classmethod
     def __upgrade(cls, ogposet):
@@ -134,6 +161,7 @@ class Shape(OgPoset):
         shape = cls.__new__(cls)
         shape._face_data = ogposet.face_data
         shape._coface_data = ogposet.coface_data
+        shape._isatom = True if len(ogposet.maximal()) == 1 else False
         return shape
 
 
