@@ -59,10 +59,10 @@ class OgPoset:
     def __init__(self, face_data, coface_data,
                  wfcheck=True, matchcheck=True):
         if wfcheck:
-            OgPoset._wfcheck(face_data)
+            OgPoset.__wfcheck(face_data)
 
         if matchcheck:
-            if not coface_data == OgPoset._coface_from_face(face_data):
+            if not coface_data == OgPoset.__coface_from_face(face_data):
                 raise ValueError("Face and coface data do not match.")
 
         self._face_data = face_data
@@ -73,7 +73,7 @@ class OgPoset:
                 type(self).__name__, str(self.size))
 
     def __getitem__(self, key):
-        return self.all[key]
+        return self.all()[key]
 
     def __contains__(self, item):
         if isinstance(item, El):
@@ -86,7 +86,7 @@ class OgPoset:
         return sum(self.size)
 
     def __iter__(self):
-        return iter(self.all)
+        return iter(self.all())
 
     def __eq__(self, other):
         return type(self) is type(other) and \
@@ -131,7 +131,6 @@ class OgPoset:
                     chain[n][i][j] = 1
         return chain
 
-    @property
     def all(self):
         """ Returns the Closed subset of all elements. """
         return Closed(
@@ -140,10 +139,14 @@ class OgPoset:
                 self,
                 wfcheck=False)
 
-    @property
+    def none(self):
+        """ Returns the empty Closed subset. """
+        return Closed(GrSet(), self,
+                      wfcheck=False)
+
     def maximal(self):
         """ Returns the GrSubset of maximal elements. """
-        return self.all.maximal
+        return self.all().maximal()
 
     def faces(self, element, sign=None):
         """
@@ -190,25 +193,25 @@ class OgPoset:
 
     def image(self, ogmap):
         """ Returns the image of the whole OgPoset through an OgMap. """
-        return self.all.image(ogmap)
+        return self.all().image(ogmap)
 
     def boundary_inclusion(self, sign=None, dim=None):
         """ Returns the inclusion of the n-boundary into the OgPoset. """
-        return self.all.boundary(sign, dim).as_map
+        return self.all().boundary(sign, dim).as_map
 
     def boundary(self, sign=None, dim=None):
         """ Returns the n-boundary as another OgPoset. """
         return self.boundary_inclusion(sign, dim).source
 
-    @staticmethod
-    def from_face_data(face_data,
+    @classmethod
+    def from_face_data(cls, face_data,
                        wfcheck=True):
         if wfcheck:
-            OgPoset._wfcheck(face_data)
-        coface_data = OgPoset._coface_from_face(face_data)
+            cls.__wfcheck(face_data)
+        coface_data = cls.__coface_from_face(face_data)
 
-        return OgPoset(face_data, coface_data,
-                       wfcheck=False, matchcheck=False)
+        return cls(face_data, coface_data,
+                   wfcheck=False, matchcheck=False)
 
     @staticmethod
     def coproduct(fst, snd):
@@ -230,7 +233,8 @@ class OgPoset:
                 for n_data in fst.face_data] + [[] for _ in range(offset1)]
         face_data_snd = [
                 [
-                    {sign: set(map(lambda k: k + shift[n-1], faces))
+                    {sign:
+                        {k + shift[n-1] for k in faces}
                      for sign, faces in x.items()}
                     for x in n_data
                 ]
@@ -248,7 +252,8 @@ class OgPoset:
                         [] for _ in range(offset1)]
         coface_data_snd = [
                 [
-                   {sign: set(map(lambda k: k + shift[n+1], cofaces))
+                   {sign:
+                       {k + shift[n+1] for k in cofaces}
                     for sign, cofaces in x.items()}
                    for x in n_data
                 ]
@@ -276,9 +281,9 @@ class OgPoset:
     def disjoint_union(fst, snd):
         return OgPoset.coproduct(fst, snd).target
 
-    # Internal methods
+    # Private methods
     @staticmethod
-    def _wfcheck(face_data):
+    def __wfcheck(face_data):
         """ Internal method checking that face data is well-formed. """
 
         utils.typecheck(face_data, {'type': list}, {
@@ -317,7 +322,7 @@ class OgPoset:
                             repr(n), repr(i))))
 
     @staticmethod
-    def _coface_from_face(face_data):
+    def __coface_from_face(face_data):
         """
         Internal method constructing coface data from face data.
         Face data is presumed to be well-formed.
@@ -473,7 +478,7 @@ class GrSubset:
     def __init__(self, support, ambient,
                  wfcheck=True):
         if wfcheck:
-            GrSubset._wfcheck(support, ambient)
+            GrSubset.__wfcheck(support, ambient)
 
         self._support = support
         self._ambient = ambient
@@ -572,6 +577,14 @@ class GrSubset:
         return GrSubset(intersection, self.ambient,
                         wfcheck=False)
 
+    def issubset(self, other):
+        utils.typecheck(other, {
+            'type': GrSubset,
+            'st': lambda x: x.ambient == self.ambient,
+            'why': 'not a subset of the same OgPoset'
+            })
+        return self.support.issubset(other.support)
+
     def closure(self):
         """
         Returns the closure of the subset as an object of type Closed.
@@ -584,15 +597,6 @@ class GrSubset:
                     closure.add(face)
 
         return Closed(closure, self.ambient,
-                      wfcheck=False)
-
-    def closed(self):
-        """
-        Returns itself as a Closed, if closed as a subset.
-        """
-        if not self.isclosed:
-            raise ValueError(self.support, 'not a closed subset')
-        return Closed(self.support, self.ambient,
                       wfcheck=False)
 
     def image(self, ogmap):
@@ -615,7 +619,7 @@ class GrSubset:
 
     # Internal methods
     @staticmethod
-    def _wfcheck(support, ambient):
+    def __wfcheck(support, ambient):
         utils.typecheck(support, {'type': GrSet})
         utils.typecheck(ambient, {'type': OgPoset})
 
@@ -665,7 +669,6 @@ class Closed(GrSubset):
         return OgMap(source, self.ambient, mapping,
                      wfcheck=False)
 
-    @property
     def maximal(self):
         """
         Returns the subset of elements that are not below any other
@@ -688,7 +691,7 @@ class Closed(GrSubset):
                 utils.mksign(sign)) if sign is not None else '-'
         dim = self.support.dim - 1 if dim is None else dim
 
-        boundary_max = self.maximal.support[:dim]
+        boundary_max = self.maximal().support[:dim]
 
         for x in self[dim]:
             if self.ambient.cofaces(x, _sign).isdisjoint(
@@ -707,6 +710,13 @@ class Closed(GrSubset):
         """
         return self.boundary_max(sign, dim).closure()
 
+    @staticmethod
+    def subset(grsubset):
+        if not grsubset.isclosed:
+            raise ValueError(grsubset.support, 'not a closed subset')
+        return Closed(grsubset.support, grsubset.ambient,
+                      wfcheck=True)
+
 
 class OgMap:
     """
@@ -716,7 +726,7 @@ class OgMap:
     def __init__(self, source, target, mapping=None,
                  wfcheck=True):
         if wfcheck:
-            OgMap._wfcheck(source, target, mapping)
+            OgMap.__wfcheck(source, target, mapping)
 
         self._source = source
         self._target = target
@@ -744,7 +754,7 @@ class OgMap:
 
     def __setitem__(self, element, image):
         if element in self.source:
-            self._extensioncheck(element, image)
+            self.__extensioncheck(element, image)
             self._mapping[element.dim][element.pos] = image
         else:
             raise ValueError(utils.value_err(
@@ -816,8 +826,8 @@ class OgMap:
         return OgMap(self.source, other.target, mapping,
                      wfcheck=False)
 
-    # Internal methods.
-    def _extensioncheck(self, element, image):
+    # Private methods.
+    def __extensioncheck(self, element, image):
         if image not in self.target:
             raise ValueError(utils.value_err(
                 image, 'not in target'))
@@ -848,7 +858,7 @@ class OgMap:
                             sign, repr(n))))
 
     @staticmethod
-    def _wfcheck(source, target, mapping):
+    def __wfcheck(source, target, mapping):
         for x in source, target:
             utils.typecheck(x, {'type': OgPoset})
         if mapping is not None:  # otherwise nothing else to check

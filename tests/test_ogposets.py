@@ -179,7 +179,7 @@ test_closed = test_grsubset.closure()
 
 interval_grsubset = GrSubset(GrSet(El(0, 1)), interval)
 
-whisker_all = whisker.all
+whisker_all = whisker.all()
 
 test_injection = OgMap(interval, whisker, [
     [El(0, 1), El(0, 2)],
@@ -233,7 +233,7 @@ def test_OgPoset_as_chain():
 
 
 def test_OgPoset_all():
-    assert whisker.all == Closed(
+    assert whisker.all() == Closed(
             GrSet(El(0, 0), El(0, 1), El(0, 2),
                   El(1, 0), El(1, 1), El(1, 2),
                   El(2, 0)),
@@ -252,7 +252,7 @@ def test_OgPoset_from_face_data():
 
 
 def test_OgPoset_id():
-    assert whisker.image(whisker.id()) == whisker.all
+    assert whisker.image(whisker.id()) == whisker.all()
 
 
 def test_OgPoset_boundary_inclusion():
@@ -443,10 +443,10 @@ def test_GrSubset_union():
             'not a subset of the same OgPoset')
 
     assert not isinstance(
-            test_grsubset.union(whisker.all),
+            test_grsubset.union(whisker.all()),
             Closed)
     assert isinstance(
-            test_grsubset.closure().union(whisker.all),
+            test_grsubset.closure().union(whisker.all()),
             Closed)
 
 
@@ -456,10 +456,10 @@ def test_GrSubset_intersection():
         GrSet(El(0, 2)), whisker)
 
     assert not isinstance(
-            test_grsubset.intersection(whisker.all),
+            test_grsubset.intersection(whisker.all()),
             Closed)
     assert isinstance(
-            test_grsubset.closure().intersection(whisker.all),
+            test_grsubset.closure().intersection(whisker.all()),
             Closed)
 
 
@@ -468,7 +468,7 @@ def test_GrSubset_closure():
             GrSet(El(0, 0), El(0, 1), El(0, 2),
                   El(1, 0), El(1, 1), El(2, 0)),
             whisker)
-    assert whisker_all.maximal.closure() == \
+    assert whisker_all.maximal().closure() == \
         whisker_all
 
 
@@ -516,10 +516,10 @@ def test_Closed_as_map():
 
 
 def test_Closed_maximal():
-    assert whisker_all.maximal == GrSubset(
+    assert whisker_all.maximal() == GrSubset(
             GrSet(El(2, 0), El(1, 2)), whisker)
 
-    assert test_closed.maximal == test_grsubset
+    assert test_closed.maximal() == test_grsubset
 
 
 def test_Closed_boundary():
@@ -533,7 +533,7 @@ def test_Closed_boundary():
             GrSet(El(1, 1), El(1, 2)), whisker).closure()
     assert whisker_all.boundary(0, 2) == whisker_all
 
-    assert whisker_all.boundary() == whisker_all[:2].closed()
+    assert whisker_all.boundary() == Closed.subset(whisker_all[:2])
     assert whisker_all.boundary(None, 0) == Closed(
             GrSet(El(0, 0), El(0, 2)), whisker)
 

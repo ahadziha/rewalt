@@ -3,7 +3,7 @@ Implements shapes of cells and diagrams.
 """
 
 from rewal import utils
-from rewal.ogposets import (El, OgPoset, OgMap)
+from rewal.ogposets import (El, OgPoset, GrSet, GrSubset, OgMap)
 
 
 class Shape(OgPoset):
@@ -62,6 +62,70 @@ class Shape(OgPoset):
                         wfcheck=False)
 
     # Private methods
+    @staticmethod
+    def __reorder(shape):
+        """
+        Traverses all elements of the shape and returns an isomorphism
+        from the shape with elements reordered in traversal order.
+        """
+        mapping = [[] for _ in range(shape.dim + 1)]
+        marked = shape.none()
+
+        focus_stack = [shape.all()]  # traversal begins
+        while len(focus_stack) > 0:
+            focus = focus_stack[-1]
+            if focus.issubset(marked):
+                del focus_stack[-1]
+            else:
+                focus_input = focus.boundary('-')
+                if not focus_input.issubset(marked):
+                    focus_stack.append(focus_input)
+                else:
+                    if len(focus.maximal()) == 1:
+                        for x in focus.maximal():
+                            mapping[x.dim].append(x)
+                            marked.support.add(x)
+                        del focus_stack[-1]
+                        focus_stack.append(focus.boundary('+'))
+                    else:
+                        def candidates(x):
+                            return [y for y in shape.cofaces(x, '-')
+                                    if y not in marked]
+                        x = next(
+                                x for x in mapping[focus.dim - 1]
+                                if len(candidates(x)) > 0)
+                        focus_stack.append(GrSubset(
+                            GrSet(candidates(x)[0]),
+                            shape, wfcheck=False).closure())
+
+        def reordered_faces(x, sign):
+            return {k for k in range(shape.size[x.dim - 1])
+                    if mapping[x.dim - 1][k] in shape.faces(x, sign)}
+
+        def reordered_cofaces(x, sign):
+            return {k for k in range(shape.size[x.dim + 1])
+                    if mapping[x.dim + 1][k] in shape.cofaces(x, sign)}
+
+        face_data = [
+                [
+                    {sign: reordered_faces(x, sign)
+                     for sign in ('-', '+')}
+                    for x in n_data
+                ]
+                for n_data in mapping]
+        coface_data = [
+                [
+                    {sign: reordered_cofaces(x, sign)
+                     for sign in ('-', '+')}
+                    for x in n_data
+                ]
+                for n_data in mapping]
+        reordered_shape = OgPoset(face_data, coface_data,
+                                  wfcheck=False)
+
+        return ShapeMap(reordered_shape, shape, mapping,
+                        wfcheck=False)
+
     @classmethod
     def __upgrade(cls, ogposet):
         """
@@ -86,7 +150,7 @@ class ShapeMap(OgMap):
             utils.typecheck(x, {'type': Shape})
         super().__init__(source, target, mapping, wfcheck)
 
-    @staticmethod
-    def from_ogmap(ogmap):
-        return ShapeMap(ogmap.source, ogmap.target, ogmap.mapping,
-                        wfcheck=False)
+    @classmethod
+    def from_ogmap(cls, ogmap):
+        return cls(ogmap.source, ogmap.target, ogmap.mapping,
+                   wfcheck=False)
