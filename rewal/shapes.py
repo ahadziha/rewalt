@@ -45,18 +45,16 @@ class Shape(OgPoset):
 
     # Constructors
     @staticmethod
-    def atom(fst, snd,
-             wfcheck=True):
-        if wfcheck:
-            for u in fst, snd:
-                utils.typecheck(u, {
-                    'type': Shape,
-                    'st': lambda v: v.isround,
-                    'why': 'expecting a shape with spherical boundary'})
-            if fst.dim != snd.dim:
-                raise ValueError(utils.value_err(
-                    snd, 'dimension does not match dimension of {}'.format(
-                        repr(fst))))
+    def atom(fst, snd):
+        for u in fst, snd:
+            utils.typecheck(u, {
+                'type': Shape,
+                'st': lambda v: v.isround,
+                'why': 'expecting a shape with spherical boundary'})
+        if fst.dim != snd.dim:
+            raise ValueError(utils.value_err(
+                snd, 'dimension does not match dimension of {}'.format(
+                    repr(fst))))
 
         in_span = OgMapPair(
                 fst.boundary_inclusion('-'), snd.boundary_inclusion('-'))
@@ -150,8 +148,7 @@ class Shape(OgPoset):
         utils.typecheck(dim, {'type': int})
         if dim >= 0:
             lower = Shape.globe(dim - 1)
-            return Shape.atom(lower, lower,
-                              wfcheck=False)
+            return Shape.atom(lower, lower)
         return Shape()
 
     @classmethod
@@ -195,7 +192,7 @@ class Shape(OgPoset):
                             return [y for y in shape.cofaces(x, '-')
                                     if y not in marked]
                         x = next(
-                                x for x in mapping[focus.dim - 1]
+                                x for x in mapping[focus.support.dim - 1]
                                 if len(candidates(x)) > 0)
                         focus_stack.append(GrSubset(
                             GrSet(candidates(x)[0]),
@@ -261,3 +258,15 @@ class ShapeMap(OgMap):
     def from_ogmap(cls, ogmap):
         return cls(ogmap.source, ogmap.target, ogmap.mapping,
                    wfcheck=False)
+
+
+def atom(fst, snd):
+    return Shape.atom(fst, snd)
+
+
+def paste(fst, snd, dim):
+    return Shape.paste(fst, snd, dim)
+
+
+def globe(dim):
+    return Shape.globe(dim)

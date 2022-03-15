@@ -2,11 +2,20 @@ from pytest import raises
 
 from rewal import utils
 from rewal.ogposets import (El, OgPoset, OgMap)
-from rewal.shapes import (Shape, ShapeMap)
+from rewal.shapes import (Shape, ShapeMap, atom, paste, globe)
 
 
 point = Shape.point()
 arrow = Shape.arrow()
+
+
+def test():
+    whisker_l = paste(arrow, globe(2), 0)
+    whisker_r = paste(globe(2), arrow, 0)
+    interch_1 = paste(whisker_l, whisker_r, 1)
+    interch_2 = paste(whisker_r, whisker_l, 1)
+    interch_3 = paste(globe(2), globe(2), 0)
+    assert interch_1 == interch_2 == interch_3
 
 
 """ Tests for Shape """
