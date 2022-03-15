@@ -5,6 +5,10 @@ from rewal.ogposets import (El, OgPoset, OgMap)
 from rewal.shapes import (Shape, ShapeMap)
 
 
+point = Shape.point()
+arrow = Shape.arrow()
+
+
 """ Tests for Shape """
 
 
@@ -13,9 +17,10 @@ def test_Shape():
     assert Shape().dim == -1
 
 
-def test_Shape_point():
-    assert Shape.point().size == [1]
-    assert isinstance(Shape.point(), Shape)
+def test_Shape_atom():
+    assert Shape.atom(Shape(), Shape()) == point
+    assert Shape.atom(point, point).size == [2, 1]
+    assert Shape.atom(arrow, arrow).size == [2, 2, 1]
 
 
 def test_Shape_initial():

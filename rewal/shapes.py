@@ -3,7 +3,8 @@ Implements shapes of cells and diagrams.
 """
 
 from rewal import utils
-from rewal.ogposets import (El, OgPoset, GrSet, GrSubset, OgMap)
+from rewal.ogposets import (El, OgPoset, GrSet, GrSubset,
+                            OgMap, OgMapPair)
 
 
 class Shape(OgPoset):
@@ -31,7 +32,8 @@ class Shape(OgPoset):
     @property
     def isround(self):
         """ Returns whether the shape has spherical boundary. """
-        boundary_in, boundary_out = self.boundary('-'), self.boundary('+')
+        boundary_in = self.all().boundary('-')
+        boundary_out = self.all().boundary('+')
         intersection = boundary_in.intersection(boundary_out)
         for k in range(self.dim-2, -1, -1):
             boundary_in = boundary_in.boundary('-')
@@ -41,21 +43,78 @@ class Shape(OgPoset):
             intersection = boundary_in.intersection(boundary_out)
         return True
 
-    @classmethod
-    def point(cls):
-        """
-        Generates the point shape.
-        """
-        point = cls.__new__(cls)
-        point._face_data = [
-                [{'-': set(), '+': set()}]
-                ]
-        point._coface_data = [
-                [{'-': set(), '+': set()}]
-                ]
-        point._isatom = True
-        return point
-    
+    # Constructors
+    @staticmethod
+    def atom(fst, snd,
+             wfcheck=True):
+        if wfcheck:
+            for u in fst, snd:
+                utils.typecheck(u, {
+                    'type': Shape,
+                    'st': lambda v: v.isround,
+                    'why': 'expecting a shape with spherical boundary'})
+            if fst.dim != snd.dim:
+                raise ValueError(utils.value_err(
+                    snd, 'dimension does not match dimension of {}'.format(
+                        repr(fst))))
+
+        in_span = OgMapPair(
+                fst.boundary_inclusion('-'), snd.boundary_inclusion('-'))
+        out_span = OgMapPair(
+                fst.boundary_inclusion('+'), snd.boundary_inclusion('+'))
+
+        if not in_span.isspan:
+            raise ValueError(utils.value_err(
+                snd, 'input boundary does not match '
+                'input boundary of {}'.format(repr(fst))))
+        if not out_span.isspan:
+            raise ValueError(utils.value_err(
+                snd, 'output boundary does not match '
+                'output boundary of {}'.format(repr(fst))))
+
+        glue_in = in_span.pushout()
+        glue_out = out_span.then(glue_in).coequaliser()
+        inclusion = glue_in.then(glue_out)
+
+        new_atom = inclusion.target
+        # Add a greatest element
+        new_atom.face_data.append(
+                [
+                    {'-':
+                        {inclusion.fst[x].pos for x in fst[fst.dim]},
+                     '+':
+                        {inclusion.snd[x].pos for x in snd[snd.dim]}}
+                ])
+        new_atom.coface_data.append([{'-': set(), '+': set()}])
+        for x in fst[fst.dim]:
+            new_atom.coface_data[x.dim][inclusion.fst[x].pos]['-'].add(0)
+        for x in snd[snd.dim]:
+            new_atom.coface_data[x.dim][inclusion.snd[x].pos]['+'].add(0)
+
+        return Shape.__reorder(new_atom).source
+
+    @staticmethod
+    def paste(fst, snd, dim):
+        span = OgMapPair(
+                fst.boundary_inclusion('+', dim),
+                snd.boundary_inclusion('-', dim))
+        if not span.isspan:
+            raise ValueError(utils.value_err(
+                    snd,
+                    'input {}-boundary does not match '
+                    'output {}-boundary of {}'.format(
+                        str(dim), str(dim), repr(fst))))
+        if dim >= fst.dim:
+            return fst
+        if dim >= snd.dim:
+            return snd
+
+        return Shape.__reorder(span.pushout().target).source
+
+    # Some special maps of shapes.
+    def id(self):
+        return ShapeMap.from_ogmap(super().id())
+
     def boundary_inclusion(self, sign=None, dim=None):
         """
         Input and output boundaries of Shapes are Shapes.
@@ -63,12 +122,9 @@ class Shape(OgPoset):
         boundary_ogmap = super().boundary_inclusion(sign, dim)
         if sign is None:
             return boundary_ogmap
-        reordering = self.__reorder(boundary_ogmap.source)
+        reordering = Shape.__reorder(boundary_ogmap.source)
         return ShapeMap.from_ogmap(
                 reordering.then(boundary_ogmap))
-
-    def id(self):
-        return ShapeMap.from_ogmap(super().id())
 
     def initial(self):
         """
@@ -86,6 +142,27 @@ class Shape(OgPoset):
                 for n_data in self.face_data]
         return ShapeMap(self, Shape.point(), mapping,
                         wfcheck=False)
+
+    # Some special named shapes.
+    @staticmethod
+    def globe(dim):
+        """ The globes. """
+        utils.typecheck(dim, {'type': int})
+        if dim >= 0:
+            lower = Shape.globe(dim - 1)
+            return Shape.atom(lower, lower,
+                              wfcheck=False)
+        return Shape()
+
+    @classmethod
+    def point(cls):
+        """ The point. """
+        return cls.__upgrade(Shape.globe(0))
+
+    @classmethod
+    def arrow(cls):
+        """ The arrow. """
+        return cls.__upgrade(Shape.globe(1))
 
     # Private methods
     @staticmethod
@@ -125,12 +202,14 @@ class Shape(OgPoset):
                             shape, wfcheck=False).closure())
 
         def reordered_faces(x, sign):
-            return {k for k in range(shape.size[x.dim - 1])
-                    if mapping[x.dim - 1][k] in shape.faces(x, sign)}
+            return {k for y in shape.faces(x, sign)
+                    for k in range(shape.size[x.dim - 1])
+                    if y == mapping[x.dim - 1][k]}
 
         def reordered_cofaces(x, sign):
-            return {k for k in range(shape.size[x.dim + 1])
-                    if mapping[x.dim + 1][k] in shape.cofaces(x, sign)}
+            return {k for y in shape.cofaces(x, sign)
+                    for k in range(shape.size[x.dim + 1])
+                    if y == mapping[x.dim + 1][k]}
 
         face_data = [
                 [
