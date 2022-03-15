@@ -346,7 +346,9 @@ class GrSet:
             self.add(x)
 
     def __repr__(self):
-        return "GrSet{}".format(repr(self.as_list))
+        return "{}({})".format(
+                type(self).__name__,
+                ', '.join([repr(x) for x in self.as_list]))
 
     def __str__(self):
         return repr(self)

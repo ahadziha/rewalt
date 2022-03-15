@@ -3,7 +3,7 @@ from pytest import raises
 
 from rewal import utils
 from rewal.ogposets import (El, OgPoset, GrSet, GrSubset, Closed,
-                           OgMap, OgMapPair)
+                            OgMap, OgMapPair)
 
 
 """ Tests for El """
@@ -290,7 +290,7 @@ def test_GrSet_init():
 
 
 def test_GrSet_str():
-    assert str(test_grset) == 'GrSet[El(0, 2), El(0, 5), El(2, 0)]'
+    assert str(test_grset) == 'GrSet(El(0, 2), El(0, 5), El(2, 0))'
 
 
 def test_GrSet_contains():

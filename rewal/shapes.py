@@ -3,7 +3,7 @@ Implements shapes of cells and diagrams.
 """
 
 from rewal import utils
-from rewal.ogposets import (OgPoset, OgMap)
+from rewal.ogposets import (El, OgPoset, OgMap)
 
 
 class Shape(OgPoset):
@@ -12,16 +12,24 @@ class Shape(OgPoset):
     """
 
     def __init__(self):
+        """
+        Initialises to the empty shape.
+        """
         self._face_data = []
         self._coface_data = []
+        self._isatom = False
 
-    # Class methods
+    @property
+    def isatom(self):
+        """
+        Returns whether the shape is an atom (has a greatest element).
+        """
+        return self._isatom
+
     @classmethod
     def point(cls):
         """
         Generates the point shape.
-        This is a class method because the point also belongs to all
-        specialised shape classes.
         """
         point = cls.__new__(cls)
         point._face_data = [
@@ -30,15 +38,35 @@ class Shape(OgPoset):
         point._coface_data = [
                 [{'-': set(), '+': set()}]
                 ]
+        point._isatom = True
         return point
 
-    # Internal methods
+    def id(self):
+        return ShapeMap.from_ogmap(super().id())
+
+    def initial(self):
+        """
+        Returns the unique map from the initial (empty) shape.
+        """
+        return ShapeMap(Shape(), self,
+                        wfcheck=False)
+
+    def terminal(self):
+        """
+        Returns the unique map to the terminal shape (the point).
+        """
+        mapping = [
+                [El(0, 0) for _ in n_data]
+                for n_data in self.face_data]
+        return ShapeMap(self, Shape.point(), mapping,
+                        wfcheck=False)
+
+    # Private methods
     @classmethod
-    def _upgrade(cls, ogposet):
+    def __upgrade(cls, ogposet):
         """
         Forces upgrade of an OgPoset to the shape class.
         """
-        utils.typecheck(ogposet, {'type': OgPoset})
         shape = cls.__new__(cls)
         shape._face_data = ogposet.face_data
         shape._coface_data = ogposet.coface_data
@@ -47,7 +75,7 @@ class Shape(OgPoset):
 
 class ShapeMap(OgMap):
     """
-    An OgMap overlay used for maps between Shape objects.
+    An OgMap overlay for maps between Shape objects.
     Used for constructions that are not well-defined for general
     maps between oriented graded posets.
     """
@@ -58,15 +86,7 @@ class ShapeMap(OgMap):
             utils.typecheck(x, {'type': Shape})
         super().__init__(source, target, mapping, wfcheck)
 
-    # Internal methods
     @staticmethod
-    def _upgrade(ogmap):
-        """
-        Forces upgrade of an OgMap to a ShapeMap.
-        """
-        utils.typecheck(ogmap, {'type': OgMap})
-        return ShapeMap(
-                Shape._upgrade(ogmap.source),
-                Shape._upgrade(ogmap.target),
-                ogmap.mapping,
-                wfcheck=False)
+    def from_ogmap(ogmap):
+        return ShapeMap(ogmap.source, ogmap.target, ogmap.mapping,
+                        wfcheck=False)

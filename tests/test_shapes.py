@@ -57,9 +57,13 @@ def test_Shape_point():
     assert isinstance(Shape.point(), Shape)
 
 
-def test_Shape_upgrade():
-    assert not ogpoint == Shape.point()
-    assert Shape._upgrade(ogpoint) == Shape.point()
+def test_Shape_initial():
+    assert Shape.point().initial() == Shape().terminal()
+    assert Shape().initial() == Shape().id()
+
+
+def test_Shape_terminal():
+    assert Shape.point().terminal() == Shape.point().id()
 
 
 """ Tests for ShapeMap """
@@ -74,8 +78,3 @@ def test_ShapeMap():
     with raises(TypeError) as err:
         ShapeMap(oginterval, ogwhisker)
     assert str(err.value) == utils.type_err(Shape, oginterval)
-
-
-def test_ShapeMap_upgrade():
-    assert not isinstance(ogcollapse, ShapeMap)
-    assert isinstance(ShapeMap._upgrade(ogcollapse), ShapeMap)
