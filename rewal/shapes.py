@@ -55,7 +55,7 @@ class Shape(OgPoset):
                 ]
         point._isatom = True
         return point
-
+    
     def boundary_inclusion(self, sign=None, dim=None):
         """
         Input and output boundaries of Shapes are Shapes.

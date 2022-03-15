@@ -715,7 +715,7 @@ class Closed(GrSubset):
         if not grsubset.isclosed:
             raise ValueError(grsubset.support, 'not a closed subset')
         return Closed(grsubset.support, grsubset.ambient,
-                      wfcheck=True)
+                      wfcheck=False)
 
 
 class OgMap:
@@ -823,8 +823,18 @@ class OgMap:
                  else None for x in n_data]
                 for n_data in self.mapping]
 
+        if type(self) is type(other):  # for inheritance
+            return self.__class__(self.source, other.target, mapping,
+                                  wfcheck=False)
         return OgMap(self.source, other.target, mapping,
                      wfcheck=False)
+
+    @staticmethod
+    def compose(one, *others):
+        utils.typecheck(one, {'type': OgMap})
+        if others:
+            return one.then(*others)
+        return one
 
     # Private methods.
     def __extensioncheck(self, element, image):

@@ -643,6 +643,11 @@ def test_OgMap_then():
             test_injection, 'source does not match target of first map')
 
 
+def test_OgMap_compose():
+    assert OgMap.compose(test_injection) == test_injection
+    assert OgMap.compose(test_injection, test_collapse) == test_composite
+
+
 """ Tests for OgMapPair """
 
 
