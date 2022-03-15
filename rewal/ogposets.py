@@ -28,7 +28,7 @@ class El(tuple):
         return repr(self)
 
     def __eq__(self, other):
-        return isinstance(other, El) and \
+        return type(self) is type(other) and \
                 self.dim == other.dim and self.pos == other.pos
 
     def __hash__(self):
@@ -69,7 +69,8 @@ class OgPoset:
         self._coface_data = coface_data
 
     def __str__(self):
-        return "OgPoset with {} elements".format(str(self.size))
+        return "{} with {} elements".format(
+                type(self).__name__, str(self.size))
 
     def __getitem__(self, key):
         return self.all[key]
@@ -88,7 +89,7 @@ class OgPoset:
         return iter(self.all)
 
     def __eq__(self, other):
-        return isinstance(other, OgPoset) and \
+        return type(self) is type(other) and \
                 self.face_data == other.face_data and \
                 self.coface_data == other.coface_data
 
@@ -136,7 +137,8 @@ class OgPoset:
         return Closed(
                 GrSet(*[El(n, k) for n in range(len(self.size))
                         for k in range(self.size[n])]),
-                self, wfcheck=False)
+                self,
+                wfcheck=False)
 
     @property
     def maximal(self):
@@ -376,7 +378,7 @@ class GrSet:
         raise KeyError(str(key))
 
     def __eq__(self, other):
-        return isinstance(other, GrSet) and \
+        return type(self) is type(other) and \
                 self._elements == other._elements
 
     @property
@@ -475,7 +477,7 @@ class GrSubset:
         self._ambient = ambient
 
     def __eq__(self, other):
-        return type(self) == type(other) and \
+        return type(self) is type(other) and \
                 self.support == other.support and \
                 self.ambient == other.ambient
 
@@ -541,7 +543,8 @@ class GrSubset:
         if same_type:  # return a Closed iff all are Closed
             return self.__class__(union, self.ambient,
                                   wfcheck=False)
-        return GrSubset(union, self.ambient, wfcheck=False)
+        return GrSubset(union, self.ambient,
+                        wfcheck=False)
 
     def intersection(self, *others):
         """
@@ -564,7 +567,8 @@ class GrSubset:
         if same_type:  # return a Closed iff all are Closed
             return self.__class__(intersection, self.ambient,
                                   wfcheck=False)
-        return GrSubset(intersection, self.ambient, wfcheck=False)
+        return GrSubset(intersection, self.ambient,
+                        wfcheck=False)
 
     def closure(self):
         """
@@ -628,7 +632,7 @@ class Closed(GrSubset):
     """
     def __init__(self, support, ambient,
                  wfcheck=True):
-        super().__init__(support, ambient, wfcheck=wfcheck)
+        super().__init__(support, ambient, wfcheck)
 
         if wfcheck:
             if not self.isclosed:
@@ -720,13 +724,14 @@ class OgMap:
         self._mapping = mapping
 
     def __eq__(self, other):
-        return isinstance(other, OgMap) and \
+        return type(self) == type(other) and \
                 self.source == other.source and \
                 self.target == other.target and \
                 self.mapping == other.mapping
 
     def __str__(self):
-        return 'OgMap from {} to {}'.format(
+        return '{} from {} to {}'.format(
+                type(self).__name__,
                 str(self.source), str(self.target))
 
     def __getitem__(self, element):
@@ -874,7 +879,7 @@ class OgMapPair(tuple):
         return '({}, {})'.format(str(self.fst), str(self.snd))
 
     def __eq__(self, other):
-        return isinstance(other, OgMapPair) and \
+        return type(self) is type(other) and \
                 self.fst == other.fst and self.snd == other.snd
 
     @property
@@ -967,7 +972,7 @@ class OgMapPair(tuple):
                     for k, x in enumerate(n_data) if El(n, k) not in to_delete
                 ]
                 for n, n_data in enumerate(self.target.face_data)]
-        quotient = OgPoset.from_face_data(face_data, wfcheck=wfcheck)
+        quotient = OgPoset.from_face_data(face_data, wfcheck)
 
         return OgMap(self.target, quotient, mapping, wfcheck=False)
 
@@ -983,6 +988,6 @@ class OgMapPair(tuple):
                 'expecting a span of injective total maps'))
 
         coproduct = OgPoset.coproduct(self.fst.target, self.snd.target)
-        coequaliser = self.then(coproduct).coequaliser(wfcheck=wfcheck)
+        coequaliser = self.then(coproduct).coequaliser(wfcheck)
 
         return coproduct.then(coequaliser)
