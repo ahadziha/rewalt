@@ -115,7 +115,8 @@ class Shape(OgPoset):
     @staticmethod
     def paste(fst, snd, dim=None):
         """
-        Returns the pasting of two shapes along their dim-boundary.
+        Returns the pasting of two shapes along the output k-boundary
+        of the first and the input k-boundary of the second.
         """
         if dim is None:  # default is principal composition
             dim = min(fst.dim, snd.dim) - 1
@@ -165,7 +166,7 @@ class Shape(OgPoset):
 
     # Special maps
     def id(self):
-        return ShapeMap(super().id(),
+        return ShapeMap(OgPoset.id(self),
                         wfcheck=False)
 
     def boundary_inclusion(self, sign=None, dim=None):
