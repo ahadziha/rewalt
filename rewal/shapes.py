@@ -15,7 +15,7 @@ class Shape(OgPoset):
         """
         Initialises to the empty shape.
         """
-        super().__init__([], [], wfcheck=False)
+        super().__init__([], [], wfcheck=False, matchcheck=False)
 
     # Redefining to be more lax wrt subclasses
     def __eq__(self, other):
