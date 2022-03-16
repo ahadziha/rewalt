@@ -66,6 +66,13 @@ class Shape(OgPoset):
                     repr(fst))))
         dim = fst.dim
 
+        if dim == -1:  # Check explicitly for some simple cases.
+            return Point()
+        if dim == 0:
+            return Arrow()
+        if isinstance(fst, Globe) and isinstance(snd, Globe):
+            return Globe(dim+1)
+
         in_span = OgMapPair(
                 fst.boundary_inclusion('-'), snd.boundary_inclusion('-'))
         out_span = OgMapPair(
@@ -100,14 +107,15 @@ class Shape(OgPoset):
             coface_data[dim][inclusion.snd[x].pos]['+'].add(0)
 
         new_atom = Shape.__reorder(
-                OgPoset(face_data, coface_data, wfcheck=False)).source
+                OgPoset(face_data, coface_data, 
+                        wfcheck=False, matchcheck=False)).source
+
         return new_atom
 
     @staticmethod
-    def paste_cospan(fst, snd, dim=None):
+    def paste(fst, snd, dim=None):
         """
-        Returns the pasting of two shapes along their dim-boundary,
-        together with their inclusions into the pasting.
+        Returns the pasting of two shapes along their dim-boundary.
         """
         if dim is None:  # default is principal composition
             dim = min(fst.dim, snd.dim) - 1
@@ -129,37 +137,31 @@ class Shape(OgPoset):
                         str(dim), str(dim), repr(fst))))
 
         if dim >= fst.dim:
-            return OgMapPair(span.snd, snd.id())
+            return snd
         if dim >= snd.dim:
-            return OgMapPair(fst.id(), span.fst)
+            return fst
         pushout = span.pushout()
-        reordering = Shape.__reorder(pushout.target).inv()
-        paste_cospan = pushout.then(reordering)
+        paste = Shape.__reorder(pushout.target).source
 
         # Theta is closed under pasting
         if isinstance(fst, Theta) and isinstance(snd, Theta):
-            target = Theta.__upgrade(paste_cospan.target)
-            paste_cospan = OgMapPair(
-                    OgMap(fst, target, paste_cospan.fst.mapping,
-                          wfcheck=False),
-                    OgMap(snd, target, paste_cospan.snd.mapping,
-                          wfcheck=False))
-
-        return OgMapPair(
-                ShapeMap(paste_cospan.fst, wfcheck=False),
-                ShapeMap(paste_cospan.snd, wfcheck=False))
-
-    @staticmethod
-    def paste(fst, snd, dim=None):
-        return Shape.paste_cospan(fst, snd, dim).target
+            return Theta._Shape__upgrade(paste)
+        return paste
 
     # Other constructors
-    def suspend(self, n=1):
-        if n == 0:
-            return self
+    @staticmethod
+    def suspend(shape, dim=1):
+        utils.typecheck(shape, {'type': Shape})
+        suspension = Shape.__reorder(
+                OgPoset.suspend(shape, dim)).source
 
-        return Shape.__reorder(
-                OgPoset.suspension(self, n)).source
+        # Theta and Globe are closed under suspension
+        if isinstance(shape, Globe):
+            return Globe._Shape__upgrade(suspension)
+        if isinstance(shape, Theta):
+            return Theta._Shape__upgrade(suspension)
+
+        return suspension
 
     # Special maps
     def id(self):
@@ -170,7 +172,7 @@ class Shape(OgPoset):
         """
         Input and output boundaries of Shapes are Shapes.
         """
-        boundary_ogmap = super().boundary_inclusion(sign, dim)
+        boundary_ogmap = OgPoset.boundary_inclusion(self, sign, dim)
         if sign is None:
             return boundary_ogmap
         reordering = Shape.__reorder(boundary_ogmap.source)
@@ -182,35 +184,21 @@ class Shape(OgPoset):
         Returns the unique map from the initial (empty) shape.
         """
         return ShapeMap(
-                OgMap(Shape(), self, wfcheck=False),
+                OgMap(Shape(), self, 
+                      wfcheck=False),
                 wfcheck=False)
 
     def terminal(self):
         """
-        Returns the unique map to the terminal shape (the point).
+        Returns the unique map to the point.
         """
         mapping = [
                 [El(0, 0) for _ in n_data]
                 for n_data in self.face_data]
         return ShapeMap(
-                OgMap(self, Shape.point(), mapping, wfcheck=False),
+                OgMap(self, Point(), mapping, 
+                      wfcheck=False),
                 wfcheck=False)
-
-    # Some special named shapes.
-    @classmethod
-    def point(cls):
-        """ The point. """
-        face_data = [[{'-': set(), '+': set()}]]
-        coface_data = [[{'-': set(), '+': set()}]]
-
-        return cls.__upgrade(
-                OgPoset(face_data, coface_data,
-                        wfcheck=False, matchcheck=False))
-
-    @classmethod
-    def arrow(cls):
-        """ The arrow. """
-        return cls.__upgrade(Globe(1))
 
     # Private methods
     @staticmethod
@@ -281,7 +269,7 @@ class Shape(OgPoset):
                 for n_data in mapping]
         reordered = Shape.__upgrade(
                 OgPoset(face_data, coface_data,
-                        wfcheck=False))
+                        wfcheck=False, matchcheck=False))
 
         return OgMap(reordered, shape, mapping,
                      wfcheck=False)
@@ -299,7 +287,7 @@ class Shape(OgPoset):
 
 class Theta(Shape):
     """
-    Class for Batanin cell shapes (objects of the Theta category).
+    Class for Batanin cell shapes, the objects of the Theta category.
     """
     def __init__(self, *thetas):
         def tree(*thetas):
@@ -309,34 +297,41 @@ class Theta(Shape):
                 thetas = thetas[1:]
                 if thetas:
                     return Shape.paste(
-                            theta.suspend(),
+                            Shape.suspend(theta),
                             tree(*thetas), 0)
-                return theta.suspend()
-            return Shape.point()
+                return Shape.suspend(theta)
+            return Shape._Shape__upgrade(OgPoset.point())
         new = tree(*thetas)
 
         super().__init__()
         self._face_data = new.face_data
         self._coface_data = new.coface_data
 
-    # Theta and Globe are closed under suspension
-    def suspend(self, dim=1):
-        return self.__class__._Shape__upgrade(
-                super().suspend(dim))
-
 
 class Globe(Theta):
     """ The globes. """
-    def __init__(self, dim):
+    def __init__(self, dim=0):
         utils.typecheck(dim, {
             'type': int,
             'st': lambda n: n >= 0,
             'why': 'expecting non-negative integer'})
-        new = Shape.point().suspend(dim)
+        new = OgPoset.suspend(OgPoset.point(), dim)
 
         super().__init__()
         self._face_data = new.face_data
         self._coface_data = new.coface_data
+
+
+class Point(Globe):
+    """ The point. """
+    def __init__(self):
+        super().__init__()
+
+
+class Arrow(Globe):
+    """ The arrow. """
+    def __init__(self):
+        super().__init__(1)
 
 
 class ShapeMap(OgMap):

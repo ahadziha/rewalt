@@ -218,6 +218,15 @@ class OgPoset:
                    wfcheck=False, matchcheck=False)
 
     @staticmethod
+    def point():
+        """ The terminal oriented graded poset. """
+        face_data = [[{'-': set(), '+': set()}]]
+        coface_data = [[{'-': set(), '+': set()}]]
+
+        return OgPoset(face_data, coface_data,
+                       wfcheck=False, matchcheck=False)
+
+    @staticmethod
     def coproduct(fst, snd):
         """ Returns the coproduct cospan of two OgPosets. """
         for x in fst, snd:
@@ -291,7 +300,7 @@ class OgPoset:
         return OgPoset.coproduct(fst, snd).target
 
     @staticmethod
-    def suspension(ogp, n=1):
+    def suspend(ogp, n=1):
         """ Returns the OgPoset suspended n times. """
         utils.typecheck(ogp, {'type': OgPoset})
         utils.typecheck(n, {
@@ -301,8 +310,8 @@ class OgPoset:
         if n == 0:
             return ogp
         if n > 1:
-            return OgPoset.suspension(
-                    OgPoset.suspension(ogp, 1), n-1)
+            return OgPoset.suspend(
+                    OgPoset.suspend(ogp, 1), n-1)
         face_data = [
                 [
                     {'-': set(), '+': set()},

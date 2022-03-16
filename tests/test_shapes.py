@@ -2,13 +2,13 @@ from pytest import raises
 
 from rewal import utils
 from rewal.ogposets import (OgMap)
-from rewal.shapes import (Shape, Theta, Globe,
+from rewal.shapes import (Shape, Theta, Globe, Point, Arrow,
                           ShapeMap, atom, paste)
 
 
 empty = Shape()
-point = Globe(0)
-arrow = Globe(1)
+point = Point()
+arrow = Arrow()
 globe2 = Globe(2)
 
 whisker_l = paste(arrow, globe2)
@@ -76,7 +76,7 @@ def test_Shape_paste():
     interch_3 = paste(globe2, globe2, 0)
     assert interch_1 == interch_2 == interch_3
 
-    assert paste(arrow, point, 0) == arrow == paste(point, arrow, 0)
+    assert arrow == paste(arrow, point, 0)
     assert paste(globe2, arrow, 1) == globe2 == paste(arrow, globe2, 1)
 
     with raises(ValueError) as err:
