@@ -10,10 +10,10 @@ arrow = Shape.arrow()
 
 
 def test():
-    whisker_l = paste(arrow, globe(2), 0)
-    whisker_r = paste(globe(2), arrow, 0)
-    interch_1 = paste(whisker_l, whisker_r, 1)
-    interch_2 = paste(whisker_r, whisker_l, 1)
+    whisker_l = paste(arrow, globe(2))
+    whisker_r = paste(globe(2), arrow)
+    interch_1 = paste(whisker_l, whisker_r)
+    interch_2 = paste(whisker_r, whisker_l)
     interch_3 = paste(globe(2), globe(2), 0)
     assert interch_1 == interch_2 == interch_3
 

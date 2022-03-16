@@ -46,6 +46,11 @@ class Shape(OgPoset):
     # Constructors
     @staticmethod
     def atom(fst, snd):
+        """
+        Given two shapes with identical round boundaries, returns a new
+        atomic shape whose input boundary is the first one and output
+        boundary the second one.
+        """
         for u in fst, snd:
             utils.typecheck(u, {
                 'type': Shape,
@@ -55,12 +60,12 @@ class Shape(OgPoset):
             raise ValueError(utils.value_err(
                 snd, 'dimension does not match dimension of {}'.format(
                     repr(fst))))
+        dim = fst.dim
 
         in_span = OgMapPair(
                 fst.boundary_inclusion('-'), snd.boundary_inclusion('-'))
         out_span = OgMapPair(
                 fst.boundary_inclusion('+'), snd.boundary_inclusion('+'))
-
         if not in_span.isspan:
             raise ValueError(utils.value_err(
                 snd, 'input boundary does not match '
@@ -79,20 +84,33 @@ class Shape(OgPoset):
         new_atom.face_data.append(
                 [
                     {'-':
-                        {inclusion.fst[x].pos for x in fst[fst.dim]},
+                        {inclusion.fst[x].pos for x in fst[dim]},
                      '+':
-                        {inclusion.snd[x].pos for x in snd[snd.dim]}}
+                        {inclusion.snd[x].pos for x in snd[dim]}}
                 ])
         new_atom.coface_data.append([{'-': set(), '+': set()}])
-        for x in fst[fst.dim]:
-            new_atom.coface_data[x.dim][inclusion.fst[x].pos]['-'].add(0)
-        for x in snd[snd.dim]:
-            new_atom.coface_data[x.dim][inclusion.snd[x].pos]['+'].add(0)
+        for x in fst[dim]:
+            new_atom.coface_data[dim][inclusion.fst[x].pos]['-'].add(0)
+        for x in snd[dim]:
+            new_atom.coface_data[dim][inclusion.snd[x].pos]['+'].add(0)
 
         return Shape.__reorder(new_atom).source
 
     @staticmethod
-    def paste(fst, snd, dim):
+    def paste_cospan(fst, snd, dim=None):
+        """
+        Returns the pasting of two shapes along their dim-boundary,
+        together with their inclusions into the pasting.
+        """
+        if dim is None:  # default is principal composition
+            dim = min(fst.dim, snd.dim) - 1
+        for u in fst, snd:
+            utils.typecheck(u, {'type': Shape})
+        utils.typecheck(dim, {
+            'type': int,
+            'st': lambda n: n >= 0,
+            'why': 'expecting non-negative integer'})
+
         span = OgMapPair(
                 fst.boundary_inclusion('+', dim),
                 snd.boundary_inclusion('-', dim))
@@ -102,12 +120,18 @@ class Shape(OgPoset):
                     'input {}-boundary does not match '
                     'output {}-boundary of {}'.format(
                         str(dim), str(dim), repr(fst))))
-        if dim >= fst.dim:
-            return fst
-        if dim >= snd.dim:
-            return snd
 
-        return Shape.__reorder(span.pushout().target).source
+        if dim >= fst.dim:
+            return OgMapPair(fst.id(), span.fst)
+        if dim >= snd.dim:
+            return OgMapPair(span.snd, snd.id())
+        pushout = span.pushout()
+        reorder = Shape.__reorder(pushout.target).inv()
+        return ShapeMap.from_ogmap(pushout.then(reorder))
+
+    @staticmethod
+    def paste(fst, snd, dim=None):
+        return Shape.paste_cospan(fst, snd, dim).target
 
     # Some special maps of shapes.
     def id(self):
@@ -256,6 +280,12 @@ class ShapeMap(OgMap):
 
     @classmethod
     def from_ogmap(cls, ogmap):
+        if isinstance(ogmap, OgMapPair):
+            return OgMapPair(
+                    ShapeMap.from_ogmap(ogmap.fst),
+                    ShapeMap.from_ogmap(ogmap.snd))
+
+        utils.typecheck(ogmap, {'type': OgMap})
         return cls(ogmap.source, ogmap.target, ogmap.mapping,
                    wfcheck=False)
 
@@ -264,7 +294,7 @@ def atom(fst, snd):
     return Shape.atom(fst, snd)
 
 
-def paste(fst, snd, dim):
+def paste(fst, snd, dim=None):
     return Shape.paste(fst, snd, dim)
 
 

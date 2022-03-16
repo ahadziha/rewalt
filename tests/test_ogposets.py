@@ -623,6 +623,11 @@ def test_OgMap_issurjective():
     assert test_collapse.issurjective
 
 
+def test_OgMap_isiso():
+    assert whisker.id().isiso
+    assert not OgMap(whisker, empty).isiso
+
+
 def test_OgMap_isdefined():
     assert test_injection.isdefined(El(0, 1))
     assert not OgMap(interval, whisker).isdefined(El(0, 1))
@@ -641,6 +646,15 @@ def test_OgMap_then():
         test_injection.then(test_injection)
     assert str(err.value) == utils.value_err(
             test_injection, 'source does not match target of first map')
+
+
+def test_OgMap_inv():
+    assert whisker.id().inv() == whisker.id()
+
+    with raises(ValueError) as err:
+        test_injection.inv()
+    assert str(err.value) == utils.value_err(
+            test_injection, 'not an isomorphism')
 
 
 def test_OgMap_compose():

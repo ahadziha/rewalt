@@ -297,7 +297,7 @@ class OgPoset:
             }, {'type': set}, {
             'type': int,
             'st': lambda x: x >= 0,
-            'why': 'expecting non-negative int'})
+            'why': 'expecting non-negative integer'})
 
         sizes = [len(_) for _ in face_data]
         for n, n_data in enumerate(face_data):
@@ -798,6 +798,11 @@ class OgMap:
             return True
         return False
 
+    @property
+    def isiso(self):
+        """ Returns whether the map is an isomorphism """
+        return self.istotal and self.isinjective and self.issurjective
+
     def isdefined(self, element):
         """ Returns whether the map is defined on an element. """
         if element in self.source and self[element] is not None:
@@ -827,6 +832,21 @@ class OgMap:
             return self.__class__(self.source, other.target, mapping,
                                   wfcheck=False)
         return OgMap(self.source, other.target, mapping,
+                     wfcheck=False)
+
+    def inv(self):
+        """ Returns the inverse of the OgMap if it is an isomorphism. """
+        if not self.isiso:
+            raise ValueError(utils.value_err(
+                self, 'not an isomorphism'))
+        mapping_inv = [[None for _ in n_data]
+                       for n_data in self.mapping]
+
+        for x in self.source:
+            image = self[x]
+            mapping_inv[image.dim][image.pos] = x
+
+        return OgMap(self.target, self.source, mapping_inv,
                      wfcheck=False)
 
     @staticmethod
