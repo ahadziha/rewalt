@@ -107,7 +107,7 @@ class Shape(OgPoset):
             coface_data[dim][inclusion.snd[x].pos]['+'].add(0)
 
         new_atom = Shape.__reorder(
-                OgPoset(face_data, coface_data, 
+                OgPoset(face_data, coface_data,
                         wfcheck=False, matchcheck=False)).source
 
         return new_atom
@@ -184,7 +184,7 @@ class Shape(OgPoset):
         Returns the unique map from the initial (empty) shape.
         """
         return ShapeMap(
-                OgMap(Shape(), self, 
+                OgMap(Shape(), self,
                       wfcheck=False),
                 wfcheck=False)
 
@@ -196,7 +196,7 @@ class Shape(OgPoset):
                 [El(0, 0) for _ in n_data]
                 for n_data in self.face_data]
         return ShapeMap(
-                OgMap(self, Point(), mapping, 
+                OgMap(self, Point(), mapping,
                       wfcheck=False),
                 wfcheck=False)
 
@@ -303,13 +303,12 @@ class Theta(Shape):
             return Shape._Shape__upgrade(OgPoset.point())
         new = tree(*thetas)
 
-        super().__init__()
         self._face_data = new.face_data
         self._coface_data = new.coface_data
 
 
 class Globe(Theta):
-    """ The globes. """
+    """ Class for the globes. """
     def __init__(self, dim=0):
         utils.typecheck(dim, {
             'type': int,
@@ -317,19 +316,18 @@ class Globe(Theta):
             'why': 'expecting non-negative integer'})
         new = OgPoset.suspend(OgPoset.point(), dim)
 
-        super().__init__()
         self._face_data = new.face_data
         self._coface_data = new.coface_data
 
 
 class Point(Globe):
-    """ The point. """
+    """ Class for the point. """
     def __init__(self):
         super().__init__()
 
 
 class Arrow(Globe):
-    """ The arrow. """
+    """ Class for the arrow. """
     def __init__(self):
         super().__init__(1)
 
