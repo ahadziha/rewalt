@@ -1,15 +1,17 @@
 from pytest import raises
 
 from rewal import utils
-from rewal.shapes import (Shape, atom, paste, globe)
+from rewal.ogposets import (OgMap)
+from rewal.shapes import (Shape, ShapeMap, atom, paste, globe)
 
 
 empty = Shape()
 point = globe(0)
 arrow = globe(1)
 globe2 = globe(2)
-whisker_l = paste(arrow, globe(2))
-whisker_r = paste(globe(2), arrow)
+
+whisker_l = paste(arrow, globe2)
+whisker_r = paste(globe2, arrow)
 
 binary = atom(paste(arrow, arrow), arrow)
 cobinary = atom(arrow, paste(arrow, arrow))
@@ -36,6 +38,12 @@ def test():
 def test_Shape():
     assert Shape() == Shape()
     assert Shape().dim == -1
+
+
+def test_Shape_isround():
+    assert cobinary.isround
+    assert frob_l.isround
+    assert not whisker_l.isround
 
 
 def test_Shape_atom():
@@ -84,17 +92,28 @@ def test_Shape_paste():
 
 
 def test_Shape_suspend():
-    assert whisker_l.suspend().size == [2] + whisker_l.size
-    assert arrow.suspend() == globe2
+    assert Shape.suspend(whisker_l).size == [2] + whisker_l.size
+    assert Shape.suspend(arrow) == globe2
 
 
 def test_Shape_initial():
-    assert Shape.point().initial() == Shape().terminal()
-    assert Shape().initial() == Shape().id()
+    assert point.initial() == empty.terminal()
+    assert empty.initial() == empty.id()
+    assert whisker_l.initial().istotal
 
 
 def test_Shape_terminal():
-    assert Shape.point().terminal() == Shape.point().id()
+    assert point.terminal() == point.id()
+    assert whisker_l.terminal().issurjective
 
 
 """ Tests for ShapeMap """
+
+
+def test_ShapeMap_init():
+    undefined = OgMap(point, arrow)
+    with raises(ValueError) as err:
+        ShapeMap(undefined)
+    assert str(err.value) == utils.value_err(
+            undefined,
+            'a ShapeMap must be total')

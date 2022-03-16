@@ -18,10 +18,9 @@ class Shape(OgPoset):
         """
         Initialises to the empty shape.
         """
-        self._face_data = []
-        self._coface_data = []
+        super().__init__([], [], wfcheck=False)
         self._isatom = False
-    
+
     # Redefining to be more lax wrt subclasses
     def __eq__(self, other):
         return isinstance(other, Shape) and \
@@ -32,7 +31,7 @@ class Shape(OgPoset):
     def isatom(self):
         """
         Returns whether the shape is an atom (has a greatest element).
-        We let this be stored at construction.
+        We let this be stored at construction time.
         """
         return self._isatom
 
@@ -93,22 +92,24 @@ class Shape(OgPoset):
         glue_out = out_span.then(glue_in).coequaliser()
         inclusion = glue_in.then(glue_out)
 
-        new_atom = inclusion.target
+        sphere = inclusion.target
         # Add a greatest element
-        new_atom.face_data.append(
+        face_data = sphere.face_data + [
                 [
                     {'-':
                         {inclusion.fst[x].pos for x in fst[dim]},
                      '+':
                         {inclusion.snd[x].pos for x in snd[dim]}}
-                ])
-        new_atom.coface_data.append([{'-': set(), '+': set()}])
+                ]]
+        coface_data = sphere.coface_data + [
+                [{'-': set(), '+': set()}]]
         for x in fst[dim]:
-            new_atom.coface_data[dim][inclusion.fst[x].pos]['-'].add(0)
+            coface_data[dim][inclusion.fst[x].pos]['-'].add(0)
         for x in snd[dim]:
-            new_atom.coface_data[dim][inclusion.snd[x].pos]['+'].add(0)
+            coface_data[dim][inclusion.snd[x].pos]['+'].add(0)
 
-        return Shape.__reorder(new_atom).source
+        return Shape.__reorder(
+                OgPoset(face_data, coface_data, wfcheck=False)).source
 
     @staticmethod
     def paste_cospan(fst, snd, dim=None):
@@ -152,8 +153,11 @@ class Shape(OgPoset):
         return Shape.paste_cospan(fst, snd, dim).target
 
     # Other constructors
-    def suspend(self, n=1):
-        return Shape.__reorder(super().suspend(n)).source
+    @staticmethod
+    def suspend(shape, n=1):
+        if n == 0:
+            return shape
+        return Shape.__reorder(super().suspend(shape, n)).source
 
     # Special maps
     def id(self):
@@ -200,7 +204,7 @@ class Shape(OgPoset):
             'why': 'expecting integer >= -1'})
         if dim == -1:
             return Shape()
-        return Shape.point().suspend(dim)
+        return Shape.suspend(Shape.point(), dim)
 
     @classmethod
     def point(cls):
@@ -290,14 +294,17 @@ class Shape(OgPoset):
                      wfcheck=False)
 
     @classmethod
-    def __upgrade(cls, ogposet):
+    def __upgrade(cls, ogp):
         """
         Forces upgrade of an OgPoset to the shape class.
         """
         shape = cls.__new__(cls)
-        shape._face_data = ogposet.face_data
-        shape._coface_data = ogposet.coface_data
-        shape._isatom = True if len(ogposet.maximal()) == 1 else False
+        shape._face_data = ogp.face_data
+        shape._coface_data = ogp.coface_data
+
+        shape._isatom = True if len(ogp.maximal()) == 1 else False
+        shape._size = ogp._size
+        shape._dim = ogp._dim
         return shape
 
 

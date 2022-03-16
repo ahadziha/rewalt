@@ -56,6 +56,9 @@ class OgPoset:
     Class for oriented graded posets.
     """
 
+    _size = None
+    _dim = None
+
     def __init__(self, face_data, coface_data,
                  wfcheck=True, matchcheck=True):
         if wfcheck:
@@ -108,13 +111,23 @@ class OgPoset:
 
     @property
     def size(self):
-        """ Returns the number of elements in each dimension as a list. """
-        return [len(_) for _ in self.face_data]
+        """
+        Returns the number of elements in each dimension as a list.
+        This data is stored after the first run.
+        """
+        if self._size is None:
+            self._size = [len(_) for _ in self.face_data]
+        return self._size
 
     @property
     def dim(self):
-        """ Returns the dimension of the oriented graded poset. """
-        return len(self.face_data) - 1
+        """
+        Returns the dimension of the oriented graded poset.
+        This data is stored after the first run.
+        """
+        if self._dim is None:
+            self._dim = len(self.face_data) - 1
+        return self._dim
 
     @property
     def as_chain(self):
@@ -286,29 +299,32 @@ class OgPoset:
         """
         return OgPoset.coproduct(fst, snd).target
 
-    def suspend(self, n=1):
+    @staticmethod
+    def suspend(ogp, n=1):
         """ Returns the OgPoset suspended n times. """
+        utils.typecheck(ogp, {'type': OgPoset})
         utils.typecheck(n, {
             'type': int,
             'st': lambda n: n >= 0,
             'why': 'expecting non-negative integer'})
         if n == 0:
-            return self
+            return ogp
         if n > 1:
-            return self.suspend().suspend(n-1)
+            return OgPoset.suspend(
+                    OgPoset.suspend(ogp, 1), n-1)
         face_data = [
                 [
                     {'-': set(), '+': set()},
                     {'-': set(), '+': set()}
-                ]] + self.face_data
-        for x in self[0]:
+                ]] + ogp.face_data
+        for x in ogp[0]:
             face_data[1][x.pos]['-'].add(0)
             face_data[1][x.pos]['+'].add(1)
         coface_data = [
                 [
-                    {'-': {x.pos for x in self[0]}, '+': set()},
-                    {'-': set(), '+': {x.pos for x in self[0]}}
-                ]] + self.coface_data
+                    {'-': {x.pos for x in ogp[0]}, '+': set()},
+                    {'-': set(), '+': {x.pos for x in ogp[0]}}
+                ]] + ogp.coface_data
         return OgPoset(face_data, coface_data,
                        wfcheck=False, matchcheck=False)
 
@@ -1040,8 +1056,9 @@ class OgMapPair(tuple):
 
         face_data = [
                 [
-                    {sign: set(map(lambda j: mapping[n-1][j].pos, faces))
-                     for sign, faces in x.items()}
+                    {sign:
+                        {mapping[n-1][j].pos for j in x[sign]}
+                     for sign in x}
                     for k, x in enumerate(n_data) if El(n, k) not in to_delete
                 ]
                 for n, n_data in enumerate(self.target.face_data)]
