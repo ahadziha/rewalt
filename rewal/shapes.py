@@ -33,8 +33,8 @@ class Shape(OgPoset):
     @property
     def isround(self):
         """
-        Returns whether the shape has spherical boundary. The result
-        is stored after the first run.
+        Returns whether the shape is round (has spherical boundary).
+        The result is stored after the first run.
         """
         if self._isround is not None:
             return self._isround
@@ -63,7 +63,7 @@ class Shape(OgPoset):
             utils.typecheck(u, {
                 'type': Shape,
                 'st': lambda v: v.isround,
-                'why': 'expecting a shape with spherical boundary'})
+                'why': 'expecting a round Shape'})
         if fst.dim != snd.dim:
             raise ValueError(utils.value_err(
                 snd, 'dimension does not match dimension of {}'.format(
@@ -130,9 +130,9 @@ class Shape(OgPoset):
                         str(dim), str(dim), repr(fst))))
 
         if dim >= fst.dim:
-            return OgMapPair(fst.id(), span.fst)
-        if dim >= snd.dim:
             return OgMapPair(span.snd, snd.id())
+        if dim >= snd.dim:
+            return OgMapPair(fst.id(), span.fst)
         pushout = span.pushout()
         reordering = Shape.__reorder(pushout.target).inv()
         paste_cospan = pushout.then(reordering)
@@ -162,7 +162,8 @@ class Shape(OgPoset):
         if sign is None:
             return boundary_ogmap
         reordering = Shape.__reorder(boundary_ogmap.source)
-        return ShapeMap(reordering.then(boundary_ogmap))
+        return ShapeMap(reordering.then(boundary_ogmap),
+                        wfcheck=False)
 
     def initial(self):
         """
