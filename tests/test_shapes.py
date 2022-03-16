@@ -2,13 +2,14 @@ from pytest import raises
 
 from rewal import utils
 from rewal.ogposets import (OgMap)
-from rewal.shapes import (Shape, ShapeMap, atom, paste, globe)
+from rewal.shapes import (Shape, Theta, Globe,
+                          ShapeMap, atom, paste)
 
 
 empty = Shape()
-point = globe(0)
-arrow = globe(1)
-globe2 = globe(2)
+point = Globe(0)
+arrow = Globe(1)
+globe2 = Globe(2)
 
 whisker_l = paste(arrow, globe2)
 whisker_r = paste(globe2, arrow)
@@ -35,7 +36,7 @@ def test():
 """ Tests for Shape """
 
 
-def test_Shape():
+def test_Shape_init():
     assert Shape() == Shape()
     assert Shape().dim == -1
 
@@ -105,6 +106,18 @@ def test_Shape_initial():
 def test_Shape_terminal():
     assert point.terminal() == point.id()
     assert whisker_l.terminal().issurjective
+
+
+""" Tests for Theta """
+
+
+def test_Theta_init():
+    Theta(Theta(), Theta(Theta())) == whisker_l
+    Theta(Globe(0)) == Globe(1)
+
+    with raises(TypeError) as err:
+        Theta(binary)
+    assert str(err.value) == utils.type_err(Theta, binary)
 
 
 """ Tests for ShapeMap """

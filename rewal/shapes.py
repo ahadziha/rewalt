@@ -11,15 +11,11 @@ class Shape(OgPoset):
     """
     Class for shapes of cells and diagrams.
     """
-
-    _isround = None
-
     def __init__(self):
         """
         Initialises to the empty shape.
         """
         super().__init__([], [], wfcheck=False)
-        self._isatom = False
 
     # Redefining to be more lax wrt subclasses
     def __eq__(self, other):
@@ -31,9 +27,8 @@ class Shape(OgPoset):
     def isatom(self):
         """
         Returns whether the shape is an atom (has a greatest element).
-        We let this be stored at construction time.
         """
-        return self._isatom
+        return len(self.maximal()) == 1
 
     @property
     def isround(self):
@@ -41,8 +36,6 @@ class Shape(OgPoset):
         Returns whether the shape is round (has spherical boundary).
         The result is stored after the first run.
         """
-        if self._isround is not None:
-            return self._isround
         boundary_in = self.all().boundary('-')
         boundary_out = self.all().boundary('+')
         intersection = boundary_in.intersection(boundary_out)
@@ -50,10 +43,8 @@ class Shape(OgPoset):
             boundary_in = boundary_in.boundary('-')
             boundary_out = boundary_out.boundary('+')
             if not intersection.issubset(boundary_in.union(boundary_out)):
-                self._isround = False
                 return False
             intersection = boundary_in.intersection(boundary_out)
-        self._isround = True
         return True
 
     # Main constructors
@@ -74,6 +65,10 @@ class Shape(OgPoset):
                 snd, 'dimension does not match dimension of {}'.format(
                     repr(fst))))
         dim = fst.dim
+
+        # Do something simpler if they are both globes.
+        if isinstance(fst, Globe) and isinstance(snd, Globe):
+            return Globe(dim + 1)
 
         in_span = OgMapPair(
                 fst.boundary_inclusion('-'), snd.boundary_inclusion('-'))
@@ -108,8 +103,9 @@ class Shape(OgPoset):
         for x in snd[dim]:
             coface_data[dim][inclusion.snd[x].pos]['+'].add(0)
 
-        return Shape.__reorder(
+        new_atom = Shape.__reorder(
                 OgPoset(face_data, coface_data, wfcheck=False)).source
+        return new_atom
 
     @staticmethod
     def paste_cospan(fst, snd, dim=None):
@@ -144,6 +140,15 @@ class Shape(OgPoset):
         reordering = Shape.__reorder(pushout.target).inv()
         paste_cospan = pushout.then(reordering)
 
+        # Theta is closed under pasting
+        if isinstance(fst, Theta) and isinstance(snd, Theta):
+            target = Theta.__upgrade(paste_cospan.target)
+            paste_cospan = OgMapPair(
+                    OgMap(fst, target, paste_cospan.fst.mapping,
+                          wfcheck=False),
+                    OgMap(snd, target, paste_cospan.snd.mapping,
+                          wfcheck=False))
+
         return OgMapPair(
                 ShapeMap(paste_cospan.fst, wfcheck=False),
                 ShapeMap(paste_cospan.snd, wfcheck=False))
@@ -153,11 +158,12 @@ class Shape(OgPoset):
         return Shape.paste_cospan(fst, snd, dim).target
 
     # Other constructors
-    @staticmethod
-    def suspend(shape, n=1):
+    def suspend(self, n=1):
         if n == 0:
-            return shape
-        return Shape.__reorder(super().suspend(shape, n)).source
+            return self
+
+        return Shape.__reorder(
+                super().suspension(self, n)).source
 
     # Special maps
     def id(self):
@@ -195,29 +201,20 @@ class Shape(OgPoset):
                 wfcheck=False)
 
     # Some special named shapes.
-    @staticmethod
-    def globe(dim):
-        """ The globes. """
-        utils.typecheck(dim, {
-            'type': int,
-            'st': lambda n: n >= -1,
-            'why': 'expecting integer >= -1'})
-        if dim == -1:
-            return Shape()
-        return Shape.suspend(Shape.point(), dim)
-
     @classmethod
     def point(cls):
         """ The point. """
         face_data = [[{'-': set(), '+': set()}]]
         coface_data = [[{'-': set(), '+': set()}]]
+
         return cls.__upgrade(
-                OgPoset(face_data, coface_data, wfcheck=False))
+                OgPoset(face_data, coface_data,
+                        wfcheck=False, matchcheck=False))
 
     @classmethod
     def arrow(cls):
         """ The arrow. """
-        return cls.__upgrade(Shape.globe(1))
+        return cls.__upgrade(Globe(1))
 
     # Private methods
     @staticmethod
@@ -301,11 +298,49 @@ class Shape(OgPoset):
         shape = cls.__new__(cls)
         shape._face_data = ogp.face_data
         shape._coface_data = ogp.coface_data
-
-        shape._isatom = True if len(ogp.maximal()) == 1 else False
-        shape._size = ogp._size
-        shape._dim = ogp._dim
         return shape
+
+
+class Theta(Shape):
+    """
+    Class for Batanin cell shapes (objects of the Theta category).
+    """
+    def __init__(self, *thetas):
+        def tree(*thetas):
+            if thetas:
+                theta = thetas[0]
+                utils.typecheck(theta, {'type': Theta})
+                thetas = thetas[1:]
+                if thetas:
+                    return Shape.paste(
+                            theta.suspend(),
+                            tree(*thetas), 0)
+                return theta.suspend()
+            return Shape.point()
+        new = tree(*thetas)
+
+        super().__init__()
+        self._face_data = new.face_data
+        self._coface_data = new.coface_data
+
+    # Theta and Globe are closed under suspension
+    def suspend(self, dim=1):
+        return self.__class__._Shape__upgrade(
+                super().suspend(dim))
+
+
+class Globe(Theta):
+    """ The globes. """
+    def __init__(self, dim):
+        utils.typecheck(dim, {
+            'type': int,
+            'st': lambda n: n >= 0,
+            'why': 'expecting non-negative integer'})
+        new = Shape.point().suspend(dim)
+
+        super().__init__()
+        self._face_data = new.face_data
+        self._coface_data = new.coface_data       
 
 
 class ShapeMap(OgMap):
@@ -352,7 +387,3 @@ def atom(fst, snd):
 
 def paste(fst, snd, dim=None):
     return Shape.paste(fst, snd, dim)
-
-
-def globe(dim):
-    return Shape.globe(dim)

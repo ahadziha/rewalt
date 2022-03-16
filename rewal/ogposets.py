@@ -56,9 +56,6 @@ class OgPoset:
     Class for oriented graded posets.
     """
 
-    _size = None
-    _dim = None
-
     def __init__(self, face_data, coface_data,
                  wfcheck=True, matchcheck=True):
         if wfcheck:
@@ -113,21 +110,15 @@ class OgPoset:
     def size(self):
         """
         Returns the number of elements in each dimension as a list.
-        This data is stored after the first run.
         """
-        if self._size is None:
-            self._size = [len(_) for _ in self.face_data]
-        return self._size
+        return [len(_) for _ in self.face_data]
 
     @property
     def dim(self):
         """
         Returns the dimension of the oriented graded poset.
-        This data is stored after the first run.
         """
-        if self._dim is None:
-            self._dim = len(self.face_data) - 1
-        return self._dim
+        return len(self.face_data) - 1
 
     @property
     def as_chain(self):
@@ -300,7 +291,7 @@ class OgPoset:
         return OgPoset.coproduct(fst, snd).target
 
     @staticmethod
-    def suspend(ogp, n=1):
+    def suspension(ogp, n=1):
         """ Returns the OgPoset suspended n times. """
         utils.typecheck(ogp, {'type': OgPoset})
         utils.typecheck(n, {
@@ -310,8 +301,8 @@ class OgPoset:
         if n == 0:
             return ogp
         if n > 1:
-            return OgPoset.suspend(
-                    OgPoset.suspend(ogp, 1), n-1)
+            return OgPoset.suspension(
+                    OgPoset.suspension(ogp, 1), n-1)
         face_data = [
                 [
                     {'-': set(), '+': set()},
