@@ -66,10 +66,6 @@ class Shape(OgPoset):
                     repr(fst))))
         dim = fst.dim
 
-        # Do something simpler if they are both globes.
-        if isinstance(fst, Globe) and isinstance(snd, Globe):
-            return Globe(dim + 1)
-
         in_span = OgMapPair(
                 fst.boundary_inclusion('-'), snd.boundary_inclusion('-'))
         out_span = OgMapPair(
@@ -163,7 +159,7 @@ class Shape(OgPoset):
             return self
 
         return Shape.__reorder(
-                super().suspension(self, n)).source
+                OgPoset.suspension(self, n)).source
 
     # Special maps
     def id(self):
@@ -340,7 +336,7 @@ class Globe(Theta):
 
         super().__init__()
         self._face_data = new.face_data
-        self._coface_data = new.coface_data       
+        self._coface_data = new.coface_data
 
 
 class ShapeMap(OgMap):
@@ -349,9 +345,6 @@ class ShapeMap(OgMap):
     Used for constructions that are not well-defined for general
     maps between oriented graded posets.
     """
-
-    _isinjective = None
-    _issurjective = None
 
     def __init__(self, ogmap, wfcheck=True):
         if wfcheck:
@@ -365,20 +358,6 @@ class ShapeMap(OgMap):
 
         super().__init__(ogmap.source, ogmap.target, ogmap.mapping,
                          wfcheck=False)
-
-    @property
-    def isinjective(self):
-        """ We will store the result after the first run. """
-        if self._isinjective is None:
-            self._isinjective = super().isinjective
-        return self._isinjective
-
-    @property
-    def issurjective(self):
-        """ We will store the result after the first run. """
-        if self._issurjective is None:
-            self._issurjective = super().issurjective
-        return self._issurjective
 
 
 def atom(fst, snd):
