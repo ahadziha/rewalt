@@ -21,6 +21,12 @@ class Shape(OgPoset):
         self._face_data = []
         self._coface_data = []
         self._isatom = False
+    
+    # Redefining to be more lax wrt subclasses
+    def __eq__(self, other):
+        return isinstance(other, Shape) and \
+                self.face_data == other.face_data and \
+                self.coface_data == other.coface_data
 
     @property
     def isatom(self):

@@ -19,8 +19,15 @@ assoc_r = paste(paste(arrow, binary), binary)
 associator = atom(assoc_l, assoc_r)
 
 frob_l = paste(paste(cobinary, arrow), paste(arrow, binary))
-frob_r = paste(paste(arrow, binary), paste(cobinary, arrow))
+frob_r = paste(paste(arrow, cobinary), paste(binary, arrow))
 frob_c = paste(binary, cobinary)
+frobenius1 = atom(frob_l, frob_r)
+frobenius2 = atom(frob_c, frob_l)
+frobenius3 = atom(frob_r, frob_c)
+
+
+def test():
+    assert associator.size == frobenius1.size == [4, 6, 4, 1]
 
 
 """ Tests for Shape """
@@ -74,6 +81,11 @@ def test_Shape_paste():
             binary,
             'input 1-boundary does not match '
             'output 1-boundary of {}'.format(repr(binary)))
+
+
+def test_Shape_suspend():
+    assert whisker_l.suspend().size == [2] + whisker_l.size
+    assert arrow.suspend() == globe2
 
 
 def test_Shape_initial():
