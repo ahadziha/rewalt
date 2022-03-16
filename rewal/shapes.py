@@ -51,7 +51,7 @@ class Shape(OgPoset):
         self._isround = True
         return True
 
-    # Constructors
+    # Main constructors
     @staticmethod
     def atom(fst, snd):
         """
@@ -145,7 +145,11 @@ class Shape(OgPoset):
     def paste(fst, snd, dim=None):
         return Shape.paste_cospan(fst, snd, dim).target
 
-    # Some special maps of shapes.
+    # Other constructors
+    def suspend(self, n=1):
+        return Shape.__reorder(super().suspend(n)).source
+
+    # Special maps
     def id(self):
         return ShapeMap(super().id(),
                         wfcheck=False)
@@ -181,13 +185,15 @@ class Shape(OgPoset):
 
     # Some special named shapes.
     @staticmethod
-    def globe(dim):  # TODO: make this use suspensions
+    def globe(dim):
         """ The globes. """
-        utils.typecheck(dim, {'type': int})
-        if dim >= 0:
-            lower = Shape.globe(dim - 1)
-            return Shape.atom(lower, lower)
-        return Shape()
+        utils.typecheck(dim, {
+            'type': int,
+            'st': lambda n: n >= -1,
+            'why': 'expecting integer >= -1'})
+        if dim == -1:
+            return Shape()
+        return Shape.point().suspend(dim)
 
     @classmethod
     def point(cls):
@@ -218,26 +224,32 @@ class Shape(OgPoset):
             if focus.issubset(marked):
                 del focus_stack[-1]
             else:
-                focus_input = focus.boundary('-')
-                if not focus_input.issubset(marked):
-                    focus_stack.append(focus_input)
+                dim = focus.support.dim
+                if dim == 0:
+                    for x in focus[dim]:
+                        mapping[dim].append(x)
+                        marked.support.add(x)
                 else:
-                    if len(focus.maximal()) == 1:
-                        for x in focus.maximal():
-                            mapping[x.dim].append(x)
-                            marked.support.add(x)
-                        del focus_stack[-1]
-                        focus_stack.append(focus.boundary('+'))
+                    focus_input = focus.boundary('-')
+                    if not focus_input.issubset(marked):
+                        focus_stack.append(focus_input)
                     else:
-                        def candidates(x):
-                            return [y for y in shape.cofaces(x, '-')
-                                    if y not in marked]
-                        x = next(
-                                x for x in mapping[focus.support.dim - 1]
-                                if len(candidates(x)) > 0)
-                        focus_stack.append(GrSubset(
-                            GrSet(candidates(x)[0]),
-                            shape, wfcheck=False).closure())
+                        if len(focus.maximal()) == 1:
+                            for x in focus[dim]:
+                                mapping[dim].append(x)
+                                marked.support.add(x)
+                            del focus_stack[-1]
+                            focus_stack.append(focus.boundary('+'))
+                        else:
+                            def candidates(x):
+                                return [y for y in shape.cofaces(x, '-')
+                                        if y not in marked]
+                            x = next(
+                                    x for x in mapping[dim - 1]
+                                    if len(candidates(x)) > 0)
+                            focus_stack.append(GrSubset(
+                                GrSet(candidates(x)[0]),
+                                shape, wfcheck=False).closure())
 
         def reordered_faces(x, sign):
             return {k for y in shape.faces(x, sign)

@@ -215,6 +215,7 @@ class OgPoset:
 
     @staticmethod
     def coproduct(fst, snd):
+        """ Returns the coproduct cospan of two OgPosets. """
         for x in fst, snd:
             utils.typecheck(x, {'type': OgPoset})
 
@@ -279,7 +280,37 @@ class OgPoset:
 
     @staticmethod
     def disjoint_union(fst, snd):
+        """
+        Returns the disjoint union of two OgPosets (the target
+        of the coproduct cospan).
+        """
         return OgPoset.coproduct(fst, snd).target
+
+    def suspend(self, n=1):
+        """ Returns the OgPoset suspended n times. """
+        utils.typecheck(n, {
+            'type': int,
+            'st': lambda n: n >= 0,
+            'why': 'expecting non-negative integer'})
+        if n == 0:
+            return self
+        if n > 1:
+            return self.suspend().suspend(n-1)
+        face_data = [
+                [
+                    {'-': set(), '+': set()},
+                    {'-': set(), '+': set()}
+                ]] + self.face_data
+        for x in self[0]:
+            face_data[1][x.pos]['-'].add(0)
+            face_data[1][x.pos]['+'].add(1)
+        coface_data = [
+                [
+                    {'-': {x.pos for x in self[0]}, '+': set()},
+                    {'-': set(), '+': {x.pos for x in self[0]}}
+                ]] + self.coface_data
+        return OgPoset(face_data, coface_data,
+                       wfcheck=False, matchcheck=False)
 
     # Private methods
     @staticmethod
