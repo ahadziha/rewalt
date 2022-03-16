@@ -42,10 +42,3 @@ def test_Shape_terminal():
 
 
 """ Tests for ShapeMap """
-
-
-def test_ShapeMap():
-    assert ShapeMap(Shape(), Shape.point()) == \
-            ShapeMap(Shape(), Shape.point())
-    assert ShapeMap(Shape(), Shape.point()) != \
-        OgMap(Shape(), Shape.point())

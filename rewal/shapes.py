@@ -12,6 +12,8 @@ class Shape(OgPoset):
     Class for shapes of cells and diagrams.
     """
 
+    _isround = None
+
     def __init__(self):
         """
         Initialises to the empty shape.
@@ -24,14 +26,18 @@ class Shape(OgPoset):
     def isatom(self):
         """
         Returns whether the shape is an atom (has a greatest element).
-        We let this be recorded by the constructors to avoid computing
-        the maximal elements at every call.
+        We let this be stored at construction.
         """
         return self._isatom
 
     @property
     def isround(self):
-        """ Returns whether the shape has spherical boundary. """
+        """
+        Returns whether the shape has spherical boundary. The result
+        is stored after the first run.
+        """
+        if self._isround is not None:
+            return self._isround
         boundary_in = self.all().boundary('-')
         boundary_out = self.all().boundary('+')
         intersection = boundary_in.intersection(boundary_out)
@@ -39,8 +45,10 @@ class Shape(OgPoset):
             boundary_in = boundary_in.boundary('-')
             boundary_out = boundary_out.boundary('+')
             if not intersection.issubset(boundary_in.union(boundary_out)):
+                self._isround = False
                 return False
             intersection = boundary_in.intersection(boundary_out)
+        self._isround = True
         return True
 
     # Constructors
@@ -126,8 +134,12 @@ class Shape(OgPoset):
         if dim >= snd.dim:
             return OgMapPair(span.snd, snd.id())
         pushout = span.pushout()
-        reorder = Shape.__reorder(pushout.target).inv()
-        return ShapeMap.from_ogmap(pushout.then(reorder))
+        reordering = Shape.__reorder(pushout.target).inv()
+        paste_cospan = pushout.then(reordering)
+
+        return OgMapPair(
+                ShapeMap(paste_cospan.fst, wfcheck=False),
+                ShapeMap(paste_cospan.snd, wfcheck=False))
 
     @staticmethod
     def paste(fst, snd, dim=None):
@@ -135,7 +147,8 @@ class Shape(OgPoset):
 
     # Some special maps of shapes.
     def id(self):
-        return ShapeMap.from_ogmap(super().id())
+        return ShapeMap(super().id(),
+                        wfcheck=False)
 
     def boundary_inclusion(self, sign=None, dim=None):
         """
@@ -145,15 +158,15 @@ class Shape(OgPoset):
         if sign is None:
             return boundary_ogmap
         reordering = Shape.__reorder(boundary_ogmap.source)
-        return ShapeMap.from_ogmap(
-                reordering.then(boundary_ogmap))
+        return ShapeMap(reordering.then(boundary_ogmap))
 
     def initial(self):
         """
         Returns the unique map from the initial (empty) shape.
         """
-        return ShapeMap(Shape(), self,
-                        wfcheck=False)
+        return ShapeMap(
+                OgMap(Shape(), self, wfcheck=False),
+                wfcheck=False)
 
     def terminal(self):
         """
@@ -162,12 +175,13 @@ class Shape(OgPoset):
         mapping = [
                 [El(0, 0) for _ in n_data]
                 for n_data in self.face_data]
-        return ShapeMap(self, Shape.point(), mapping,
-                        wfcheck=False)
+        return ShapeMap(
+                OgMap(self, Shape.point(), mapping, wfcheck=False),
+                wfcheck=False)
 
     # Some special named shapes.
     @staticmethod
-    def globe(dim):
+    def globe(dim):  # TODO: make this use suspensions
         """ The globes. """
         utils.typecheck(dim, {'type': int})
         if dim >= 0:
@@ -178,7 +192,10 @@ class Shape(OgPoset):
     @classmethod
     def point(cls):
         """ The point. """
-        return cls.__upgrade(Shape.globe(0))
+        face_data = [[{'-': set(), '+': set()}]]
+        coface_data = [[{'-': set(), '+': set()}]]
+        return cls.__upgrade(
+                OgPoset(face_data, coface_data, wfcheck=False))
 
     @classmethod
     def arrow(cls):
@@ -189,7 +206,7 @@ class Shape(OgPoset):
     @staticmethod
     def __reorder(shape):
         """
-        Traverses all elements of the shape and returns an isomorphism
+        Traverses all elements and returns an isomorphism
         from the shape with elements reordered in traversal order.
         """
         mapping = [[] for _ in range(shape.dim + 1)]
@@ -246,11 +263,11 @@ class Shape(OgPoset):
                     for x in n_data
                 ]
                 for n_data in mapping]
-        reordered_shape = Shape.__upgrade(
+        reordered = Shape.__upgrade(
                 OgPoset(face_data, coface_data,
                         wfcheck=False))
 
-        return OgMap(reordered_shape, shape, mapping,
+        return OgMap(reordered, shape, mapping,
                      wfcheck=False)
 
     @classmethod
@@ -267,27 +284,40 @@ class Shape(OgPoset):
 
 class ShapeMap(OgMap):
     """
-    An OgMap overlay for maps between Shape objects.
+    An OgMap overlay for total maps between Shape objects.
     Used for constructions that are not well-defined for general
     maps between oriented graded posets.
     """
 
-    def __init__(self, source, target, mapping=None,
-                 wfcheck=True):
-        for x in source, target:
-            utils.typecheck(x, {'type': Shape})
-        super().__init__(source, target, mapping, wfcheck)
+    _isinjective = None
+    _issurjective = None
 
-    @classmethod
-    def from_ogmap(cls, ogmap):
-        if isinstance(ogmap, OgMapPair):
-            return OgMapPair(
-                    ShapeMap.from_ogmap(ogmap.fst),
-                    ShapeMap.from_ogmap(ogmap.snd))
+    def __init__(self, ogmap, wfcheck=True):
+        if wfcheck:
+            utils.typecheck(ogmap, {'type': OgMap})
+            for x in ogmap.source, ogmap.target:
+                utils.typecheck(x, {'type': Shape})
+            if not ogmap.istotal:
+                raise ValueError(utils.value_err(
+                    ogmap,
+                    'a ShapeMap must be total'))
 
-        utils.typecheck(ogmap, {'type': OgMap})
-        return cls(ogmap.source, ogmap.target, ogmap.mapping,
-                   wfcheck=False)
+        super().__init__(ogmap.source, ogmap.target, ogmap.mapping,
+                         wfcheck=False)
+
+    @property
+    def isinjective(self):
+        """ We will store the result after the first run. """
+        if self._isinjective is None:
+            self._isinjective = super().isinjective
+        return self._isinjective
+
+    @property
+    def issurjective(self):
+        """ We will store the result after the first run. """
+        if self._issurjective is None:
+            self._issurjective = super().issurjective
+        return self._issurjective
 
 
 def atom(fst, snd):
