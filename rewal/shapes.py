@@ -409,7 +409,7 @@ class Opetope(OpetopeTree):
         return OgPoset.__new__(Point)
 
 
-class Globe(Theta):
+class Globe(Theta, Opetope):
     """ Class for globes. """
     def __new__(self):
         return OgPoset.__new__(Point)
