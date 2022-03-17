@@ -106,12 +106,12 @@ class Shape(OgPoset):
         new_atom = Shape.__reorder(
                 OgPoset(face_data, coface_data,
                         wfcheck=False, matchcheck=False)).source
-        """
+
         # Recursion for positive opetopes
         if (isinstance(fst, OpetopeTree) or fst.dim == 1) \
                 and isinstance(snd, Opetope):
             new_atom = OpetopeTree._Shape__upgrade(new_atom)
-        """
+
         return new_atom
 
     @staticmethod
@@ -169,9 +169,10 @@ class Shape(OgPoset):
 
         # Theta and Globe are closed under suspension
         if isinstance(shape, Globe):
-            return Globe._Shape__upgrade(suspension)
-        if isinstance(shape, Theta):
-            return Theta._Shape__upgrade(suspension)
+            suspension = Globe._Shape__upgrade(suspension)
+        else:
+            if isinstance(shape, Theta):
+                suspension = Theta._Shape__upgrade(suspension)
         return suspension
 
     # Named shapes
@@ -232,9 +233,13 @@ class Shape(OgPoset):
                 if boundary == Arrow():
                     inclusion = Arrow._Shape__upgrademapsrc(inclusion)
                 else:  # Add checks for simplices.
-                    if isinstance(self, Theta):
-                        inclusion = self.__class__._Shape__upgrademapsrc(
+                    if isinstance(self, Globe):
+                        inclusion = Globe._Shape__upgrademapsrc(
                                 inclusion)
+                    else:
+                        if isinstance(self, Theta):
+                            inclusion = Theta._Shape__upgrademapsrc(
+                                    inclusion)
 
         return ShapeMap(inclusion,
                         wfcheck=False)
@@ -381,26 +386,31 @@ class Empty(Shape):
 
 class Theta(Shape):
     """
-    Class for Batanin cell shapes, the objects of the Theta category.
+    Class for the objects of the Theta category (Batanin cells).
     """
     def __new__(self):
         return OgPoset.__new__(Point)
 
 
-"""
 class OpetopeTree(Shape):
+    """
+    Class for shapes that can appear as input boundaries of positive
+    opetopes.
+    """
     def __new__(self):
         return OgPoset.__new__(Point)
 
 
 class Opetope(OpetopeTree):
+    """
+    Class for positive opetopes.
+    """
     def __new__(self):
         return OgPoset.__new__(Point)
-"""
 
 
 class Globe(Theta):
-    """ Class for the globes. """
+    """ Class for globes. """
     def __new__(self):
         return OgPoset.__new__(Point)
 
