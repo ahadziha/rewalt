@@ -68,7 +68,7 @@ class Shape(OgPoset):
         if dim == 0:
             return Arrow()
         if isinstance(fst, Globe) and isinstance(snd, Globe):
-            return Globe(dim+1)
+            return Shape.suspend(fst)
 
         in_span = OgMapPair(
                 fst.boundary_inclusion('-'), snd.boundary_inclusion('-'))
@@ -106,7 +106,12 @@ class Shape(OgPoset):
         new_atom = Shape.__reorder(
                 OgPoset(face_data, coface_data,
                         wfcheck=False, matchcheck=False)).source
-
+        """
+        # Recursion for positive opetopes
+        if (isinstance(fst, OpetopeTree) or fst.dim == 1) \
+                and isinstance(snd, Opetope):
+            new_atom = OpetopeTree._Shape__upgrade(new_atom)
+        """
         return new_atom
 
     @staticmethod
@@ -143,7 +148,7 @@ class Shape(OgPoset):
 
         # Theta is closed under pasting
         if isinstance(fst, Theta) and isinstance(snd, Theta):
-            return Theta._Shape__upgrade(paste)
+            paste = Theta._Shape__upgrade(paste)
         return paste
 
     # Other constructors
@@ -158,10 +163,10 @@ class Shape(OgPoset):
             return OgPoset.suspend(shape, n)
         if isinstance(shape, Point) and n == 1:
             return Arrow()
-        print("done")
+
         suspension = Shape.__reorder(
                 OgPoset.suspend(shape, n)).source
-        
+
         # Theta and Globe are closed under suspension
         if isinstance(shape, Globe):
             return Globe._Shape__upgrade(suspension)
@@ -170,10 +175,24 @@ class Shape(OgPoset):
         return suspension
 
     # Named shapes
+    @staticmethod
+    def empty():
+        return Empty()
+
+    @staticmethod
+    def point():
+        return Point()
+
+    @staticmethod
+    def arrow():
+        return Arrow()
+
+    @staticmethod
     def globe(dim=0):
         """ Globes. """
         return Shape.suspend(Point(), dim)
 
+    @staticmethod
     def theta(*thetas):
         """ Batanin cells. """
         if thetas:
@@ -196,11 +215,28 @@ class Shape(OgPoset):
         """
         Input and output boundaries of Shapes are Shapes.
         """
-        boundary_ogmap = OgPoset.boundary_inclusion(self, sign, dim)
+        boundary_ogmap = super().boundary_inclusion(sign, dim)
         if sign is None:
             return boundary_ogmap
         reordering = Shape.__reorder(boundary_ogmap.source)
-        return ShapeMap(reordering.then(boundary_ogmap),
+        inclusion = reordering.then(boundary_ogmap)
+
+        # Check if boundary is a named shape.
+        boundary = inclusion.source
+        if boundary.dim == - 1:
+            inclusion = Empty._Shape__upgrademapsrc(inclusion)
+        else:
+            if boundary.dim == 0:
+                inclusion = Point._Shape__upgrademapsrc(inclusion)
+            else:
+                if boundary == Arrow():
+                    inclusion = Arrow._Shape__upgrademapsrc(inclusion)
+                else:  # Add checks for simplices.
+                    if isinstance(self, Theta):
+                        inclusion = self.__class__._Shape__upgrademapsrc(
+                                inclusion)
+
+        return ShapeMap(inclusion,
                         wfcheck=False)
 
     def initial(self):
@@ -208,7 +244,7 @@ class Shape(OgPoset):
         Returns the unique map from the initial (empty) shape.
         """
         return ShapeMap(
-                OgMap(Shape(), self,
+                OgMap(Empty(), self,
                       wfcheck=False),
                 wfcheck=False)
 
@@ -308,6 +344,28 @@ class Shape(OgPoset):
         shape._coface_data = ogp.coface_data
         return shape
 
+    @classmethod
+    def __upgrademapsrc(cls, ogmap):
+        """
+        Upgrades the source of a map to the shape class.
+        """
+        return OgMap(
+                cls._Shape__upgrade(ogmap.source),
+                ogmap.target,
+                ogmap.mapping,
+                wfcheck=False)
+
+    @classmethod
+    def __upgrademaptgt(cls, ogmap):
+        """
+        Upgrades the target of a map to the shape class.
+        """
+        return OgMap(
+                ogmap.source,
+                cls._Shape__upgrade(ogmap.target),
+                ogmap.mapping,
+                wfcheck=False)
+
 
 class Empty(Shape):
     """
@@ -329,6 +387,18 @@ class Theta(Shape):
         return OgPoset.__new__(Point)
 
 
+"""
+class OpetopeTree(Shape):
+    def __new__(self):
+        return OgPoset.__new__(Point)
+
+
+class Opetope(OpetopeTree):
+    def __new__(self):
+        return OgPoset.__new__(Point)
+"""
+
+
 class Globe(Theta):
     """ Class for the globes. """
     def __new__(self):
@@ -341,9 +411,10 @@ class Point(Globe):
         return OgPoset.__new__(Point)
 
     def __init__(self):
-        super().__init__([[{'-': set(), '+': set()}]],
-                         [[{'-': set(), '+': set()}]],
-                         wfcheck=False, matchcheck=False)
+        super().__init__(
+                [[{'-': set(), '+': set()}]],
+                [[{'-': set(), '+': set()}]],
+                wfcheck=False, matchcheck=False)
 
 
 class Arrow(Globe):
@@ -352,13 +423,15 @@ class Arrow(Globe):
         return OgPoset.__new__(Arrow)
 
     def __init__(self):
-        super().__init__([
-            [{'-': set(), '+': set()}, {'-': set(), '+': set()}],
-            [{'-': {0}, '+': {1}}]],
-            [
-                [{'-': {0}, '+': set()}, {'-': set(), '+': {0}}],
-                [{'-': set(), '+': set()}]],
-            wfcheck=False, matchcheck=False)
+        super().__init__(
+                [
+                    [{'-': set(), '+': set()}, {'-': set(), '+': set()}],
+                    [{'-': {0}, '+': {1}}]
+                ], [
+                    [{'-': {0}, '+': set()}, {'-': set(), '+': {0}}],
+                    [{'-': set(), '+': set()}]
+                ],
+                wfcheck=False, matchcheck=False)
 
 
 class ShapeMap(OgMap):
@@ -388,3 +461,7 @@ def atom(fst, snd):
 
 def paste(fst, snd, dim=None):
     return Shape.paste(fst, snd, dim)
+
+
+def suspend(shape, n=1):
+    return Shape.suspend(shape, n)

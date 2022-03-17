@@ -2,14 +2,14 @@ from pytest import raises
 
 from rewal import utils
 from rewal.ogposets import (OgMap)
-from rewal.shapes import (Shape, Theta, Globe, Point, Arrow,
-                          ShapeMap, atom, paste)
+from rewal.shapes import (Shape, ShapeMap, Theta,
+                          atom, paste, suspend)
 
 
-empty = Shape()
-point = Point()
-arrow = Arrow()
-globe2 = Globe(2)
+empty = Shape.empty()
+point = Shape.point()
+arrow = Shape.arrow()
+globe2 = Shape.globe(2)
 
 whisker_l = paste(arrow, globe2)
 whisker_r = paste(globe2, arrow)
@@ -47,6 +47,28 @@ def test_Shape_isround():
     assert not whisker_l.isround
 
 
+def test_Shape_paste():
+    interch_1 = paste(whisker_l, whisker_r)
+    interch_2 = paste(whisker_r, whisker_l)
+    interch_3 = paste(globe2, globe2, 0)
+    assert interch_1 == interch_2 == interch_3
+
+    assert paste(point, arrow, 0) == arrow == paste(arrow, point, 0)
+    assert paste(globe2, arrow, 1) == globe2 == paste(arrow, globe2, 1)
+
+    with raises(ValueError) as err:
+        paste(point, point)
+    assert str(err.value) == utils.value_err(
+            -1, 'expecting non-negative integer')
+
+    with raises(ValueError) as err:
+        paste(binary, binary)
+    assert str(err.value) == utils.value_err(
+            binary,
+            'input 1-boundary does not match '
+            'output 1-boundary of {}'.format(repr(binary)))
+
+
 def test_Shape_atom():
     assert atom(empty, empty) == point
     assert atom(point, point) == arrow
@@ -70,31 +92,9 @@ def test_Shape_atom():
             'output boundary of {}'.format(repr(cobinary)))
 
 
-def test_Shape_paste():
-    interch_1 = paste(whisker_l, whisker_r)
-    interch_2 = paste(whisker_r, whisker_l)
-    interch_3 = paste(globe2, globe2, 0)
-    assert interch_1 == interch_2 == interch_3
-
-    assert arrow == paste(arrow, point, 0)
-    assert paste(globe2, arrow, 1) == globe2 == paste(arrow, globe2, 1)
-
-    with raises(ValueError) as err:
-        paste(point, point)
-    assert str(err.value) == utils.value_err(
-            -1, 'expecting non-negative integer')
-
-    with raises(ValueError) as err:
-        paste(binary, binary)
-    assert str(err.value) == utils.value_err(
-            binary,
-            'input 1-boundary does not match '
-            'output 1-boundary of {}'.format(repr(binary)))
-
-
 def test_Shape_suspend():
-    assert Shape.suspend(whisker_l).size == [2] + whisker_l.size
-    assert Shape.suspend(arrow) == globe2
+    assert suspend(whisker_l).size == [2] + whisker_l.size
+    assert suspend(arrow) == globe2
 
 
 def test_Shape_initial():
@@ -112,11 +112,11 @@ def test_Shape_terminal():
 
 
 def test_Theta_init():
-    Theta(Theta(), Theta(Theta())) == whisker_l
-    Theta(Globe(0)) == Globe(1)
+    Shape.theta(Shape.theta(), Shape.theta(Shape.theta())) == whisker_l
+    Shape.theta(point) == arrow
 
     with raises(TypeError) as err:
-        Theta(binary)
+        Shape.theta(binary)
     assert str(err.value) == utils.type_err(Theta, binary)
 
 
