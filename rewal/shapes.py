@@ -11,11 +11,8 @@ class Shape(OgPoset):
     """
     Class for shapes of cells and diagrams.
     """
-    def __init__(self):
-        """
-        Initialises to the empty shape.
-        """
-        super().__init__([], [], wfcheck=False, matchcheck=False)
+    def __new__(self):
+        return OgPoset.__new__(Empty)
 
     # Redefining to be more lax wrt subclasses
     def __eq__(self, other):
@@ -151,18 +148,44 @@ class Shape(OgPoset):
 
     # Other constructors
     @staticmethod
-    def suspend(shape, dim=1):
+    def suspend(shape, n=1):
         utils.typecheck(shape, {'type': Shape})
-        suspension = Shape.__reorder(
-                OgPoset.suspend(shape, dim)).source
+        if n == 0:
+            return shape
 
+        # Suspensions of Empty are not shapes
+        if isinstance(shape, Empty):
+            return OgPoset.suspend(shape, n)
+        if isinstance(shape, Point) and n == 1:
+            return Arrow()
+        print("done")
+        suspension = Shape.__reorder(
+                OgPoset.suspend(shape, n)).source
+        
         # Theta and Globe are closed under suspension
         if isinstance(shape, Globe):
             return Globe._Shape__upgrade(suspension)
         if isinstance(shape, Theta):
             return Theta._Shape__upgrade(suspension)
-
         return suspension
+
+    # Named shapes
+    def globe(dim=0):
+        """ Globes. """
+        return Shape.suspend(Point(), dim)
+
+    def theta(*thetas):
+        """ Batanin cells. """
+        if thetas:
+            theta = thetas[0]
+            utils.typecheck(theta, {'type': Theta})
+            thetas = thetas[1:]
+            if thetas:
+                return Shape.paste(
+                        Shape.suspend(theta),
+                        Shape.theta(*thetas), 0)
+            return Shape.suspend(theta)
+        return Point()
 
     # Special maps
     def id(self):
@@ -280,57 +303,62 @@ class Shape(OgPoset):
         """
         Forces upgrade of an OgPoset to the shape class.
         """
-        shape = cls.__new__(cls)
+        shape = OgPoset.__new__(cls)
         shape._face_data = ogp.face_data
         shape._coface_data = ogp.coface_data
         return shape
+
+
+class Empty(Shape):
+    """
+    Class for the empty shape.
+    """
+    def __new__(self):
+        return OgPoset.__new__(Empty)
+
+    def __init__(self):
+        super().__init__([], [],
+                         wfcheck=False, matchcheck=False)
 
 
 class Theta(Shape):
     """
     Class for Batanin cell shapes, the objects of the Theta category.
     """
-    def __init__(self, *thetas):
-        def tree(*thetas):
-            if thetas:
-                theta = thetas[0]
-                utils.typecheck(theta, {'type': Theta})
-                thetas = thetas[1:]
-                if thetas:
-                    return Shape.paste(
-                            Shape.suspend(theta),
-                            tree(*thetas), 0)
-                return Shape.suspend(theta)
-            return Shape._Shape__upgrade(OgPoset.point())
-        new = tree(*thetas)
-
-        self._face_data = new.face_data
-        self._coface_data = new.coface_data
+    def __new__(self):
+        return OgPoset.__new__(Point)
 
 
 class Globe(Theta):
     """ Class for the globes. """
-    def __init__(self, dim=0):
-        utils.typecheck(dim, {
-            'type': int,
-            'st': lambda n: n >= 0,
-            'why': 'expecting non-negative integer'})
-        new = OgPoset.suspend(OgPoset.point(), dim)
-
-        self._face_data = new.face_data
-        self._coface_data = new.coface_data
+    def __new__(self):
+        return OgPoset.__new__(Point)
 
 
 class Point(Globe):
     """ Class for the point. """
+    def __new__(self):
+        return OgPoset.__new__(Point)
+
     def __init__(self):
-        super().__init__()
+        super().__init__([[{'-': set(), '+': set()}]],
+                         [[{'-': set(), '+': set()}]],
+                         wfcheck=False, matchcheck=False)
 
 
 class Arrow(Globe):
     """ Class for the arrow. """
+    def __new__(self):
+        return OgPoset.__new__(Arrow)
+
     def __init__(self):
-        super().__init__(1)
+        super().__init__([
+            [{'-': set(), '+': set()}, {'-': set(), '+': set()}],
+            [{'-': {0}, '+': {1}}]],
+            [
+                [{'-': {0}, '+': set()}, {'-': set(), '+': {0}}],
+                [{'-': set(), '+': set()}]],
+            wfcheck=False, matchcheck=False)
 
 
 class ShapeMap(OgMap):
