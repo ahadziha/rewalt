@@ -328,7 +328,6 @@ class Shape(OgPoset):
         focus_stack = [shape.all()]  # traversal begins
         while len(focus_stack) > 0:
             focus = focus_stack[-1]
-            print(focus.support)
             if focus.issubset(marked):
                 del focus_stack[-1]
             else:

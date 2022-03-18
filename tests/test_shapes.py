@@ -97,8 +97,9 @@ def test_Shape_suspend():
 
 
 def test_Shape_gray():
-    assert Shape.gray(globe2, arrow).size == [4, 6, 4, 1]
+    assert (globe2 * arrow).size == [4, 6, 4, 1]
     assert Shape.gray() == point
+    assert (arrow * arrow) * arrow == arrow * (arrow * arrow)
 
 
 def test_Shape_under():

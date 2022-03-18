@@ -803,6 +803,8 @@ class Closed(GrSubset):
         """
         Returns the n-boundary of the closed set.
         """
+        if isinstance(dim, int) and dim >= self.support.dim:
+            return self
         return self.boundary_max(sign, dim).closure()
 
     @staticmethod
