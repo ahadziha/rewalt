@@ -336,6 +336,7 @@ class Shape(OgPoset):
                     for x in focus[dim]:
                         mapping[dim].append(x)
                         marked.support.add(x)
+                    del focus_stack[-1]
                 else:
                     focus_input = focus.boundary('-')
                     if not focus_input.issubset(marked):
