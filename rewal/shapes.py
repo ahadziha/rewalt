@@ -437,6 +437,66 @@ class Cube(Shape):
     def __new__(self):
         return OgPoset.__new__(Point)
 
+    def cube_face(self, k, sign):
+        """ Cubical face maps. """
+        sign = utils.mksign(sign)
+        utils.typecheck(k, {
+            'type': int,
+            'st': lambda k: k in range(self.dim),
+            'why': 'out of bounds'})
+        basic_faces = {
+            '-': ShapeMap(OgMap(
+                Point(), Arrow(),
+                [[El(0, 0)]],
+                wfcheck=False), wfcheck=False),
+            '+': ShapeMap(OgMap(
+                Point(), Arrow(),
+                [[El(0, 1)]],
+                wfcheck=False), wfcheck=False)}
+        arrowid = Arrow().id()
+        maps = [arrowid for _ in range(k)] + \
+            [basic_faces[sign]] + \
+            [arrowid for _ in range(self.dim - k - 1)]
+        return ShapeMap.gray(*maps)
+
+    def cube_degeneracy(self, k):
+        """ Cubical degeneracy maps. """
+        utils.typecheck(k, {
+            'type': int,
+            'st': lambda k: k in range(self.dim),
+            'why': 'out of bounds'})
+        arrowid = Arrow().id()
+        maps = [arrowid for _ in range(k)] + \
+            [Arrow().terminal()] + \
+            [arrowid for _ in range(self.dim - k - 1)]
+        return ShapeMap.gray(*maps)
+
+    def connection(self, k, sign):
+        """ Cubical connection maps. """
+        sign = utils.mksign(sign)
+        utils.typecheck(k, {
+            'type': int,
+            'st': lambda k: k in range(self.dim),
+            'why': 'out of bounds'})
+        basic_connections = {
+                '-': ShapeMap(OgMap(
+                        Shape.cube(2), Arrow(),
+                        [[El(0, 0), El(0, 0), El(0, 1), El(0, 0)],
+                         [El(0, 0), El(1, 0), El(0, 0), El(1, 0)],
+                         [El(1, 0)]],
+                        wfcheck=False), wfcheck=False),
+                '+': ShapeMap(OgMap(
+                        Shape.cube(2), Arrow(),
+                        [[El(0, 0), El(0, 1), El(0, 1), El(0, 1)],
+                         [El(1, 0), El(0, 1), El(1, 0), El(0, 1)],
+                         [El(1, 0)]],
+                        wfcheck=False), wfcheck=False)}
+        arrowid = Arrow().id()
+        maps = [arrowid for _ in range(k)] + \
+            [basic_connections[sign]] + \
+            [arrowid for _ in range(self.dim - k - 1)]
+        return ShapeMap.gray(*maps)
+
 
 class Theta(Shape):
     """
@@ -526,6 +586,59 @@ class ShapeMap(OgMap):
 
         super().__init__(ogmap.source, ogmap.target, ogmap.mapping,
                          wfcheck=False)
+
+    def __mul__(self, other):
+        return ShapeMap.gray(self, other)
+
+    @staticmethod
+    def gray(*maps):
+        for f in maps:
+            utils.typecheck(f, {'type': ShapeMap})
+        if len(maps) == 0:
+            return Point().id()
+        if len(maps) == 1:
+            return maps[0]
+
+        def oggray(fst, snd, *others):
+            if len(others) > 0:
+                return oggray(oggray(fst, snd), *others)
+
+            size1 = fst.target.size + [0 for _ in range(snd.target.dim)]
+            size2 = snd.target.size + [0 for _ in range(fst.target.dim)]
+
+            def pair(x, y):
+                dim = x.dim + y.dim
+                pos = y.pos + x.pos*size2[y.dim] + sum(
+                        [size1[k]*size2[dim-k] for k in range(x.dim)])
+                return El(dim, pos)
+
+            mapping = [[] for _ in range(fst.source.dim + snd.source.dim + 1)]
+            for x in fst.source:
+                for y in snd.source:
+                    mapping[x.dim + y.dim].append(
+                        pair(fst[x], snd[y]))
+
+            return OgMap(
+                    OgPoset.gray(fst.source, snd.source),
+                    OgPoset.gray(fst.target, snd.target),
+                    mapping,
+                    wfcheck=False)
+
+        gray = oggray(*maps)
+        if gray.source in [f.source for f in maps]:
+            if gray.target in [f.target for f in maps]:
+                return gray
+        if gray.source not in [f.source for f in maps]:
+            gray = Shape._Shape__reorder(gray.source).then(gray)
+            if all([isinstance(x, Cube) for x in [f.source for f in maps]]):
+                gray = Cube._Shape__upgrademapsrc(gray)
+        if gray.target not in [f.target for f in maps]:
+            gray = gray.then(Shape._Shape__reorder(gray.target).inv())
+            if all([isinstance(x, Cube) for x in [f.target for f in maps]]):
+                gray = Cube._Shape__upgrademaptgt(gray)
+
+        return ShapeMap(gray,
+                        wfcheck=False)
 
 
 def atom(fst, snd):
