@@ -620,9 +620,13 @@ class GrSubset:
         return self._ambient
 
     @property
+    def dim(self):
+        return self.support.dim
+
+    @property
     def isclosed(self):
         """ Returns whether the subset is closed. """
-        for n in range(self.support.dim, 0, -1):
+        for n in range(self.dim, 0, -1):
             for x in self[n]:
                 for face in self.ambient.faces(x):
                     if face not in self:
@@ -691,7 +695,7 @@ class GrSubset:
         """
         closure = self.support.copy()
 
-        for n in range(self.support.dim, 0, -1):
+        for n in range(self.dim, 0, -1):
             for element in closure[n]:
                 for face in self.ambient.faces(element):
                     closure.add(face)
@@ -752,18 +756,16 @@ class Closed(GrSubset):
         the closed subset in the ambient.
         """
         mapping = [self.support[n].as_list
-                   for n in range(self.support.dim + 1)]
+                   for n in range(self.dim + 1)]
 
         face_data = [
                 [
-                    {'-': set(), '+': set()} for _ in n_data
-                ]
-                for n_data in mapping]
-        for n, n_data in enumerate(mapping):
-            for i, x in enumerate(n_data):
-                for sign in '-', '+':
-                    for y in self.ambient.faces(x, sign):
-                        face_data[n][i][sign].add(mapping[n-1].index(y))
+                    {sign:
+                        {mapping[n-1].index(y)
+                         for y in self.ambient.faces(x, sign)}
+                     for sign in ('-', '+')}
+                    for x in n_data]
+                for n, n_data in enumerate(mapping)]
         source = OgPoset.from_face_data(face_data, wfcheck=False)
 
         return OgMap(source, self.ambient, mapping,
@@ -789,7 +791,7 @@ class Closed(GrSubset):
         """
         _sign = utils.flip(
                 utils.mksign(sign)) if sign is not None else '-'
-        dim = self.support.dim - 1 if dim is None else dim
+        dim = self.dim - 1 if dim is None else dim
 
         boundary_max = self.maximal().support[:dim]
 
@@ -808,7 +810,7 @@ class Closed(GrSubset):
         """
         Returns the n-boundary of the closed set.
         """
-        if isinstance(dim, int) and dim >= self.support.dim:
+        if isinstance(dim, int) and dim >= self.dim:
             return self
         return self.boundary_max(sign, dim).closure()
 

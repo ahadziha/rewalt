@@ -318,7 +318,7 @@ class Shape(OgPoset):
             if focus.issubset(marked):
                 del focus_stack[-1]
             else:
-                dim = focus.support.dim
+                dim = focus.dim
                 if dim == 0:
                     for x in focus[dim]:
                         mapping[dim].append(x)
