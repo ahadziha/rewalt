@@ -757,12 +757,16 @@ class Closed(GrSubset):
         """
         Returns the n-boundary of the closed set.
         """
+        if isinstance(dim, int) and dim >= self.support.dim:
+            return self
         return self.boundary_max(sign, dim).closure()
 
     @staticmethod
-    def subset(grsubset):
-        if not grsubset.isclosed:
-            raise ValueError(grsubset.support, 'not a closed subset')
+    def subset(grsubset,
+               wfcheck=True):
+        if wfcheck:
+            if not grsubset.isclosed:
+                raise ValueError(grsubset.support, 'not a closed subset')
         return Closed(grsubset.support, grsubset.ambient,
                       wfcheck=False)
 

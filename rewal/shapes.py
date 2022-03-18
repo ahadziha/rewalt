@@ -231,11 +231,25 @@ class Shape(OgPoset):
         if sign is None:
             return boundary_ogmap
         reordering = Shape.__reorder(boundary_ogmap.source)
-        inclusion = reordering.then(boundary_ogmap)
 
-        # TODO: boundaries as named shapes?
+        return ShapeMap(reordering.then(boundary_ogmap),
+                        wfcheck=False)
 
-        return ShapeMap(inclusion,
+    def under(self, element):
+        """ 
+        Returns the inclusion of an atom as the closure of an element
+        in the shape.
+        """
+        utils.typecheck(element, {
+            'type': El,
+            'st': lambda x: x in self,
+            'why': 'not an element'})
+        underset = GrSubset(
+                GrSet(element), self,
+                wfcheck=False).closure()
+        reordering = Shape.__reorder(underset.as_map.source)
+
+        return ShapeMap(reordering.then(underset.as_map),
                         wfcheck=False)
 
     def initial(self):
