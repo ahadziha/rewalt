@@ -201,6 +201,8 @@ class OgPoset:
 
     def boundary_inclusion(self, sign=None, dim=None):
         """ Returns the inclusion of the n-boundary into the OgPoset. """
+        if isinstance(dim, int) and dim >= self.dim:
+            return self.id()
         return self.all().boundary(sign, dim).as_map
 
     def boundary(self, sign=None, dim=None):
@@ -216,7 +218,7 @@ class OgPoset:
 
         return cls(face_data, coface_data,
                    wfcheck=False, matchcheck=False)
-
+        
     @staticmethod
     def point():
         """ The terminal oriented graded poset. """

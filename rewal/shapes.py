@@ -108,9 +108,8 @@ class Shape(OgPoset):
                         wfcheck=False, matchcheck=False)).source
 
         # Recursion for positive opetopes
-        if (isinstance(fst, OpetopeTree) or fst.dim == 1) \
-                and isinstance(snd, Opetope):
-            new_atom = OpetopeTree._Shape__upgrade(new_atom)
+        if isinstance(fst, OpetopeTree) and isinstance(snd, Opetope):
+            new_atom = Opetope._Shape__upgrade(new_atom)
 
         return new_atom
 
@@ -146,9 +145,17 @@ class Shape(OgPoset):
         pushout = span.pushout()
         paste = Shape.__reorder(pushout.target).source
 
-        # Theta is closed under pasting
+        # Upgrade to named shape classes
         if isinstance(fst, Theta) and isinstance(snd, Theta):
-            paste = Theta._Shape__upgrade(paste)
+            if isinstance(fst, GlobeString) and isinstance(snd, GlobeString) \
+                    and fst.dim == snd.dim == dim+1:
+                return GlobeString._Shape__upgrade(paste)
+            return Theta._Shape__upgrade(paste)
+
+        if isinstance(fst, OpetopeTree) and isinstance(snd, GlobeString) \
+                and fst.dim == snd.dim == dim+1:
+            return OpetopeTree._Shape__upgrade(paste)
+
         return paste
 
     # Other constructors
@@ -167,12 +174,13 @@ class Shape(OgPoset):
         suspension = Shape.__reorder(
                 OgPoset.suspend(shape, n)).source
 
-        # Theta and Globe are closed under suspension
-        if isinstance(shape, Globe):
-            suspension = Globe._Shape__upgrade(suspension)
-        else:
-            if isinstance(shape, Theta):
-                suspension = Theta._Shape__upgrade(suspension)
+        # Theta, GlobeString, Globe are closed under suspension
+        if isinstance(shape, Theta):
+            if isinstance(shape, GlobeString):
+                if isinstance(shape, Globe):
+                    return Globe._Shape__upgrade(suspension)
+                return GlobeString._Shape__upgrade(suspension)
+            return Theta._Shape__upgrade(suspension)
         return suspension
 
     # Named shapes
@@ -209,37 +217,23 @@ class Shape(OgPoset):
 
     # Special maps
     def id(self):
-        return ShapeMap(OgPoset.id(self),
+        return ShapeMap(super().id(),
                         wfcheck=False)
 
     def boundary_inclusion(self, sign=None, dim=None):
         """
         Input and output boundaries of Shapes are Shapes.
         """
+        if isinstance(dim, int) and dim >= self.dim:
+            return self.id()
+
         boundary_ogmap = super().boundary_inclusion(sign, dim)
         if sign is None:
             return boundary_ogmap
         reordering = Shape.__reorder(boundary_ogmap.source)
         inclusion = reordering.then(boundary_ogmap)
 
-        # Check if boundary is a named shape.
-        boundary = inclusion.source
-        if boundary.dim == - 1:
-            inclusion = Empty._Shape__upgrademapsrc(inclusion)
-        else:
-            if boundary.dim == 0:
-                inclusion = Point._Shape__upgrademapsrc(inclusion)
-            else:
-                if boundary == Arrow():
-                    inclusion = Arrow._Shape__upgrademapsrc(inclusion)
-                else:  # Add checks for simplices.
-                    if isinstance(self, Globe):
-                        inclusion = Globe._Shape__upgrademapsrc(
-                                inclusion)
-                    else:
-                        if isinstance(self, Theta):
-                            inclusion = Theta._Shape__upgrademapsrc(
-                                    inclusion)
+        # TODO: boundaries as named shapes?
 
         return ShapeMap(inclusion,
                         wfcheck=False)
@@ -372,7 +366,15 @@ class Shape(OgPoset):
                 wfcheck=False)
 
 
-class Empty(Shape):
+class Simplex(Shape):
+    """
+    Class for oriented simplices.
+    """
+    def __new__(self):
+        return OgPoset.__new__(Empty)
+
+
+class Empty(Simplex):
     """
     Class for the empty shape.
     """
@@ -382,6 +384,14 @@ class Empty(Shape):
     def __init__(self):
         super().__init__([], [],
                          wfcheck=False, matchcheck=False)
+
+
+class Cube(Shape):
+    """
+    Class for cubes.
+    """
+    def __new__(self):
+        return OgPoset.__new__(Point)
 
 
 class Theta(Shape):
@@ -401,6 +411,15 @@ class OpetopeTree(Shape):
         return OgPoset.__new__(Point)
 
 
+class GlobeString(Theta, OpetopeTree):
+    """
+    Class for 'strings of globes' in the top dimension, the intersection
+    of opetope trees and Batanin cells.
+    """
+    def __new__(self):
+        return OgPoset.__new__(Point)
+
+
 class Opetope(OpetopeTree):
     """
     Class for positive opetopes.
@@ -409,13 +428,13 @@ class Opetope(OpetopeTree):
         return OgPoset.__new__(Point)
 
 
-class Globe(Theta, Opetope):
+class Globe(GlobeString, Opetope):
     """ Class for globes. """
     def __new__(self):
         return OgPoset.__new__(Point)
 
 
-class Point(Globe):
+class Point(Globe, Simplex, Cube):
     """ Class for the point. """
     def __new__(self):
         return OgPoset.__new__(Point)
@@ -427,7 +446,7 @@ class Point(Globe):
                 wfcheck=False, matchcheck=False)
 
 
-class Arrow(Globe):
+class Arrow(Globe, Simplex, Cube):
     """ Class for the arrow. """
     def __new__(self):
         return OgPoset.__new__(Arrow)
