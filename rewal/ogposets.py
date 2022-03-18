@@ -96,6 +96,9 @@ class OgPoset:
     def __add__(self, other):
         return OgPoset.disjoint_union(self, other)
 
+    def __mul__(self, other):
+        return self.gray(self, other)
+
     @property
     def face_data(self):
         """ Face data are read-only. """
@@ -367,8 +370,7 @@ class OgPoset:
                          for z in fst.cofaces(x, sign)
                          }.union(
                              {pair(x, z).pos
-                              for z in snd.cofaces(y, sndsign(
-                                  x.dim + 1, sign))
+                              for z in snd.cofaces(y, sndsign(x.dim, sign))
                               })
                      for sign in ('-', '+')})
         return OgPoset(face_data, coface_data,
@@ -801,8 +803,6 @@ class Closed(GrSubset):
         """
         Returns the n-boundary of the closed set.
         """
-        if isinstance(dim, int) and dim >= self.support.dim:
-            return self
         return self.boundary_max(sign, dim).closure()
 
     @staticmethod

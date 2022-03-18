@@ -328,6 +328,7 @@ class Shape(OgPoset):
         focus_stack = [shape.all()]  # traversal begins
         while len(focus_stack) > 0:
             focus = focus_stack[-1]
+            print(focus.support)
             if focus.issubset(marked):
                 del focus_stack[-1]
             else:
@@ -350,10 +351,10 @@ class Shape(OgPoset):
                         else:
                             def candidates(x):
                                 return [y for y in shape.cofaces(x, '-')
-                                        if y not in marked]
+                                        if y in focus and y not in marked]
                             x = next(
-                                    x for x in mapping[dim - 1]
-                                    if len(candidates(x)) > 0)
+                                    x for x in mapping[dim-1]
+                                    if x in focus and len(candidates(x)) > 0)
                             focus_stack.append(GrSubset(
                                 GrSet(candidates(x)[0]),
                                 shape, wfcheck=False).closure())
