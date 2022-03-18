@@ -20,6 +20,13 @@ class Shape(OgPoset):
                 self.face_data == other.face_data and \
                 self.coface_data == other.coface_data
 
+    def __mul__(self, other):
+        return Shape.gray(self, other)
+
+    def __pow__(self, other):
+        utils.typecheck(other, {'type': int})
+        return Shape.gray(*[self for _ in range(other)])
+
     @property
     def isatom(self):
         """
@@ -589,6 +596,10 @@ class ShapeMap(OgMap):
 
     def __mul__(self, other):
         return ShapeMap.gray(self, other)
+
+    def __pow__(self, other):
+        utils.typecheck(other, {'type': int})
+        return ShapeMap.gray(*[self for _ in range(other)])
 
     @staticmethod
     def gray(*maps):
