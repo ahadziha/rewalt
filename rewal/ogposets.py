@@ -156,6 +156,8 @@ class OgPoset:
         """
         Returns the faces of an element as a graded set.
         """
+        if element.dim == 0:
+            return GrSet()
         if sign is None:
             return self.faces(element, '-').union(
                 self.faces(element, '+'))
@@ -173,6 +175,8 @@ class OgPoset:
         """
         Returns the cofaces of an element as a graded set.
         """
+        if element.dim == self.dim:
+            return GrSet()
         if sign is None:
             return self.cofaces(element, '-').union(
                 self.cofaces(element, '+'))
@@ -218,15 +222,6 @@ class OgPoset:
 
         return cls(face_data, coface_data,
                    wfcheck=False, matchcheck=False)
-        
-    @staticmethod
-    def point():
-        """ The terminal oriented graded poset. """
-        face_data = [[{'-': set(), '+': set()}]]
-        coface_data = [[{'-': set(), '+': set()}]]
-
-        return OgPoset(face_data, coface_data,
-                       wfcheck=False, matchcheck=False)
 
     @staticmethod
     def coproduct(fst, snd):
@@ -327,6 +322,55 @@ class OgPoset:
                     {'-': {x.pos for x in ogp[0]}, '+': set()},
                     {'-': set(), '+': {x.pos for x in ogp[0]}}
                 ]] + ogp.coface_data
+        return OgPoset(face_data, coface_data,
+                       wfcheck=False, matchcheck=False)
+
+    @staticmethod
+    def gray(fst, snd, *others):
+        """
+        Returns the Gray product of two or more oriented graded posets.
+        """
+        if len(others) > 0:
+            return OgPoset.gray(OgPoset.gray(fst, snd), *others)
+
+        size1 = fst.size + [0 for _ in range(snd.dim)]
+        size2 = snd.size + [0 for _ in range(fst.dim)]
+
+        def pair(x, y):
+            dim = x.dim + y.dim
+            pos = y.pos + x.pos*size2[y.dim] + sum(
+                    [size1[k]*size2[dim-k] for k in range(x.dim)])
+            return El(dim, pos)
+
+        def sndsign(n, sign):
+            if n % 2 == 1:
+                return utils.flip(sign)
+            return sign
+
+        face_data = [[] for _ in range(fst.dim + snd.dim + 1)]
+        coface_data = [[] for _ in range(fst.dim + snd.dim + 1)]
+        for x in fst:
+            for y in snd:
+                dim = x.dim + y.dim
+                face_data[dim].append(
+                    {sign:
+                        {pair(z, y).pos
+                         for z in fst.faces(x, sign)
+                         }.union(
+                            {pair(x, z).pos
+                             for z in snd.faces(y, sndsign(x.dim, sign))
+                             })
+                     for sign in ('-', '+')})
+                coface_data[dim].append(
+                    {sign:
+                        {pair(z, y).pos
+                         for z in fst.cofaces(x, sign)
+                         }.union(
+                             {pair(x, z).pos
+                              for z in snd.cofaces(y, sndsign(
+                                  x.dim + 1, sign))
+                              })
+                     for sign in ('-', '+')})
         return OgPoset(face_data, coface_data,
                        wfcheck=False, matchcheck=False)
 
@@ -864,7 +908,7 @@ class OgMap:
 
     def then(self, other, *others):
         """ Returns the composite with other maps. """
-        if others:
+        if len(others) > 0:
             return self.then(other).then(*others)
 
         if isinstance(other, OgMapPair):
@@ -905,7 +949,7 @@ class OgMap:
     @staticmethod
     def compose(one, *others):
         utils.typecheck(one, {'type': OgMap})
-        if others:
+        if len(others) > 0:
             return one.then(*others)
         return one
 
@@ -1019,7 +1063,7 @@ class OgMapPair(tuple):
 
     def then(self, other, *others):
         """ Returns the composite with other pairs or maps. """
-        if others:
+        if len(others) > 0:
             return self.then(other).then(*others)
 
         if isinstance(other, OgMapPair):

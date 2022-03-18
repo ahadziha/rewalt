@@ -277,6 +277,11 @@ def test_OgPoset_disjoint_union():
     assert whisker + empty == empty + whisker == whisker
 
 
+def test_OgPoset_gray():
+    assert OgPoset.gray(interval, interval).size == [4, 4, 1]
+    assert OgPoset.gray(interval, point) == interval
+
+
 """ Tests for GrSet """
 
 

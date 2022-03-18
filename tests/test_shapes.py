@@ -91,14 +91,19 @@ def test_Shape_paste():
             'output 1-boundary of {}'.format(repr(binary)))
 
 
-def test_Shape_under():
-    assert whisker_l.under(El(2, 0)).source == globe2
-    assert associator.under(El(2, 1)).source == binary
-
-
 def test_Shape_suspend():
     assert suspend(whisker_l).size == [2] + whisker_l.size
     assert suspend(arrow) == globe2
+
+
+def test_Shape_gray():
+    assert Shape.gray(globe2, arrow).size == [4, 6, 4, 1]
+    assert Shape.gray() == point
+
+
+def test_Shape_under():
+    assert whisker_l.under(El(2, 0)).source == globe2
+    assert associator.under(El(2, 1)).source == binary
 
 
 def test_Shape_initial():

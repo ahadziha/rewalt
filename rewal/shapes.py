@@ -183,6 +183,32 @@ class Shape(OgPoset):
             return Theta._Shape__upgrade(suspension)
         return suspension
 
+    @staticmethod
+    def gray(*shapes):
+        """ Gray product of shapes. """
+        if len(shapes) == 0:
+            return Point()
+        if len(shapes) == 1:
+            return shapes[0]
+
+        fst, snd = shapes[0], shapes[1]
+        others = shapes[2:]
+        if len(others) > 0:
+            return Shape.gray(Shape.gray(fst, snd), *others)
+
+        if fst.dim == 0:
+            return snd
+        if snd.dim == 0:
+            return fst
+        if fst.dim == -1 or snd.dim == -1:
+            return Empty()
+        gray = Shape.__reorder(OgPoset.gray(fst, snd)).source
+
+        # Cubes are closed under Gray products
+        if isinstance(fst, Cube) and isinstance(snd, Cube):
+            return Cube._Shape__upgrade(gray)
+        return gray
+
     # Named shapes
     @staticmethod
     def empty():
@@ -197,6 +223,22 @@ class Shape(OgPoset):
         return Arrow()
 
     @staticmethod
+    def cube(dim=0):
+        utils.typecheck(dim, {
+            'type': int,
+            'st': lambda n: n >= 0,
+            'why': 'expecting non-negative integer'})
+        if dim == 0:
+            return Point()
+        if dim == 1:
+            return Arrow()
+        arrow = Arrow()
+        ogcube = OgPoset.gray(*[arrow for _ in range(dim)])
+        cube = Shape.__reorder(ogcube).source
+
+        return Cube._Shape__upgrade(cube)
+
+    @staticmethod
     def globe(dim=0):
         """ Globes. """
         return Shape.suspend(Point(), dim)
@@ -204,11 +246,11 @@ class Shape(OgPoset):
     @staticmethod
     def theta(*thetas):
         """ Batanin cells. """
-        if thetas:
+        if len(thetas) > 0:
             theta = thetas[0]
             utils.typecheck(theta, {'type': Theta})
             thetas = thetas[1:]
-            if thetas:
+            if len(thetas) > 0:
                 return Shape.paste(
                         Shape.suspend(theta),
                         Shape.theta(*thetas), 0)
@@ -236,7 +278,7 @@ class Shape(OgPoset):
                         wfcheck=False)
 
     def under(self, element):
-        """ 
+        """
         Returns the inclusion of an atom as the closure of an element
         in the shape.
         """
