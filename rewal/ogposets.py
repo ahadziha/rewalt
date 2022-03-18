@@ -336,6 +336,11 @@ class OgPoset:
         if len(others) > 0:
             return OgPoset.gray(OgPoset.gray(fst, snd), *others)
 
+        if len(fst) == 0 or len(snd) == 1:
+            return fst
+        if len(fst) == 1 or len(snd) == 0:
+            return snd
+
         size1 = fst.size + [0 for _ in range(snd.dim)]
         size2 = snd.size + [0 for _ in range(fst.dim)]
 

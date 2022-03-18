@@ -186,26 +186,20 @@ class Shape(OgPoset):
     @staticmethod
     def gray(*shapes):
         """ Gray product of shapes. """
+        for x in shapes:
+            utils.typecheck(x, {'type': Shape})
         if len(shapes) == 0:
             return Point()
         if len(shapes) == 1:
             return shapes[0]
 
-        fst, snd = shapes[0], shapes[1]
-        others = shapes[2:]
-        if len(others) > 0:
-            return Shape.gray(Shape.gray(fst, snd), *others)
+        oggray = OgPoset.gray(*shapes)
+        if oggray in shapes:
+            return oggray
 
-        if fst.dim == 0:
-            return snd
-        if snd.dim == 0:
-            return fst
-        if fst.dim == -1 or snd.dim == -1:
-            return Empty()
-        gray = Shape.__reorder(OgPoset.gray(fst, snd)).source
-
+        gray = Shape.__reorder(oggray).source
         # Cubes are closed under Gray products
-        if isinstance(fst, Cube) and isinstance(snd, Cube):
+        if all([isinstance(x, Cube) for x in shapes]):
             return Cube._Shape__upgrade(gray)
         return gray
 
@@ -228,15 +222,8 @@ class Shape(OgPoset):
             'type': int,
             'st': lambda n: n >= 0,
             'why': 'expecting non-negative integer'})
-        if dim == 0:
-            return Point()
-        if dim == 1:
-            return Arrow()
         arrow = Arrow()
-        ogcube = OgPoset.gray(*[arrow for _ in range(dim)])
-        cube = Shape.__reorder(ogcube).source
-
-        return Cube._Shape__upgrade(cube)
+        return Shape.gray(*[arrow for _ in range(dim)])
 
     @staticmethod
     def globe(dim=0):
