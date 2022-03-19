@@ -1053,6 +1053,10 @@ class OgMap:
         return OgMap(self.target, self.source, mapping_inv,
                      wfcheck=False)
 
+    def image(self):
+        """ The image of the source through the mapping. """
+        return self.source.all().image(self)
+
     @staticmethod
     def compose(one, *others):
         utils.typecheck(one, {'type': OgMap})
