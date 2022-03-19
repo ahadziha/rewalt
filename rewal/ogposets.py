@@ -402,6 +402,23 @@ class OgPoset:
                        wfcheck=False, matchcheck=False)
 
     @staticmethod
+    def bot(ogp):
+        """
+        Returns the OgPoset augmented with a bottom element,
+        covered with positive orientation.
+        """
+        if len(ogp) == 0:
+            return OgPoset.point()
+        face_data = [[{'-': set(), '+': set()}]] + ogp.face_data
+        for x in face_data[1]:
+            x['+'].add(0)
+        coface_data = [[
+            {'-': set(), '+': {k for k in range(ogp.size[0])}}
+            ]] + ogp.coface_data
+        return OgPoset(face_data, coface_data,
+                       wfcheck=False, matchcheck=False)
+
+    @staticmethod
     def join(*ogps):
         """ Returns the join of a number of oriented graded posets. """
         if len(ogps) == 0:
@@ -422,24 +439,9 @@ class OgPoset:
         if len(snd) == 0:
             return fst
 
-        fst_bot_face_data = [[{'-': set(), '+': set()}]] + fst.face_data
-        snd_bot_face_data = [[{'-': set(), '+': set()}]] + snd.face_data
-        for x in fst_bot_face_data[1]:
-            x['+'].add(0)
-        for x in snd_bot_face_data[1]:
-            x['+'].add(0)
-        fst_bot_coface_data = [[
-            {'-': set(), '+': {k for k in range(fst.size[0])}}
-            ]] + fst.coface_data
-        snd_bot_coface_data = [[
-            {'-': set(), '+': {k for k in range(snd.size[0])}}
-            ]] + snd.coface_data
-        fst_bot = OgPoset(fst_bot_face_data, fst_bot_coface_data,
-                          wfcheck=False, matchcheck=False)
-        snd_bot = OgPoset(snd_bot_face_data, snd_bot_coface_data,
-                          wfcheck=False, matchcheck=False)
-
-        join_bot = OgPoset.gray(fst_bot, snd_bot)
+        join_bot = OgPoset.gray(
+                OgPoset.bot(fst),
+                OgPoset.bot(snd))
         face_data = join_bot.face_data[1:]
         for x in face_data[0]:
             x['+'].clear()
@@ -1029,6 +1031,21 @@ class OgMap:
             return one.then(*others)
         return one
 
+    @staticmethod
+    def bot(ogmap):
+        """
+        Extension of OgPoset.bot to maps.
+        """
+        utils.typecheck(ogmap, {'type': OgMap})
+        source = OgPoset.bot(ogmap.source)
+        target = OgPoset.bot(ogmap.target)
+        mapping = [[El(0, 0)]] + [
+                [El(x.dim + 1, x.pos) for x in n_data]
+                for n_data in ogmap.mapping]
+
+        return OgMap(source, target, mapping,
+                     wfcheck=False)
+
     # Private methods.
     def __extensioncheck(self, element, image):
         if image not in self.target:
@@ -1078,6 +1095,59 @@ class OgMap:
             for x in source:
                 if mapping[x.dim][x.pos] is not None:
                     check_map[x] = mapping[x.dim][x.pos]
+
+    @staticmethod
+    def __gray(fst, snd, *others):
+        """
+        Used only as helper method for ShapeMap.gray; does not work
+        on arbitrary OgMaps
+        """
+        if len(others) > 0:
+            return OgMap._OgMap__gray(
+                    OgMap._OgMap__gray(fst, snd), *others)
+
+        size1 = fst.target.size + [0 for _ in range(snd.target.dim)]
+        size2 = snd.target.size + [0 for _ in range(fst.target.dim)]
+
+        def pair(x, y):
+            dim = x.dim + y.dim
+            pos = y.pos + x.pos*size2[y.dim] + sum(
+                    [size1[k]*size2[dim-k] for k in range(x.dim)])
+            return El(dim, pos)
+
+        mapping = [[] for _ in range(fst.source.dim + snd.source.dim + 1)]
+        for x in fst.source:
+            for y in snd.source:
+                mapping[x.dim + y.dim].append(
+                    pair(fst[x], snd[y]))
+
+        return OgMap(
+                OgPoset.gray(fst.source, snd.source),
+                OgPoset.gray(fst.target, snd.target),
+                mapping,
+                wfcheck=False)
+
+    @staticmethod
+    def __join(fst, snd, *others):
+        """
+        Used only as helper method for ShapeMap.join; does not work
+        on arbitrary OgMaps
+        """
+        if len(others) > 0:
+            return OgMap._OgMap__join(
+                    OgMap._OgMap__join(fst, snd), *others)
+
+        join_bot = OgMap._OgMap__gray(
+                OgMap.bot(fst), OgMap.bot(snd))
+        mapping = [
+                [El(x.dim - 1, x.pos) for x in n_data]
+                for n_data in join_bot.mapping[1:]]
+
+        return OgMap(
+                OgPoset.join(fst.source, snd.source),
+                OgPoset.join(fst.target, snd.target),
+                mapping,
+                wfcheck=False)
 
 
 class OgMapPair(tuple):

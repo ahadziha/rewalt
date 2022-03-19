@@ -21,11 +21,19 @@ class Shape(OgPoset):
                 self.coface_data == other.coface_data
 
     def __mul__(self, other):
+        """ Multiplication returns the Gray product. """
         return Shape.gray(self, other)
 
     def __pow__(self, other):
         utils.typecheck(other, {'type': int})
         return Shape.gray(*[self for _ in range(other)])
+
+    def __rshift__(self, other):
+        """ Shift returns the join. """
+        return Shape.join(self, other)
+
+    def __lshift__(self, other):
+        return Shape.join(other, self)
 
     @property
     def isatom(self):
@@ -631,6 +639,12 @@ class ShapeMap(OgMap):
         utils.typecheck(other, {'type': int})
         return ShapeMap.gray(*[self for _ in range(other)])
 
+    def __rshift__(self, other):
+        return ShapeMap.join(self, other)
+
+    def __lshift__(self, other):
+        return ShapeMap.join(other, self)
+
     @staticmethod
     def gray(*maps):
         for f in maps:
@@ -640,32 +654,7 @@ class ShapeMap(OgMap):
         if len(maps) == 1:
             return maps[0]
 
-        def oggray(fst, snd, *others):
-            if len(others) > 0:
-                return oggray(oggray(fst, snd), *others)
-
-            size1 = fst.target.size + [0 for _ in range(snd.target.dim)]
-            size2 = snd.target.size + [0 for _ in range(fst.target.dim)]
-
-            def pair(x, y):
-                dim = x.dim + y.dim
-                pos = y.pos + x.pos*size2[y.dim] + sum(
-                        [size1[k]*size2[dim-k] for k in range(x.dim)])
-                return El(dim, pos)
-
-            mapping = [[] for _ in range(fst.source.dim + snd.source.dim + 1)]
-            for x in fst.source:
-                for y in snd.source:
-                    mapping[x.dim + y.dim].append(
-                        pair(fst[x], snd[y]))
-
-            return OgMap(
-                    OgPoset.gray(fst.source, snd.source),
-                    OgPoset.gray(fst.target, snd.target),
-                    mapping,
-                    wfcheck=False)
-
-        gray = oggray(*maps)
+        gray = OgMap._OgMap__gray(*maps)
         if gray.source in [f.source for f in maps]:
             if gray.target in [f.target for f in maps]:
                 return gray
@@ -677,8 +666,38 @@ class ShapeMap(OgMap):
             gray = gray.then(Shape._Shape__reorder(gray.target).inv())
             if all([isinstance(x, Cube) for x in [f.target for f in maps]]):
                 gray = Cube._Shape__upgrademaptgt(gray)
-
         return ShapeMap(gray,
+                        wfcheck=False)
+
+    @staticmethod
+    def join(*maps):
+        for f in maps:
+            utils.typecheck(f, {'type': ShapeMap})
+        if len(maps) == 0:
+            return Empty().id()
+        if len(maps) == 1:
+            return maps[0]
+
+        join = OgMap._OgMap__join(*maps)
+        if join.source in [f.source for f in maps]:
+            if join.target in [f.target for f in maps]:
+                return join
+        if join.source not in [f.source for f in maps]:
+            join = Shape._Shape__reorder(join.source).then(join)
+            if all([isinstance(x, Simplex) for x in [f.source for f in maps]]):
+                if len(join.source) == 3:
+                    join = Arrow._Shape__upgrademapsrc(join)
+                else:
+                    join = Simplex._Shape__upgrademapsrc(join)
+        if join.target not in [f.target for f in maps]:
+            join = join.then(Shape._Shape__reorder(join.target).inv())
+            if all([isinstance(x, Simplex) for x in [f.target for f in maps]]):
+                if len(join.source) == 3:
+                    join = Arrow._Shape__upgrademaptgt(join)
+                else:
+                    join = Simplex._Shape__upgrademaptgt(join)
+
+        return ShapeMap(join,
                         wfcheck=False)
 
 
