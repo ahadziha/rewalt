@@ -46,18 +46,8 @@ class Shape(OgPoset):
     def isround(self):
         """
         Returns whether the shape is round (has spherical boundary).
-        The result is stored after the first run.
         """
-        boundary_in = self.all().boundary('-')
-        boundary_out = self.all().boundary('+')
-        intersection = boundary_in.intersection(boundary_out)
-        for k in range(self.dim-2, -1, -1):
-            boundary_in = boundary_in.boundary('-')
-            boundary_out = boundary_out.boundary('+')
-            if not intersection.issubset(boundary_in.union(boundary_out)):
-                return False
-            intersection = boundary_in.intersection(boundary_out)
-        return True
+        return self.all().isround
 
     # Main constructors
     @staticmethod
@@ -462,6 +452,30 @@ class Simplex(Shape):
     def __new__(self):
         return OgPoset.__new__(Empty)
 
+    def simplex_face(self, k):
+        """ Simplicial face maps. """
+        utils.typecheck(k, {
+            'type': int,
+            'st': lambda k: k in range(self.dim + 1),
+            'why': 'out of bounds'})
+        pointid = Point().id()
+        maps = [pointid for _ in range(k)] + \
+            [Empty().terminal()] + \
+            [pointid for _ in range(self.dim - k)]
+        return ShapeMap.join(*maps)
+
+    def simplex_degeneracy(self, k):
+        """ Simplicial degeneracy maps. """
+        utils.typecheck(k, {
+            'type': int,
+            'st': lambda k: k in range(self.dim),
+            'why': 'out of bounds'})
+        pointid = Point().id()
+        maps = [pointid for _ in range(k)] + \
+            [Arrow().terminal()] + \
+            [pointid for _ in range(self.dim - k - 1)]
+        return ShapeMap.join(*maps)
+
 
 class Empty(Simplex):
     """
@@ -692,7 +706,7 @@ class ShapeMap(OgMap):
         if join.target not in [f.target for f in maps]:
             join = join.then(Shape._Shape__reorder(join.target).inv())
             if all([isinstance(x, Simplex) for x in [f.target for f in maps]]):
-                if len(join.source) == 3:
+                if len(join.target) == 3:
                     join = Arrow._Shape__upgrademaptgt(join)
                 else:
                     join = Simplex._Shape__upgrademaptgt(join)

@@ -840,6 +840,35 @@ class Closed(GrSubset):
         return OgMap(source, self.ambient, mapping,
                      wfcheck=False)
 
+    @property
+    def ispure(self):
+        """
+        Returns whether the maximal elements of the closed subset
+        all have the same dimension.
+        """
+        for x in self.maximal():
+            if x.dim != self.dim:
+                return False
+        return True
+
+    @property
+    def isround(self):
+        """
+        Returns whether the closed subset "has spherical boundary".
+        """
+        if not self.ispure:
+            return False
+        boundary_in = self.boundary('-')
+        boundary_out = self.boundary('+')
+        intersection = boundary_in.intersection(boundary_out)
+        for k in range(self.dim-2, -1, -1):
+            boundary_in = boundary_in.boundary('-')
+            boundary_out = boundary_out.boundary('+')
+            if not intersection.issubset(boundary_in.union(boundary_out)):
+                return False
+            intersection = boundary_in.intersection(boundary_out)
+        return True
+
     def maximal(self):
         """
         Returns the subset of elements that are not below any other
