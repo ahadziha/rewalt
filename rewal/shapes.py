@@ -635,13 +635,12 @@ class ShapeMap(OgMap):
 
     def __init__(self, ogmap, wfcheck=True):
         if wfcheck:
-            utils.typecheck(ogmap, {'type': OgMap})
+            utils.typecheck(ogmap, {
+                'type': OgMap,
+                'st': lambda f: f.istotal,
+                'why': 'a ShapeMap must be total'})
             for x in ogmap.source, ogmap.target:
                 utils.typecheck(x, {'type': Shape})
-            if not ogmap.istotal:
-                raise ValueError(utils.value_err(
-                    ogmap,
-                    'a ShapeMap must be total'))
 
         super().__init__(ogmap.source, ogmap.target, ogmap.mapping,
                          wfcheck=False)
