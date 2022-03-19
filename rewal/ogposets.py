@@ -96,9 +96,6 @@ class OgPoset:
     def __add__(self, other):
         return OgPoset.disjoint_union(self, other)
 
-    def __mul__(self, other):
-        return self.gray(self, other)
-
     @property
     def face_data(self):
         """ Face data are read-only. """
@@ -227,6 +224,20 @@ class OgPoset:
                    wfcheck=False, matchcheck=False)
 
     @staticmethod
+    def empty():
+        """ The initial oriented graded poset. """
+        return OgPoset([], [],
+                       wfcheck=False, matchcheck=False)
+
+    @staticmethod
+    def point():
+        """ The terminal oriented graded poset. """
+        return OgPoset(
+            [[{'-': set(), '+': set()}]],
+            [[{'-': set(), '+': set()}]],
+            wfcheck=False, matchcheck=False)
+
+    @staticmethod
     def coproduct(fst, snd):
         """ Returns the coproduct cospan of two OgPosets. """
         for x in fst, snd:
@@ -329,13 +340,22 @@ class OgPoset:
                        wfcheck=False, matchcheck=False)
 
     @staticmethod
-    def gray(fst, snd, *others):
+    def gray(*ogps):
         """
-        Returns the Gray product of two or more oriented graded posets.
+        Returns the Gray product of a number of oriented graded posets.
         """
-        if len(others) > 0:
-            return OgPoset.gray(OgPoset.gray(fst, snd), *others)
+        if len(ogps) == 0:
+            return OgPoset.point()
+        if len(ogps) == 1:
+            utils.typecheck(ogps[0], {'type': OgPoset})
+            return ogps[0]
+        if len(ogps) > 2:
+            others = ogps[2:]
+            return OgPoset.gray(OgPoset.gray(ogps[0], ogps[1]), *others)
 
+        fst, snd = ogps[0], ogps[1]
+        for x in (fst, snd):
+            utils.typecheck(x, {'type': OgPoset})
         if len(fst) == 0 or len(snd) == 1:
             return fst
         if len(fst) == 1 or len(snd) == 0:
@@ -378,6 +398,53 @@ class OgPoset:
                               for z in snd.cofaces(y, sndsign(x.dim, sign))
                               })
                      for sign in ('-', '+')})
+        return OgPoset(face_data, coface_data,
+                       wfcheck=False, matchcheck=False)
+
+    @staticmethod
+    def join(*ogps):
+        """ Returns the join of a number of oriented graded posets. """
+        if len(ogps) == 0:
+            return OgPoset.empty()
+        if len(ogps) == 1:
+            utils.typecheck(ogps[0], {'type': OgPoset})
+            return ogps[0]
+        if len(ogps) > 2:
+            others = ogps[2:]
+            return OgPoset.join(OgPoset.join(ogps[0], ogps[1]), *others)
+
+        fst, snd = ogps[0], ogps[1]
+        for x in (fst, snd):
+            utils.typecheck(x, {'type': OgPoset})
+
+        if len(fst) == 0:
+            return snd
+        if len(snd) == 0:
+            return fst
+
+        fst_bot_face_data = [[{'-': set(), '+': set()}]] + fst.face_data
+        snd_bot_face_data = [[{'-': set(), '+': set()}]] + snd.face_data
+        for x in fst_bot_face_data[1]:
+            x['+'].add(0)
+        for x in snd_bot_face_data[1]:
+            x['+'].add(0)
+        fst_bot_coface_data = [[
+            {'-': set(), '+': {k for k in range(fst.size[0])}}
+            ]] + fst.coface_data
+        snd_bot_coface_data = [[
+            {'-': set(), '+': {k for k in range(snd.size[0])}}
+            ]] + snd.coface_data
+        fst_bot = OgPoset(fst_bot_face_data, fst_bot_coface_data,
+                          wfcheck=False, matchcheck=False)
+        snd_bot = OgPoset(snd_bot_face_data, snd_bot_coface_data,
+                          wfcheck=False, matchcheck=False)
+
+        join_bot = OgPoset.gray(fst_bot, snd_bot)
+        face_data = join_bot.face_data[1:]
+        for x in face_data[0]:
+            x['+'].clear()
+        coface_data = join_bot.coface_data[1:]
+
         return OgPoset(face_data, coface_data,
                        wfcheck=False, matchcheck=False)
 

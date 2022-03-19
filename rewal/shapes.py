@@ -210,6 +210,27 @@ class Shape(OgPoset):
             return Cube._Shape__upgrade(gray)
         return gray
 
+    @staticmethod
+    def join(*shapes):
+        for x in shapes:
+            utils.typecheck(x, {'type': Shape})
+        if len(shapes) == 0:
+            return Empty()
+        if len(shapes) == 1:
+            return shapes[0]
+
+        ogjoin = OgPoset.join(*shapes)
+        if len(ogjoin) == 3:  # check explicitly if it's arrow
+            return Arrow()
+        if ogjoin in shapes:
+            return ogjoin
+
+        join = Shape.__reorder(ogjoin).source
+        # Simplices are closed under joins
+        if all([isinstance(x, Simplex) for x in shapes]):
+            return Simplex._Shape__upgrade(join)
+        return join
+
     # Named shapes
     @staticmethod
     def empty():
@@ -222,6 +243,15 @@ class Shape(OgPoset):
     @staticmethod
     def arrow():
         return Arrow()
+
+    @staticmethod
+    def simplex(dim=-1):
+        utils.typecheck(dim, {
+            'type': int,
+            'st': lambda n: n >= -1,
+            'why': 'expecting integer >= -1'})
+        point = Point()
+        return Shape.join(*[point for _ in range(dim+1)])
 
     @staticmethod
     def cube(dim=0):
