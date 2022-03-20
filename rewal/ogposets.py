@@ -59,10 +59,10 @@ class OgPoset:
     def __init__(self, face_data, coface_data,
                  wfcheck=True, matchcheck=True):
         if wfcheck:
-            OgPoset.__wfcheck(face_data)
+            OgPoset._wfcheck(face_data)
 
         if matchcheck:
-            if not coface_data == OgPoset.__coface_from_face(face_data):
+            if not coface_data == OgPoset._coface_from_face(face_data):
                 raise ValueError("Face and coface data do not match.")
 
         self._face_data = face_data
@@ -217,8 +217,8 @@ class OgPoset:
     def from_face_data(cls, face_data,
                        wfcheck=True):
         if wfcheck:
-            cls.__wfcheck(face_data)
-        coface_data = cls.__coface_from_face(face_data)
+            cls._wfcheck(face_data)
+        coface_data = cls._coface_from_face(face_data)
 
         return cls(face_data, coface_data,
                    wfcheck=False, matchcheck=False)
@@ -452,7 +452,7 @@ class OgPoset:
 
     # Private methods
     @staticmethod
-    def __wfcheck(face_data):
+    def _wfcheck(face_data):
         """ Internal method checking that face data is well-formed. """
 
         utils.typecheck(face_data, {'type': list}, {
@@ -491,7 +491,7 @@ class OgPoset:
                             repr(n), repr(i))))
 
     @staticmethod
-    def __coface_from_face(face_data):
+    def _coface_from_face(face_data):
         """
         Internal method constructing coface data from face data.
         Face data is presumed to be well-formed.
@@ -647,7 +647,7 @@ class GrSubset:
     def __init__(self, support, ambient,
                  wfcheck=True):
         if wfcheck:
-            GrSubset.__wfcheck(support, ambient)
+            GrSubset._wfcheck(support, ambient)
 
         self._support = support
         self._ambient = ambient
@@ -792,7 +792,7 @@ class GrSubset:
 
     # Internal methods
     @staticmethod
-    def __wfcheck(support, ambient):
+    def _wfcheck(support, ambient):
         utils.typecheck(support, {'type': GrSet})
         utils.typecheck(ambient, {'type': OgPoset})
 
@@ -930,7 +930,7 @@ class OgMap:
     def __init__(self, source, target, mapping=None,
                  wfcheck=True):
         if wfcheck:
-            OgMap.__wfcheck(source, target, mapping)
+            OgMap._wfcheck(source, target, mapping)
 
         self._source = source
         self._target = target
@@ -958,7 +958,7 @@ class OgMap:
 
     def __setitem__(self, element, image):
         if element in self.source:
-            self.__extensioncheck(element, image)
+            self._extensioncheck(element, image)
             self._mapping[element.dim][element.pos] = image
         else:
             raise ValueError(utils.value_err(
@@ -1080,7 +1080,7 @@ class OgMap:
                      wfcheck=False)
 
     # Private methods.
-    def __extensioncheck(self, element, image):
+    def _extensioncheck(self, element, image):
         if image not in self.target:
             raise ValueError(utils.value_err(
                 image, 'not in target'))
@@ -1111,7 +1111,7 @@ class OgMap:
                             sign, repr(n))))
 
     @staticmethod
-    def __wfcheck(source, target, mapping):
+    def _wfcheck(source, target, mapping):
         for x in source, target:
             utils.typecheck(x, {'type': OgPoset})
         if mapping is not None:  # otherwise nothing else to check
@@ -1130,14 +1130,14 @@ class OgMap:
                     check_map[x] = mapping[x.dim][x.pos]
 
     @staticmethod
-    def __gray(fst, snd, *others):
+    def _gray(fst, snd, *others):
         """
         Used only as helper method for ShapeMap.gray; does not work
         on arbitrary OgMaps
         """
         if len(others) > 0:
-            return OgMap._OgMap__gray(
-                    OgMap._OgMap__gray(fst, snd), *others)
+            return OgMap._OgMap_gray(
+                    OgMap._OgMap_gray(fst, snd), *others)
 
         size1 = fst.target.size + [0 for _ in range(snd.target.dim)]
         size2 = snd.target.size + [0 for _ in range(fst.target.dim)]
@@ -1161,16 +1161,16 @@ class OgMap:
                 wfcheck=False)
 
     @staticmethod
-    def __join(fst, snd, *others):
+    def _join(fst, snd, *others):
         """
         Used only as helper method for ShapeMap.join; does not work
         on arbitrary OgMaps
         """
         if len(others) > 0:
-            return OgMap._OgMap__join(
-                    OgMap._OgMap__join(fst, snd), *others)
+            return OgMap._join(
+                    OgMap._join(fst, snd), *others)
 
-        join_bot = OgMap._OgMap__gray(
+        join_bot = OgMap._gray(
                 OgMap.bot(fst), OgMap.bot(snd))
         mapping = [
                 [El(x.dim - 1, x.pos) for x in n_data]

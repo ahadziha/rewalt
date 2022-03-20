@@ -108,13 +108,13 @@ class Shape(OgPoset):
         for x in snd[dim]:
             coface_data[dim][inclusion.snd[x].pos]['+'].add(0)
 
-        new_atom = Shape.__reorder(
+        new_atom = Shape._reorder(
                 OgPoset(face_data, coface_data,
                         wfcheck=False, matchcheck=False)).source
 
         # Recursion for positive opetopes
         if isinstance(fst, OpetopeTree) and isinstance(snd, Opetope):
-            new_atom = Opetope._Shape__upgrade(new_atom)
+            new_atom = Opetope._upgrade(new_atom)
 
         return new_atom
 
@@ -148,18 +148,18 @@ class Shape(OgPoset):
         if dim >= snd.dim:
             return fst
         pushout = span.pushout()
-        paste = Shape.__reorder(pushout.target).source
+        paste = Shape._reorder(pushout.target).source
 
         # Upgrade to named shape classes
         if isinstance(fst, Theta) and isinstance(snd, Theta):
             if isinstance(fst, GlobeString) and isinstance(snd, GlobeString) \
                     and fst.dim == snd.dim == dim+1:
-                return GlobeString._Shape__upgrade(paste)
-            return Theta._Shape__upgrade(paste)
+                return GlobeString._upgrade(paste)
+            return Theta._upgrade(paste)
 
         if isinstance(fst, OpetopeTree) and isinstance(snd, GlobeString) \
                 and fst.dim == snd.dim == dim+1:
-            return OpetopeTree._Shape__upgrade(paste)
+            return OpetopeTree._upgrade(paste)
 
         return paste
 
@@ -176,16 +176,16 @@ class Shape(OgPoset):
         if isinstance(shape, Point) and n == 1:
             return Arrow()
 
-        suspension = Shape.__reorder(
+        suspension = Shape._reorder(
                 OgPoset.suspend(shape, n)).source
 
         # Theta, GlobeString, Globe are closed under suspension
         if isinstance(shape, Theta):
             if isinstance(shape, GlobeString):
                 if isinstance(shape, Globe):
-                    return Globe._Shape__upgrade(suspension)
-                return GlobeString._Shape__upgrade(suspension)
-            return Theta._Shape__upgrade(suspension)
+                    return Globe._upgrade(suspension)
+                return GlobeString._upgrade(suspension)
+            return Theta._upgrade(suspension)
         return suspension
 
     @staticmethod
@@ -202,10 +202,10 @@ class Shape(OgPoset):
         if oggray in shapes:
             return oggray
 
-        gray = Shape.__reorder(oggray).source
+        gray = Shape._reorder(oggray).source
         # Cubes are closed under Gray products
         if all([isinstance(x, Cube) for x in shapes]):
-            return Cube._Shape__upgrade(gray)
+            return Cube._upgrade(gray)
         return gray
 
     @staticmethod
@@ -223,10 +223,10 @@ class Shape(OgPoset):
         if ogjoin in shapes:
             return ogjoin
 
-        join = Shape.__reorder(ogjoin).source
+        join = Shape._reorder(ogjoin).source
         # Simplices are closed under joins
         if all([isinstance(x, Simplex) for x in shapes]):
-            return Simplex._Shape__upgrade(join)
+            return Simplex._upgrade(join)
         return join
 
     # Named shapes
@@ -294,7 +294,7 @@ class Shape(OgPoset):
         boundary_ogmap = super().boundary_inclusion(sign, dim)
         if sign is None:
             return boundary_ogmap
-        reordering = Shape.__reorder(boundary_ogmap.source)
+        reordering = Shape._reorder(boundary_ogmap.source)
 
         return ShapeMap(reordering.then(boundary_ogmap),
                         wfcheck=False)
@@ -311,7 +311,7 @@ class Shape(OgPoset):
         underset = GrSubset(
                 GrSet(element), self,
                 wfcheck=False).closure()
-        reordering = Shape.__reorder(underset.as_map.source)
+        reordering = Shape._reorder(underset.as_map.source)
 
         return ShapeMap(reordering.then(underset.as_map),
                         wfcheck=False)
@@ -339,7 +339,7 @@ class Shape(OgPoset):
 
     # Private methods
     @staticmethod
-    def __reorder(shape):
+    def _reorder(shape):
         """
         Traverses all elements and returns an isomorphism
         from the shape with elements reordered in traversal order.
@@ -405,7 +405,7 @@ class Shape(OgPoset):
                     for x in n_data
                 ]
                 for n_data in mapping]
-        reordered = Shape.__upgrade(
+        reordered = Shape._upgrade(
                 OgPoset(face_data, coface_data,
                         wfcheck=False, matchcheck=False))
 
@@ -413,7 +413,7 @@ class Shape(OgPoset):
                      wfcheck=False)
 
     @classmethod
-    def __upgrade(cls, ogp):
+    def _upgrade(cls, ogp):
         """
         Forces upgrade of an OgPoset to the shape class.
         """
@@ -423,24 +423,24 @@ class Shape(OgPoset):
         return shape
 
     @classmethod
-    def __upgrademapsrc(cls, ogmap):
+    def _upgrademapsrc(cls, ogmap):
         """
         Upgrades the source of a map to the shape class.
         """
         return OgMap(
-                cls._Shape__upgrade(ogmap.source),
+                cls._upgrade(ogmap.source),
                 ogmap.target,
                 ogmap.mapping,
                 wfcheck=False)
 
     @classmethod
-    def __upgrademaptgt(cls, ogmap):
+    def _upgrademaptgt(cls, ogmap):
         """
         Upgrades the target of a map to the shape class.
         """
         return OgMap(
                 ogmap.source,
-                cls._Shape__upgrade(ogmap.target),
+                cls._upgrade(ogmap.target),
                 ogmap.mapping,
                 wfcheck=False)
 
@@ -667,18 +667,18 @@ class ShapeMap(OgMap):
         if len(maps) == 1:
             return maps[0]
 
-        gray = OgMap._OgMap__gray(*maps)
+        gray = OgMap._gray(*maps)
         if gray.source in [f.source for f in maps]:
             if gray.target in [f.target for f in maps]:
                 return gray
         if gray.source not in [f.source for f in maps]:
-            gray = Shape._Shape__reorder(gray.source).then(gray)
+            gray = Shape._reorder(gray.source).then(gray)
             if all([isinstance(x, Cube) for x in [f.source for f in maps]]):
-                gray = Cube._Shape__upgrademapsrc(gray)
+                gray = Cube._upgrademapsrc(gray)
         if gray.target not in [f.target for f in maps]:
-            gray = gray.then(Shape._Shape__reorder(gray.target).inv())
+            gray = gray.then(Shape._reorder(gray.target).inv())
             if all([isinstance(x, Cube) for x in [f.target for f in maps]]):
-                gray = Cube._Shape__upgrademaptgt(gray)
+                gray = Cube._upgrademaptgt(gray)
         return ShapeMap(gray,
                         wfcheck=False)
 
@@ -691,24 +691,24 @@ class ShapeMap(OgMap):
         if len(maps) == 1:
             return maps[0]
 
-        join = OgMap._OgMap__join(*maps)
+        join = OgMap._join(*maps)
         if join.source in [f.source for f in maps]:
             if join.target in [f.target for f in maps]:
                 return join
         if join.source not in [f.source for f in maps]:
-            join = Shape._Shape__reorder(join.source).then(join)
+            join = Shape._reorder(join.source).then(join)
             if all([isinstance(x, Simplex) for x in [f.source for f in maps]]):
                 if len(join.source) == 3:
-                    join = Arrow._Shape__upgrademapsrc(join)
+                    join = Arrow._upgrademapsrc(join)
                 else:
-                    join = Simplex._Shape__upgrademapsrc(join)
+                    join = Simplex._upgrademapsrc(join)
         if join.target not in [f.target for f in maps]:
-            join = join.then(Shape._Shape__reorder(join.target).inv())
+            join = join.then(Shape._reorder(join.target).inv())
             if all([isinstance(x, Simplex) for x in [f.target for f in maps]]):
                 if len(join.target) == 3:
-                    join = Arrow._Shape__upgrademaptgt(join)
+                    join = Arrow._upgrademaptgt(join)
                 else:
-                    join = Simplex._Shape__upgrademaptgt(join)
+                    join = Simplex._upgrademaptgt(join)
 
         return ShapeMap(join,
                         wfcheck=False)
