@@ -3,7 +3,7 @@ from pytest import raises
 from rewal import utils
 from rewal.ogposets import (El, OgMap)
 from rewal.shapes import (Shape, ShapeMap, Theta,
-                          atom, paste, suspend)
+                          atom, paste)
 
 
 empty = Shape.empty()
@@ -92,8 +92,8 @@ def test_Shape_paste():
 
 
 def test_Shape_suspend():
-    assert suspend(whisker_l).size == [2] + whisker_l.size
-    assert suspend(arrow) == globe2
+    assert Shape.suspend(whisker_l).size == [2] + whisker_l.size
+    assert Shape.suspend(arrow) == globe2
 
 
 def test_Shape_gray():

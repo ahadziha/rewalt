@@ -229,6 +229,27 @@ class Shape(OgPoset):
             return Simplex._upgrade(join)
         return join
 
+    @staticmethod
+    def dual(shape, *indices):
+        dual = Shape._reorder(OgPoset.dual(shape, *indices)).source
+        if shape == dual:
+            return shape
+        # Theta is closed (but not invariant) under dualities
+        if isinstance(shape, Theta):
+            return Theta._upgrade(dual)
+        return dual
+
+    def op(self):
+        odd = [n for n in range(self.dim + 1) if n % 2 == 1]
+        return Shape.dual(self, *odd)
+
+    def co(self):
+        even = [n for n in range(self.dim + 1) if n % 2 == 0]
+        return Shape.dual(self, *even)
+
+    def coop(self):
+        return Shape.dual(self)
+
     # Named shapes
     @staticmethod
     def empty():
@@ -720,7 +741,3 @@ def atom(fst, snd):
 
 def paste(fst, snd, dim=None):
     return Shape.paste(fst, snd, dim)
-
-
-def suspend(shape, n=1):
-    return Shape.suspend(shape, n)

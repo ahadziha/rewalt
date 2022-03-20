@@ -450,6 +450,33 @@ class OgPoset:
         return OgPoset(face_data, coface_data,
                        wfcheck=False, matchcheck=False)
 
+    @staticmethod
+    def dual(ogp, *indices):
+        """
+        Reverses the orientation in the specified dimensions.
+        """
+        for x in indices:
+            utils.typecheck(x, {'type': int})
+        if len(indices) == 0:  # default is dualising in all dimensions
+            indices = range(ogp.dim + 1)
+
+        face_data = [
+                [
+                    {sign: x[utils.flip(sign)] if n in indices else x[sign]
+                     for sign in ('-', '+')}
+                    for x in n_data
+                ]
+                for n, n_data in enumerate(ogp.face_data)]
+        coface_data = [
+                [
+                    {sign: x[utils.flip(sign)] if n+1 in indices else x[sign]
+                     for sign in ('-', '+')}
+                    for x in n_data
+                ]
+                for n, n_data in enumerate(ogp.coface_data)]
+        return OgPoset(face_data, coface_data,
+                       wfcheck=False, matchcheck=True)
+
     # Private methods
     @staticmethod
     def _wfcheck(face_data):
