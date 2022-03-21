@@ -103,6 +103,10 @@ def test_Shape_inflate():
     assert simplex2.inflate().source.boundary_inclusion('-').source == \
         simplex2
 
+    whisker_l = Shape.arrow().paste(Shape.globe(2))
+    assert whisker_l.inflate().source.boundary_inclusion('+').source == \
+        whisker_l
+
 
 def test_Shape_under():
     globe2 = Shape.globe(2)
