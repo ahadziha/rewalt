@@ -107,7 +107,7 @@ class OgPoset:
         return OgPoset.disjoint_union(self, other)
 
     def __mul__(self, other):
-        """ Multiplication returns the Gray product. """
+        """ Returns the Gray product. """
         return self.gray(other)
 
     def __pow__(self, other):
@@ -115,11 +115,15 @@ class OgPoset:
         return self.__class__.gray(*[self for _ in range(other)])
 
     def __rshift__(self, other):
-        """ Shift returns the join. """
+        """ Returns the join. """
         return self.join(other)
 
     def __lshift__(self, other):
         return other.join(self)
+
+    def __invert__(self):
+        """ Returns the dual. """
+        return self.dual()
 
     @property
     def face_data(self):
