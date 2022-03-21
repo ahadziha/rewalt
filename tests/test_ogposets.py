@@ -260,12 +260,6 @@ def test_OgPoset_boundary_inclusion():
     assert whisker.boundary_inclusion('-', 0).source == point
 
 
-def test_OgPoset_boundary():
-    assert whisker.boundary().size == [3, 3]
-    assert whisker.boundary('-', 3) == whisker
-    assert whisker.boundary('+', 1).size == [3, 2]
-
-
 def test_OgPoset_coproduct():
     assert OgPoset.coproduct(point, point).iscospan
     assert OgPoset.coproduct(point, whisker).snd.isinjective
@@ -660,11 +654,6 @@ def test_OgMap_inv():
         test_injection.inv()
     assert str(err.value) == utils.value_err(
             test_injection, 'not an isomorphism')
-
-
-def test_OgMap_compose():
-    assert OgMap.compose(test_injection) == test_injection
-    assert OgMap.compose(test_injection, test_collapse) == test_composite
 
 
 """ Tests for OgMapPair """

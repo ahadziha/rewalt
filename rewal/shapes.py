@@ -20,21 +20,6 @@ class Shape(OgPoset):
                 self.face_data == other.face_data and \
                 self.coface_data == other.coface_data
 
-    def __mul__(self, other):
-        """ Multiplication returns the Gray product. """
-        return Shape.gray(self, other)
-
-    def __pow__(self, other):
-        utils.typecheck(other, {'type': int})
-        return Shape.gray(*[self for _ in range(other)])
-
-    def __rshift__(self, other):
-        """ Shift returns the join. """
-        return Shape.join(self, other)
-
-    def __lshift__(self, other):
-        return Shape.join(other, self)
-
     @property
     def isatom(self):
         """
@@ -118,6 +103,9 @@ class Shape(OgPoset):
 
         return new_atom
 
+    def _atom(self, other):
+        return Shape.atom(self, other)
+
     @staticmethod
     def paste(fst, snd, dim=None):
         """
@@ -162,6 +150,9 @@ class Shape(OgPoset):
             return OpetopeTree._upgrade(paste)
 
         return paste
+
+    def _paste(self, other, dim=None):
+        return Shape.paste(self, other, dim)
 
     # Other constructors
     @staticmethod
@@ -238,58 +229,6 @@ class Shape(OgPoset):
         if isinstance(shape, Theta):
             return Theta._upgrade(dual)
         return dual
-
-    def op(self):
-        odd = [n for n in range(self.dim + 1) if n % 2 == 1]
-        return Shape.dual(self, *odd)
-
-    def co(self):
-        even = [n for n in range(self.dim + 1) if n % 2 == 0]
-        return Shape.dual(self, *even)
-
-    def coop(self):
-        return Shape.dual(self)
-
-    @staticmethod
-    def inflate(shape, collapsed=None):
-        """
-        Forms a cylinder on a shape with some "collapsed" sides, specified
-        by a closed subset of the boundary of the shape, and returns its
-        projection on the original shape.
-        Used in constructing units and unitors on diagrams.
-        """
-        utils.typecheck(shape, {'type': Shape})
-        if collapsed is not None:
-            utils.typecheck(collapsed, {
-                'type': Closed,
-                'st': lambda x: x.ambient == shape and x.support.issubset(
-                    shape.all().boundary()),
-                'why': "expecting a closed subset of the shape's boundary"})
-        else:
-            collapsed = shape.all().boundary()  # Default is whole boundary.
-
-        asmap = collapsed.as_map
-        arrow = Shape.arrow()
-        map1 = OgMap.gray(arrow.id(), asmap)
-        map2 = OgMap.gray(arrow.terminal(), asmap.source.id())
-        pushout = OgMapPair(map1, map2).pushout()
-
-        # We use the cylinder projection map and the first leg of the pushout
-        # to define the projection map.
-        cyl_proj = OgMap.gray(arrow.terminal(), shape.id())
-        collapse = pushout.fst
-        mapping = [
-                [None for _ in n_data]
-                for n_data in pushout.target.face_data]
-        for x in collapse.source:
-            y = collapse[x]
-            mapping[y.dim][y.pos] = cyl_proj[x]
-
-        ogproj = OgMap(collapse.target, shape, mapping,
-                       wfcheck=False)
-        return ShapeMap(
-                Shape._reorder(collapse.target).then(ogproj),
-                wfcheck=False)
 
     # Named shapes
     @staticmethod
@@ -399,6 +338,45 @@ class Shape(OgPoset):
                       wfcheck=False),
                 wfcheck=False)
 
+    def inflate(self, collapsed=None):
+        """
+        Forms a cylinder on a shape with some "collapsed" sides, specified
+        by a closed subset of the boundary of the shape, and returns its
+        projection on the original shape.
+        Used in constructing units and unitors on diagrams.
+        """
+        if collapsed is not None:
+            utils.typecheck(collapsed, {
+                'type': Closed,
+                'st': lambda x: x.ambient == self and x.support.issubset(
+                    self.all().boundary()),
+                'why': "expecting a closed subset of the shape's boundary"})
+        else:
+            collapsed = self.all().boundary()  # Default is whole boundary.
+
+        asmap = collapsed.as_map
+        arrow = Shape.arrow()
+        map1 = OgMap.gray(arrow.id(), asmap)
+        map2 = OgMap.gray(arrow.terminal(), asmap.source.id())
+        pushout = OgMapPair(map1, map2).pushout()
+
+        # We use the cylinder projection map and the first leg of the pushout
+        # to define the projection map.
+        cyl_proj = OgMap.gray(arrow.terminal(), self.id())
+        collapse = pushout.fst
+        mapping = [
+                [None for _ in n_data]
+                for n_data in pushout.target.face_data]
+        for x in collapse.source:
+            y = collapse[x]
+            mapping[y.dim][y.pos] = cyl_proj[x]
+
+        ogproj = OgMap(collapse.target, self, mapping,
+                       wfcheck=False)
+        return ShapeMap(
+                Shape._reorder(collapse.target).then(ogproj),
+                wfcheck=False)
+
     # Private methods
     @staticmethod
     def _reorder(shape):
@@ -480,8 +458,8 @@ class Shape(OgPoset):
         Forces upgrade of an OgPoset to the shape class.
         """
         shape = OgPoset.__new__(cls)
-        shape._face_data = ogp.face_data
-        shape._coface_data = ogp.coface_data
+        shape.__init__(ogp.face_data, ogp.coface_data,
+                       wfcheck=False, matchcheck=False)
         return shape
 
     @classmethod
@@ -707,19 +685,6 @@ class ShapeMap(OgMap):
         super().__init__(ogmap.source, ogmap.target, ogmap.mapping,
                          wfcheck=False)
 
-    def __mul__(self, other):
-        return ShapeMap.gray(self, other)
-
-    def __pow__(self, other):
-        utils.typecheck(other, {'type': int})
-        return ShapeMap.gray(*[self for _ in range(other)])
-
-    def __rshift__(self, other):
-        return ShapeMap.join(self, other)
-
-    def __lshift__(self, other):
-        return ShapeMap.join(other, self)
-
     @staticmethod
     def gray(*maps):
         for f in maps:
@@ -774,11 +739,3 @@ class ShapeMap(OgMap):
 
         return ShapeMap(join,
                         wfcheck=False)
-
-
-def atom(fst, snd):
-    return Shape.atom(fst, snd)
-
-
-def paste(fst, snd, dim=None):
-    return Shape.paste(fst, snd, dim)

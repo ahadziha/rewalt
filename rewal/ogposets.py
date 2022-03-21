@@ -68,6 +68,16 @@ class OgPoset:
         self._face_data = face_data
         self._coface_data = coface_data
 
+        # Enable method chaining syntax
+        self.gray = self._gray
+        self.join = self._join
+        self.suspend = self._suspend
+        self.dual = self._dual
+        if hasattr(self, 'atom'):
+            self.atom = self._atom
+        if hasattr(self, 'paste'):
+            self.paste = self._paste
+
     def __str__(self):
         return "{} with {} elements".format(
                 type(self).__name__, str(self.size))
@@ -95,6 +105,21 @@ class OgPoset:
 
     def __add__(self, other):
         return OgPoset.disjoint_union(self, other)
+
+    def __mul__(self, other):
+        """ Multiplication returns the Gray product. """
+        return self.gray(other)
+
+    def __pow__(self, other):
+        utils.typecheck(other, {'type': int})
+        return self.__class__.gray(*[self for _ in range(other)])
+
+    def __rshift__(self, other):
+        """ Shift returns the join. """
+        return self.join(other)
+
+    def __lshift__(self, other):
+        return other.join(self)
 
     @property
     def face_data(self):
@@ -203,15 +228,14 @@ class OgPoset:
         """ Returns the image of the whole OgPoset through an OgMap. """
         return self.all().image(ogmap)
 
+    def boundary(self, sign=None, dim=None):
+        return self.all().boundary(sign, dim)
+
     def boundary_inclusion(self, sign=None, dim=None):
         """ Returns the inclusion of the n-boundary into the OgPoset. """
         if isinstance(dim, int) and dim >= self.dim:
             return self.id()
-        return self.all().boundary(sign, dim).as_map
-
-    def boundary(self, sign=None, dim=None):
-        """ Returns the n-boundary as another OgPoset. """
-        return self.boundary_inclusion(sign, dim).source
+        return self.boundary(sign, dim).as_map
 
     @classmethod
     def from_face_data(cls, face_data,
@@ -339,6 +363,9 @@ class OgPoset:
         return OgPoset(face_data, coface_data,
                        wfcheck=False, matchcheck=False)
 
+    def _suspend(self, n=1):
+        return self.__class__.suspend(self, n)
+
     @staticmethod
     def gray(*ogps):
         """
@@ -401,20 +428,22 @@ class OgPoset:
         return OgPoset(face_data, coface_data,
                        wfcheck=False, matchcheck=False)
 
-    @staticmethod
-    def bot(ogp):
+    def _gray(self, *others):
+        return self.__class__.gray(self, *others)
+
+    def bot(self):
         """
         Returns the OgPoset augmented with a bottom element,
         covered with positive orientation.
         """
-        if len(ogp) == 0:
+        if len(self) == 0:
             return OgPoset.point()
-        face_data = [[{'-': set(), '+': set()}]] + ogp.face_data
+        face_data = [[{'-': set(), '+': set()}]] + self.face_data
         for x in face_data[1]:
             x['+'].add(0)
         coface_data = [[
-            {'-': set(), '+': {k for k in range(ogp.size[0])}}
-            ]] + ogp.coface_data
+            {'-': set(), '+': {k for k in range(self.size[0])}}
+            ]] + self.coface_data
         return OgPoset(face_data, coface_data,
                        wfcheck=False, matchcheck=False)
 
@@ -440,8 +469,8 @@ class OgPoset:
             return fst
 
         join_bot = OgPoset.gray(
-                OgPoset.bot(fst),
-                OgPoset.bot(snd))
+                fst.bot(),
+                snd.bot())
         face_data = join_bot.face_data[1:]
         for x in face_data[0]:
             x['+'].clear()
@@ -449,6 +478,9 @@ class OgPoset:
 
         return OgPoset(face_data, coface_data,
                        wfcheck=False, matchcheck=False)
+
+    def _join(self, *others):
+        return self.__class__.join(self, *others)
 
     @staticmethod
     def dual(ogp, *dims):
@@ -476,6 +508,17 @@ class OgPoset:
                 for n, n_data in enumerate(ogp.coface_data)]
         return OgPoset(face_data, coface_data,
                        wfcheck=False, matchcheck=True)
+
+    def _dual(self, *dims):
+        return self.__class__.dual(self, *dims)
+
+    def op(self):
+        odds = [n for n in range(self.dim + 1) if n % 2 == 1]
+        return self.dual(*odds)
+
+    def co(self):
+        evens = [n for n in range(self.dim + 1) if n % 2 == 0]
+        return self.dual(*evens)
 
     # Private methods
     @staticmethod
@@ -966,6 +1009,10 @@ class OgMap:
                        for n in range(len(source.size))]
         self._mapping = mapping
 
+        # Enable method chaining syntax
+        self.gray = self._gray
+        self.join = self._join
+
     def __eq__(self, other):
         return type(self) == type(other) and \
                 self.source == other.source and \
@@ -990,6 +1037,19 @@ class OgMap:
         else:
             raise ValueError(utils.value_err(
                 element, 'not in source'))
+
+    def __mul__(self, other):
+        return self.gray(other)
+
+    def __pow__(self, other):
+        utils.typecheck(other, {'type': int})
+        return self.__class__.gray(*[self for _ in range(other)])
+
+    def __rshift__(self, other):
+        return self.join(other)
+
+    def __lshift__(self, other):
+        return other.join(self)
 
     @property
     def source(self):
@@ -1084,27 +1144,87 @@ class OgMap:
         """ The image of the source through the mapping. """
         return self.source.all().image(self)
 
-    @staticmethod
-    def compose(one, *others):
-        utils.typecheck(one, {'type': OgMap})
-        if len(others) > 0:
-            return one.then(*others)
-        return one
-
-    @staticmethod
-    def bot(ogmap):
+    def bot(self):
         """
         Extension of OgPoset.bot to maps.
         """
-        utils.typecheck(ogmap, {'type': OgMap})
-        source = OgPoset.bot(ogmap.source)
-        target = OgPoset.bot(ogmap.target)
+        source = self.source.bot()
+        target = self.target.bot()
         mapping = [[El(0, 0)]] + [
                 [El(x.dim + 1, x.pos) for x in n_data]
-                for n_data in ogmap.mapping]
+                for n_data in self.mapping]
 
         return OgMap(source, target, mapping,
                      wfcheck=False)
+
+    @staticmethod
+    def gray(*maps):
+        for f in maps:
+            utils.typecheck(f, {'type': OgMap})
+        if len(maps) == 0:
+            return OgMap.point().id()
+        if len(maps) == 1:
+            return maps[0]
+
+        fst, snd = maps[0], maps[1]
+        if len(maps) > 2:
+            return OgMap.gray(
+                    OgMap.gray(fst, snd), *maps[2:])
+
+        size1 = fst.target.size + [0 for _ in range(snd.target.dim)]
+        size2 = snd.target.size + [0 for _ in range(fst.target.dim)]
+
+        def pair(x, y):
+            if x is None or y is None:
+                return None
+            dim = x.dim + y.dim
+            pos = y.pos + x.pos*size2[y.dim] + sum(
+                    [size1[k]*size2[dim-k] for k in range(x.dim)])
+            return El(dim, pos)
+
+        mapping = [[] for _ in range(fst.source.dim + snd.source.dim + 1)]
+        for x in fst.source:
+            for y in snd.source:
+                mapping[x.dim + y.dim].append(
+                    pair(fst[x], snd[y]))
+
+        return OgMap(
+                OgPoset.gray(fst.source, snd.source),
+                OgPoset.gray(fst.target, snd.target),
+                mapping,
+                wfcheck=False)
+
+    def _gray(self, *others):
+        return self.__class__.gray(self, *others)
+
+    @staticmethod
+    def join(*maps):
+        for f in maps:
+            utils.typecheck(f, {'type': OgMap})
+        if len(maps) == 0:
+            return OgPoset.empty().id()
+        if len(maps) == 1:
+            return maps[0]
+
+        fst, snd = maps[0], maps[1]
+        if len(maps) > 2:
+            return OgMap.join(
+                    OgMap.join(fst, snd), *maps[2:])
+
+        join_bot = OgMap.gray(
+                fst.bot(), snd.bot())
+        mapping = [
+                [El(x.dim - 1, x.pos) for x in n_data]
+                for n_data in join_bot.mapping[1:]]
+
+        return OgMap(
+                OgPoset.join(fst.source, snd.source),
+                OgPoset.join(fst.target, snd.target),
+                mapping,
+                wfcheck=False)
+
+    def _join(self, *others):
+        return self.__class__.join(self, others)
 
     # Private methods.
     def _extensioncheck(self, element, image):
@@ -1155,69 +1275,6 @@ class OgMap:
             for x in source:
                 if mapping[x.dim][x.pos] is not None:
                     check_map[x] = mapping[x.dim][x.pos]
-
-    @staticmethod
-    def gray(*maps):
-        for f in maps:
-            utils.typecheck(f, {'type': OgMap})
-        if len(maps) == 0:
-            return OgMap.point().id()
-        if len(maps) == 1:
-            return maps[0]
-
-        fst, snd = maps[0], maps[1]
-        if len(maps) > 2:
-            return OgMap.gray(
-                    OgMap.gray(fst, snd), *maps[2:])
-
-        size1 = fst.target.size + [0 for _ in range(snd.target.dim)]
-        size2 = snd.target.size + [0 for _ in range(fst.target.dim)]
-
-        def pair(x, y):
-            if x is None or y is None:
-                return None
-            dim = x.dim + y.dim
-            pos = y.pos + x.pos*size2[y.dim] + sum(
-                    [size1[k]*size2[dim-k] for k in range(x.dim)])
-            return El(dim, pos)
-
-        mapping = [[] for _ in range(fst.source.dim + snd.source.dim + 1)]
-        for x in fst.source:
-            for y in snd.source:
-                mapping[x.dim + y.dim].append(
-                    pair(fst[x], snd[y]))
-
-        return OgMap(
-                OgPoset.gray(fst.source, snd.source),
-                OgPoset.gray(fst.target, snd.target),
-                mapping,
-                wfcheck=False)
-
-    @staticmethod
-    def join(*maps):
-        for f in maps:
-            utils.typecheck(f, {'type': OgMap})
-        if len(maps) == 0:
-            return OgPoset.empty().id()
-        if len(maps) == 1:
-            return maps[0]
-
-        fst, snd = maps[0], maps[1]
-        if len(maps) > 2:
-            return OgMap.join(
-                    OgMap.join(fst, snd), *maps[2:])
-
-        join_bot = OgMap.gray(
-                OgMap.bot(fst), OgMap.bot(snd))
-        mapping = [
-                [El(x.dim - 1, x.pos) for x in n_data]
-                for n_data in join_bot.mapping[1:]]
-
-        return OgMap(
-                OgPoset.join(fst.source, snd.source),
-                OgPoset.join(fst.target, snd.target),
-                mapping,
-                wfcheck=False)
 
 
 class OgMapPair(tuple):
@@ -1301,7 +1358,10 @@ class OgMapPair(tuple):
                 self,
                 'expecting a parallel pair of total maps'))
 
-        mapping = self.target.id().mapping
+        mapping = [
+                [El(n, k) for k, x in enumerate(n_data)]
+                for n, n_data in enumerate(self.target.face_data)]
+
         to_delete = GrSet()
         shift = [[0 for _ in n_data] for n_data in mapping]
 
