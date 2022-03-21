@@ -102,6 +102,13 @@ def test_Shape_gray():
     assert (arrow * arrow) * arrow == arrow * (arrow * arrow)
 
 
+def test_Shape_inflate():
+    assert Shape.inflate(binary).source.boundary('-') == \
+        binary
+    assert Shape.inflate(whisker_l).source.boundary('+') == \
+        whisker_l
+
+
 def test_Shape_under():
     assert whisker_l.under(El(2, 0)).source == globe2
     assert associator.under(El(2, 1)).source == binary

@@ -451,25 +451,25 @@ class OgPoset:
                        wfcheck=False, matchcheck=False)
 
     @staticmethod
-    def dual(ogp, *indices):
+    def dual(ogp, *dims):
         """
         Reverses the orientation in the specified dimensions.
         """
-        for x in indices:
+        for x in dims:
             utils.typecheck(x, {'type': int})
-        if len(indices) == 0:  # default is dualising in all dimensions
-            indices = range(ogp.dim + 1)
+        if len(dims) == 0:  # default is dualising in all dimensions
+            dims = range(ogp.dim + 1)
 
         face_data = [
                 [
-                    {sign: x[utils.flip(sign)] if n in indices else x[sign]
+                    {sign: x[utils.flip(sign)] if n in dims else x[sign]
                      for sign in ('-', '+')}
                     for x in n_data
                 ]
                 for n, n_data in enumerate(ogp.face_data)]
         coface_data = [
                 [
-                    {sign: x[utils.flip(sign)] if n+1 in indices else x[sign]
+                    {sign: x[utils.flip(sign)] if n+1 in dims else x[sign]
                      for sign in ('-', '+')}
                     for x in n_data
                 ]
@@ -1157,19 +1157,25 @@ class OgMap:
                     check_map[x] = mapping[x.dim][x.pos]
 
     @staticmethod
-    def _gray(fst, snd, *others):
-        """
-        Used only as helper method for ShapeMap.gray; does not work
-        on arbitrary OgMaps
-        """
-        if len(others) > 0:
-            return OgMap._OgMap_gray(
-                    OgMap._OgMap_gray(fst, snd), *others)
+    def gray(*maps):
+        for f in maps:
+            utils.typecheck(f, {'type': OgMap})
+        if len(maps) == 0:
+            return OgMap.point().id()
+        if len(maps) == 1:
+            return maps[0]
+
+        fst, snd = maps[0], maps[1]
+        if len(maps) > 2:
+            return OgMap.gray(
+                    OgMap.gray(fst, snd), *maps[2:])
 
         size1 = fst.target.size + [0 for _ in range(snd.target.dim)]
         size2 = snd.target.size + [0 for _ in range(fst.target.dim)]
 
         def pair(x, y):
+            if x is None or y is None:
+                return None
             dim = x.dim + y.dim
             pos = y.pos + x.pos*size2[y.dim] + sum(
                     [size1[k]*size2[dim-k] for k in range(x.dim)])
@@ -1188,16 +1194,20 @@ class OgMap:
                 wfcheck=False)
 
     @staticmethod
-    def _join(fst, snd, *others):
-        """
-        Used only as helper method for ShapeMap.join; does not work
-        on arbitrary OgMaps
-        """
-        if len(others) > 0:
-            return OgMap._join(
-                    OgMap._join(fst, snd), *others)
+    def join(*maps):
+        for f in maps:
+            utils.typecheck(f, {'type': OgMap})
+        if len(maps) == 0:
+            return OgPoset.empty().id()
+        if len(maps) == 1:
+            return maps[0]
 
-        join_bot = OgMap._gray(
+        fst, snd = maps[0], maps[1]
+        if len(maps) > 2:
+            return OgMap.join(
+                    OgMap.join(fst, snd), *maps[2:])
+
+        join_bot = OgMap.gray(
                 OgMap.bot(fst), OgMap.bot(snd))
         mapping = [
                 [El(x.dim - 1, x.pos) for x in n_data]
@@ -1284,37 +1294,40 @@ class OgMapPair(tuple):
     def coequaliser(self,
                     wfcheck=True):
         """
-        Returns the coequaliser of a pair of injective total maps,
-        if it exists.
+        Returns the coequaliser of a pair of total maps, if it exists.
         """
-        if not (self.isparallel and self.istotal and self.isinjective):
+        if not (self.isparallel and self.istotal):
             raise ValueError(utils.value_err(
                 self,
-                'expecting a parallel pair of injective total maps'))
+                'expecting a parallel pair of total maps'))
 
         mapping = self.target.id().mapping
         to_delete = GrSet()
-        for x in self.source:
-            if self.fst[x] != self.snd[x]:
-                to_delete.add(self.snd[x])
-                mapping[self.snd[x].dim][self.snd[x].pos] = self.fst[x]
+        shift = [[0 for _ in n_data] for n_data in mapping]
 
-        # Shift assignments following deletion of elements
-        shift_list = [[0 for _ in n_data]
-                      for n_data in mapping]
-        for x in to_delete:
-            for k, y in enumerate(mapping[x.dim]):
-                if y.pos >= x.pos:
-                    shift_list[x.dim][k] -= 1
+        for x in self.source:
+            x1, x2 = self.fst[x], self.snd[x]
+            fst, snd = mapping[x1.dim][x1.pos], mapping[x2.dim][x2.pos]
+            if fst != snd:
+                if fst.dim == snd.dim:
+                    fst, snd = (fst, snd) if fst.pos < snd.pos else (snd, fst)
+                else:
+                    fst, snd = (fst, snd) if fst.dim < snd.dim else (snd, fst)
+                if snd not in to_delete:
+                    to_delete.add(snd)
+                    for k in range(snd.pos, len(shift[snd.dim])):
+                        shift[snd.dim][k] -= 1
+                mapping[snd.dim][snd.pos] = mapping[fst.dim][fst.pos]
         mapping = [
-                [x.shifted(k) for x, k in zip(n_data, n_shifts)]
-                for n_data, n_shifts in zip(mapping, shift_list)]
+                [x.shifted(shift[x.dim][x.pos]) for x in n_data]
+                for n_data in mapping]
 
         face_data = [
                 [
                     {sign:
-                        {mapping[n-1][j].pos for j in x[sign]}
-                     for sign in x}
+                        {mapping[n-1][j].pos
+                         for j in x[sign] if mapping[n-1][j].dim == n-1}
+                     for sign in ('-', '+')}
                     for k, x in enumerate(n_data) if El(n, k) not in to_delete
                 ]
                 for n, n_data in enumerate(self.target.face_data)]
@@ -1325,10 +1338,9 @@ class OgMapPair(tuple):
     def pushout(self,
                 wfcheck=True):
         """
-        Returns the pushout of a span of injective total maps, if it
-        exists.
+        Returns the pushout of a span of total maps, if it exists.
         """
-        if not (self.isspan and self.istotal and self.isinjective):
+        if not (self.isspan and self.istotal):
             raise ValueError(utils.value_err(
                 self,
                 'expecting a span of injective total maps'))

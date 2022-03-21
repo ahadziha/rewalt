@@ -3,7 +3,7 @@ Implements shapes of cells and diagrams.
 """
 
 from rewal import utils
-from rewal.ogposets import (El, OgPoset, GrSet, GrSubset,
+from rewal.ogposets import (El, OgPoset, GrSet, GrSubset, Closed,
                             OgMap, OgMapPair)
 
 
@@ -88,8 +88,8 @@ class Shape(OgPoset):
                 snd, 'output boundary does not match '
                 'output boundary of {}'.format(repr(fst))))
 
-        glue_in = in_span.pushout()
-        glue_out = out_span.then(glue_in).coequaliser()
+        glue_in = in_span.pushout(wfcheck=False)
+        glue_out = out_span.then(glue_in).coequaliser(wfcheck=False)
         inclusion = glue_in.then(glue_out)
 
         sphere = inclusion.target
@@ -147,7 +147,7 @@ class Shape(OgPoset):
             return snd
         if dim >= snd.dim:
             return fst
-        pushout = span.pushout()
+        pushout = span.pushout(wfcheck=False)
         paste = Shape._reorder(pushout.target).source
 
         # Upgrade to named shape classes
@@ -230,8 +230,8 @@ class Shape(OgPoset):
         return join
 
     @staticmethod
-    def dual(shape, *indices):
-        dual = Shape._reorder(OgPoset.dual(shape, *indices)).source
+    def dual(shape, *dims):
+        dual = Shape._reorder(OgPoset.dual(shape, *dims)).source
         if shape == dual:
             return shape
         # Theta is closed (but not invariant) under dualities
@@ -249,6 +249,47 @@ class Shape(OgPoset):
 
     def coop(self):
         return Shape.dual(self)
+
+    @staticmethod
+    def inflate(shape, collapsed=None):
+        """
+        Forms a cylinder on a shape with some "collapsed" sides, specified
+        by a closed subset of the boundary of the shape, and returns its
+        projection on the original shape.
+        Used in constructing units and unitors on diagrams.
+        """
+        utils.typecheck(shape, {'type': Shape})
+        if collapsed is not None:
+            utils.typecheck(collapsed, {
+                'type': Closed,
+                'st': lambda x: x.ambient == shape and x.support.issubset(
+                    shape.all().boundary()),
+                'why': "expecting a closed subset of the shape's boundary"})
+        else:
+            collapsed = shape.all().boundary()  # Default is whole boundary.
+
+        asmap = collapsed.as_map
+        arrow = Shape.arrow()
+        map1 = OgMap.gray(arrow.id(), asmap)
+        map2 = OgMap.gray(arrow.terminal(), asmap.source.id())
+        pushout = OgMapPair(map1, map2).pushout()
+
+        # We use the cylinder projection map and the first leg of the pushout
+        # to define the projection map.
+        cyl_proj = OgMap.gray(arrow.terminal(), shape.id())
+        collapse = pushout.fst
+        mapping = [
+                [None for _ in n_data]
+                for n_data in pushout.target.face_data]
+        for x in collapse.source:
+            y = collapse[x]
+            mapping[y.dim][y.pos] = cyl_proj[x]
+
+        ogproj = OgMap(collapse.target, shape, mapping,
+                       wfcheck=False)
+        return ShapeMap(
+                Shape._reorder(collapse.target).then(ogproj),
+                wfcheck=False)
 
     # Named shapes
     @staticmethod
@@ -688,7 +729,7 @@ class ShapeMap(OgMap):
         if len(maps) == 1:
             return maps[0]
 
-        gray = OgMap._gray(*maps)
+        gray = OgMap.gray(*maps)
         if gray.source in [f.source for f in maps]:
             if gray.target in [f.target for f in maps]:
                 return gray
@@ -712,7 +753,7 @@ class ShapeMap(OgMap):
         if len(maps) == 1:
             return maps[0]
 
-        join = OgMap._join(*maps)
+        join = OgMap.join(*maps)
         if join.source in [f.source for f in maps]:
             if join.target in [f.target for f in maps]:
                 return join
