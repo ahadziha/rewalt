@@ -358,7 +358,7 @@ class Shape(OgPoset):
         arrow = Shape.arrow()
         map1 = OgMap.gray(arrow.id(), asmap)
         map2 = OgMap.gray(arrow.terminal(), asmap.source.id())
-        pushout = OgMapPair(map1, map2).pushout()
+        pushout = OgMapPair(map1, map2).pushout(wfcheck=False)
 
         # We use the cylinder projection map and the first leg of the pushout
         # to define the projection map.
