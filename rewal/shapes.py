@@ -743,15 +743,19 @@ class ShapeMap(OgMap):
     def dual(shapemap, *dims):
         utils.typecheck(shapemap, {'type': ShapeMap})
 
-        dual = OgMap.dual(shapemap)
-        if dual.source != shapemap.source:
-            dual = Shape._reorder(dual.source).then(dual)
+        ogdual = OgMap.dual(shapemap)
+        dual = Shape._reorder(ogdual.source).then(ogdual).then(
+                Shape._reorder(ogdual.target).inv())
+        if shapemap.source == dual.source:
+            dual = shapemap.source.__class__._upgrademapsrc(shapemap)
+        else:
             if isinstance(shapemap.source, Theta):
-                Theta._upgrademapsrc(dual)
-        if dual.target != shapemap.target:
-            dual = dual.then(Shape._reorder(dual.target).inv())
+                dual = Theta._upgrademapsrc(dual)
+        if shapemap.target == dual.target:
+            dual = shapemap.target.__class__._upgrademaptgt(shapemap)
+        else:
             if isinstance(shapemap.target, Theta):
-                Theta._upgrademaptgt(dual)
+                dual = Theta._upgrademaptgt(dual)
 
         return ShapeMap(dual,
                         wfcheck=False)
