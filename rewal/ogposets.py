@@ -1016,6 +1016,7 @@ class OgMap:
         # Enable method chaining syntax
         self.gray = self._gray
         self.join = self._join
+        self.dual = self._dual
 
     def __eq__(self, other):
         return type(self) == type(other) and \
@@ -1054,6 +1055,9 @@ class OgMap:
 
     def __lshift__(self, other):
         return other.join(self)
+
+    def __invert__(self):
+        return self.dual()
 
     @property
     def source(self):
@@ -1229,6 +1233,25 @@ class OgMap:
 
     def _join(self, *others):
         return self.__class__.join(self, others)
+
+    @staticmethod
+    def dual(ogmap, *dims):
+        utils.typecheck(ogmap, {'type': OgMap})
+        return OgMap(OgPoset.dual(ogmap.source, *dims),
+                     OgPoset.dual(ogmap.target, *dims),
+                     ogmap.mapping,
+                     wfcheck=False)
+
+    def _dual(self, *dims):
+        return self.__class__.dual(self, *dims)
+
+    def op(self):
+        odds = [n for n in range(self.dim + 1) if n % 2 == 1]
+        return self.dual(*odds)
+
+    def co(self):
+        evens = [n for n in range(self.dim + 1) if n % 2 == 0]
+        return self.dual(*evens)
 
     # Private methods.
     def _extensioncheck(self, element, image):

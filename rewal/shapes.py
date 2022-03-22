@@ -300,7 +300,7 @@ class Shape(OgPoset):
         return ShapeMap(reordering.then(boundary_ogmap),
                         wfcheck=False)
 
-    def under(self, element):
+    def atom_inclusion(self, element):
         """
         Returns the inclusion of an atom as the closure of an element
         in the shape.
@@ -738,4 +738,20 @@ class ShapeMap(OgMap):
                     join = Simplex._upgrademaptgt(join)
 
         return ShapeMap(join,
+                        wfcheck=False)
+
+    def dual(shapemap, *dims):
+        utils.typecheck(shapemap, {'type': ShapeMap})
+
+        dual = OgMap.dual(shapemap)
+        if dual.source != shapemap.source:
+            dual = Shape._reorder(dual.source).then(dual)
+            if isinstance(shapemap.source, Theta):
+                Theta._upgrademapsrc(dual)
+        if dual.target != shapemap.target:
+            dual = dual.then(Shape._reorder(dual.target).inv())
+            if isinstance(shapemap.target, Theta):
+                Theta._upgrademaptgt(dual)
+
+        return ShapeMap(dual,
                         wfcheck=False)

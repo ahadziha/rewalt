@@ -108,12 +108,12 @@ def test_Shape_inflate():
         whisker_l
 
 
-def test_Shape_under():
+def test_Shape_atom_inclusion():
     globe2 = Shape.globe(2)
     arrow = Shape.arrow()
     whisker_l = arrow.paste(globe2)
 
-    assert whisker_l.under(El(2, 0)).source == globe2
+    assert whisker_l.atom_inclusion(El(2, 0)).source == globe2
 
 
 def test_Shape_initial():
