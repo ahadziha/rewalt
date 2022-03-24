@@ -2,7 +2,7 @@ from pytest import raises
 
 from rewal import utils
 from rewal.ogposets import (El, OgMap)
-from rewal.shapes import (Shape, ShapeMap)
+from rewal.shapes import (Shape, ShapeMap, Simplex)
 
 
 """ Tests for Shape """
@@ -98,6 +98,15 @@ def test_Shape_gray():
     assert (arrow * arrow) * arrow == arrow * (arrow * arrow)
 
 
+def test_Shape_join():
+    point = Shape.point()
+    arrow = Shape.arrow()
+
+    assert arrow >> point == point << point << point
+    assert Shape.join() == Shape.empty()
+    assert isinstance(arrow >> point, Simplex)
+
+
 def test_Shape_inflate():
     simplex2 = Shape.simplex(2)
     assert simplex2.inflate().source.boundary_inclusion('-').source == \
@@ -128,6 +137,41 @@ def test_Shape_initial():
 def test_Shape_terminal():
     point = Shape.point()
     assert point.terminal() == point.id()
+
+
+""" Tests for Shape subclasses """
+
+
+def test_Simplex():
+    triangle = Shape.simplex(2)
+    tetra = Shape.simplex(3)
+
+    assert tetra.simplex_face(3).source == triangle
+    assert tetra.simplex_face(0) == tetra.atom_inclusion(
+            El(2, 3))
+
+    assert tetra.simplex_degeneracy(2).then(
+            triangle.simplex_degeneracy(1)) == \
+        tetra.simplex_degeneracy(1).then(
+            triangle.simplex_degeneracy(1))
+
+
+def test_Cube():
+    square = Shape.cube(2)
+    cube = Shape.cube(3)
+
+    assert cube.cube_degeneracy(2).then(
+            square.cube_degeneracy(1)) == \
+        cube.cube_degeneracy(1).then(
+            square.cube_degeneracy(1))
+    assert square.cube_face(0, '+').then(
+            cube.cube_face(2, '-')) == \
+        square.cube_face(1, '-').then(
+            cube.cube_face(0, '+'))
+    assert cube.connection(2, '-').then(
+            square.connection(1, '-')) == \
+        cube.connection(1, '-').then(
+            square.connection(1, '-'))
 
 
 """ Tests for ShapeMap """

@@ -616,8 +616,8 @@ class OpetopeTree(Shape):
 
 class GlobeString(Theta, OpetopeTree):
     """
-    Class for 'strings of globes' in the top dimension, the intersection
-    of opetope trees and Batanin cells.
+    Class for 'strings of globes' pasted in the top dimension, the
+    intersection of opetope trees and Batanin cells.
     """
     def __new__(self):
         return OgPoset.__new__(Point)
@@ -642,7 +642,8 @@ class Point(Globe, Simplex, Cube):
     def __new__(self):
         return OgPoset.__new__(Point)
 
-    def __init__(self):
+    def __init__(self, face_data=None, coface_data=None,
+                 wfcheck=False, matchcheck=False):
         super().__init__(
                 [[{'-': set(), '+': set()}]],
                 [[{'-': set(), '+': set()}]],
@@ -654,7 +655,8 @@ class Arrow(Globe, Simplex, Cube):
     def __new__(self):
         return OgPoset.__new__(Arrow)
 
-    def __init__(self):
+    def __init__(self, face_data=None, coface_data=None,
+                 wfcheck=False, matchcheck=False):
         super().__init__(
                 [
                     [{'-': set(), '+': set()}, {'-': set(), '+': set()}],
@@ -669,8 +671,6 @@ class Arrow(Globe, Simplex, Cube):
 class ShapeMap(OgMap):
     """
     An OgMap overlay for total maps between Shape objects.
-    Used for constructions that are not well-defined for general
-    maps between oriented graded posets.
     """
 
     def __init__(self, ogmap, wfcheck=True):
@@ -684,6 +684,11 @@ class ShapeMap(OgMap):
 
         super().__init__(ogmap.source, ogmap.target, ogmap.mapping,
                          wfcheck=False)
+
+    def then(self, other, *others):
+        return ShapeMap(
+                super().then(other, *others),
+                wfcheck=False)
 
     @staticmethod
     def gray(*maps):

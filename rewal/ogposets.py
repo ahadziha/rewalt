@@ -1127,9 +1127,6 @@ class OgMap:
                  else None for x in n_data]
                 for n_data in self.mapping]
 
-        if type(self) is type(other):  # for inheritance
-            return self.__class__(self.source, other.target, mapping,
-                                  wfcheck=False)
         return OgMap(self.source, other.target, mapping,
                      wfcheck=False)
 
