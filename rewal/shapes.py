@@ -204,14 +204,20 @@ class Shape(OgPoset):
         return pasted
 
     def paste_at_output(self, pos, other):
+        """
+        Paste along the inclusion of one of the outputs.
+        """
         return Shape.paste_along(OgMapPair(
-            self.atom_inclusion(El(self.dim, pos)),
+            self.atom_inclusion(El(self.dim - 1, pos)),
             other.boundary_inclusion('-')))
 
     def paste_at_input(self, pos, other):
+        """
+        Paste along the inclusion of one of the inputs.
+        """
         return Shape.paste_along(OgMapPair(
             other.boundary_inclusion('+'),
-            self.atom_inclusion(El(self.dim, pos))))
+            self.atom_inclusion(El(self.dim - 1, pos))))
 
     @staticmethod
     def suspend(shape, n=1):
