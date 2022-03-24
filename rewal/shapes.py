@@ -136,25 +136,83 @@ class Shape(OgPoset):
         if dim >= snd.dim:
             return fst
         pushout = span.pushout(wfcheck=False)
-        paste = Shape._reorder(pushout.target).source
+        pasted = Shape._reorder(pushout.target).source
 
         # Upgrade to named shape classes
         if isinstance(fst, Theta) and isinstance(snd, Theta):
             if isinstance(fst, GlobeString) and isinstance(snd, GlobeString) \
                     and fst.dim == snd.dim == dim+1:
-                return GlobeString._upgrade(paste)
-            return Theta._upgrade(paste)
+                return GlobeString._upgrade(pasted)
+            return Theta._upgrade(pasted)
 
         if isinstance(fst, OpetopeTree) and isinstance(snd, GlobeString) \
                 and fst.dim == snd.dim == dim+1:
-            return OpetopeTree._upgrade(paste)
+            return OpetopeTree._upgrade(pasted)
 
-        return paste
+        return pasted
 
     def _paste(self, other, dim=None):
         return Shape.paste(self, other, dim)
 
     # Other constructors
+    @staticmethod
+    def paste_along(span):
+        """
+        Returns the pasting of two shapes along the entire codim-1 input
+        (output) boundary of one, and a subshape of the codim-1 output
+        (input) boundary of the other.
+        """
+        utils.typecheck(span, {
+            'type': OgMapPair,
+            'st': lambda x: x.isspan and x.isinjective,
+            'why': 'expecting a span of injective maps'
+            }, {'type': ShapeMap})
+
+        fst_image = span.fst.image()
+        snd_image = span.snd.image()
+        fst_output = span.fst.target.boundary('+')
+        snd_input = span.snd.target.boundary('-')
+
+        def condition():
+            t1 = span.fst.target.dim == span.snd.target.dim \
+                == span.source.dim + 1
+            t2 = fst_image.issubset(fst_output)
+            t3 = snd_image.issubset(snd_input)
+            t4 = fst_image == fst_output or snd_image == snd_input
+            return t1 and t2 and t3 and t4
+
+        if not condition():
+            raise ValueError(utils.value_err(
+                span, 'not a well-formed span for pasting'))
+        if fst_image == fst_output:
+            if snd_image == snd_input:
+                return Shape.paste(span.fst.target, span.snd.target)
+            if not Shape._issubmol(snd_image, snd_input):
+                raise ValueError(utils.value_err(
+                    span.snd, 'cannot paste along this map'))
+        else:
+            if not Shape._issubmol(fst_image, fst_output):
+                raise ValueError(utils.value_err(
+                    span.fst, 'cannot paste along this map'))
+
+        pushout = span.pushout(wfcheck=False)
+        pasted = Shape._reorder(pushout.target).source
+
+        if isinstance(span.fst.target, OpetopeTree) and \
+                isinstance(span.snd.target, OpetopeTree):
+            pasted = OpetopeTree._upgrade(pasted)
+        return pasted
+
+    def paste_at_output(self, pos, other):
+        return Shape.paste_along(OgMapPair(
+            self.atom_inclusion(El(self.dim, pos)),
+            other.boundary_inclusion('-')))
+
+    def paste_at_input(self, pos, other):
+        return Shape.paste_along(OgMapPair(
+            other.boundary_inclusion('+'),
+            self.atom_inclusion(El(self.dim, pos))))
+
     @staticmethod
     def suspend(shape, n=1):
         utils.typecheck(shape, {'type': Shape})
@@ -451,6 +509,21 @@ class Shape(OgPoset):
 
         return OgMap(reordered, shape, mapping,
                      wfcheck=False)
+
+    @staticmethod
+    def _issubmol(fst, snd):
+        """
+        Given two molecules in a shape (as closed subsets), returns
+        whether the first one is a round submolecule of the second.
+        """
+        if not fst.isround:
+            return False
+        if fst == snd:
+            return True
+        if len(fst.maximal()) == 1:
+            return True
+        raise NotImplementedError(
+            'Can only paste along atoms or the entire boundary for now.')
 
     @classmethod
     def _upgrade(cls, ogp):
