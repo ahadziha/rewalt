@@ -1036,19 +1036,29 @@ class OgMap:
             element, 'not in source'))
 
     def __setitem__(self, element, image):
-        if element in self.source:
-            self._extensioncheck(element, image)
-            self._mapping[element.dim][element.pos] = image
-        else:
+        if element not in self.source:
             raise ValueError(utils.value_err(
                 element, 'not in source'))
+        self._extensioncheck(element, image)
+        self._mapping[element.dim][element.pos] = image
+
+    def __call__(self, other):
+        if isinstance(other, El):
+            return self[other]
+        if isinstance(other, GrSubset):
+            return other.image(self)
+        if isinstance(other, GrSet):
+            subset = GrSubset(other, self.source)
+            return subset.image(self)
+        raise TypeError(utils.type_err(
+            El, other))
 
     def __mul__(self, other):
         return self.gray(other)
 
-    def __pow__(self, other):
-        utils.typecheck(other, {'type': int})
-        return self.__class__.gray(*[self for _ in range(other)])
+    def __pow__(self, times):
+        utils.typecheck(times, {'type': int})
+        return self.__class__.gray(*[self for _ in range(times)])
 
     def __rshift__(self, other):
         return self.join(other)

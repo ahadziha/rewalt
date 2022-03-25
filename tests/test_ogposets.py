@@ -181,16 +181,16 @@ interval_grsubset = GrSubset(GrSet(El(0, 1)), interval)
 
 whisker_all = whisker.all()
 
-test_injection = OgMap(interval, whisker, [
+injection = OgMap(interval, whisker, [
     [El(0, 1), El(0, 2)],
     [El(1, 2)]])
 
-test_collapse = OgMap(whisker, interval, [
+collapse = OgMap(whisker, interval, [
     [El(0, 0), El(0, 1), El(0, 1)],
     [El(1, 0), El(1, 0), El(0, 1)],
     [El(1, 0)]])
 
-test_composite = OgMap(interval, interval, [
+composite = OgMap(interval, interval, [
     [El(0, 1), El(0, 1)],
     [El(0, 1)]])
 
@@ -472,19 +472,19 @@ def test_GrSubset_closure():
 
 
 def test_GrSubset_image():
-    assert test_grsubset.image(test_collapse) == GrSubset(
+    assert test_grsubset.image(collapse) == GrSubset(
             GrSet(El(0, 1), El(1, 0)), interval)
 
     with raises(ValueError) as err:
-        test_grsubset.image(test_injection)
+        test_grsubset.image(injection)
     assert str(err.value) == utils.value_err(
-            test_injection, 'OgMap source does not match ambient OgPoset')
+            injection, 'OgMap source does not match ambient OgPoset')
 
     assert isinstance(
-            test_closed.image(test_collapse),
+            test_closed.image(collapse),
             Closed)
     assert not isinstance(
-            test_grsubset.image(test_collapse),
+            test_grsubset.image(collapse),
             Closed)
 
 
@@ -506,12 +506,11 @@ def test_Closed():
 def test_Closed_as_map():
     assert Closed(
             GrSet(El(0, 1), El(0, 2), El(1, 2)),
-            whisker).as_map == test_injection
+            whisker).as_map == injection
 
-    assert test_closed.as_map.source.image(
-            test_closed.as_map) == test_closed
+    assert test_closed.as_map.image() == test_closed
 
-    assert interval.image(test_injection).as_map == test_injection
+    assert interval.image(injection).as_map == injection
 
 
 def test_Closed_maximal():
@@ -556,12 +555,12 @@ def test_OgMap_init():
 
 
 def test_OgMap_getitem():
-    assert test_injection[El(0, 0)] == El(0, 1)
-    assert test_collapse[El(2, 0)] == El(1, 0)
+    assert injection[El(0, 0)] == El(0, 1)
+    assert collapse[El(2, 0)] == El(1, 0)
     assert OgMap(interval, whisker)[El(0, 1)] is None
 
     with raises(ValueError) as err:
-        test_injection[El(0, 2)]
+        injection[El(0, 2)]
     assert str(err.value) == utils.value_err(
             El(0, 2), 'not in source')
 
@@ -600,7 +599,7 @@ def test_OgMap_setitem():
 
     test_setitem[El(1, 0)] = El(1, 2)
 
-    assert test_setitem == test_injection
+    assert test_setitem == injection
 
 
 def test_OgMap_mapping():
@@ -608,18 +607,18 @@ def test_OgMap_mapping():
 
 
 def test_OgMap_istotal():
-    assert test_injection.istotal
+    assert injection.istotal
     assert not OgMap(interval, whisker).istotal
 
 
 def test_OgMap_isinjective():
-    assert test_injection.isinjective
-    assert not test_collapse.isinjective
+    assert injection.isinjective
+    assert not collapse.isinjective
 
 
 def test_OgMap_issurjective():
-    assert not test_injection.issurjective
-    assert test_collapse.issurjective
+    assert not injection.issurjective
+    assert collapse.issurjective
 
 
 def test_OgMap_isiso():
@@ -628,66 +627,66 @@ def test_OgMap_isiso():
 
 
 def test_OgMap_isdefined():
-    assert test_injection.isdefined(El(0, 1))
+    assert injection.isdefined(El(0, 1))
     assert not OgMap(interval, whisker).isdefined(El(0, 1))
-    assert not test_injection.isdefined(El(0, 2))
+    assert not injection.isdefined(El(0, 2))
 
 
 def test_OgMap_then():
-    assert test_injection.then(test_collapse) == test_composite
-    assert test_injection.then(OgMap(whisker, whisker)) == \
+    assert injection.then(collapse) == composite
+    assert injection.then(OgMap(whisker, whisker)) == \
         OgMap(interval, whisker)
-    assert test_injection.then(
-            test_collapse, OgMap(interval, interval)) == \
+    assert injection.then(
+            collapse, OgMap(interval, interval)) == \
         OgMap(interval, interval)
 
     with raises(ValueError) as err:
-        test_injection.then(test_injection)
+        injection.then(injection)
     assert str(err.value) == utils.value_err(
-            test_injection, 'source does not match target of first map')
+            injection, 'source does not match target of first map')
 
 
 def test_OgMap_inv():
     assert whisker.id().inv() == whisker.id()
 
     with raises(ValueError) as err:
-        test_injection.inv()
+        injection.inv()
     assert str(err.value) == utils.value_err(
-            test_injection, 'not an isomorphism')
+            injection, 'not an isomorphism')
 
 
 """ Tests for OgMapPair """
 
 
 def test_OgMapPair():
-    assert OgMapPair(test_injection, test_collapse) == \
-            OgMapPair(test_injection, test_collapse)
-    assert OgMapPair(test_injection, test_collapse) != \
-        OgMapPair(test_collapse, test_injection)
+    assert OgMapPair(injection, collapse) == \
+            OgMapPair(injection, collapse)
+    assert OgMapPair(injection, collapse) != \
+        OgMapPair(collapse, injection)
 
 
 def test_OgMapPair_source():
-    assert OgMapPair(test_injection, interval.id()).source == interval
+    assert OgMapPair(injection, interval.id()).source == interval
 
 
 def test_OgMapPair_target():
-    assert OgMapPair(test_collapse, interval.id()).target == interval
+    assert OgMapPair(collapse, interval.id()).target == interval
 
 
 def test_OgMapPair_isspan():
     assert OgMapPair(
-            test_injection, test_injection.then(test_collapse)).isspan
-    assert not OgMapPair(test_injection, test_collapse).isspan
+            injection, injection.then(collapse)).isspan
+    assert not OgMapPair(injection, collapse).isspan
 
 
 def test_OgMapPair_iscospan():
     assert OgMapPair(
-            test_injection, test_collapse.then(test_injection)).iscospan
-    assert not OgMapPair(test_injection, test_collapse).iscospan
+            injection, collapse.then(injection)).iscospan
+    assert not OgMapPair(injection, collapse).iscospan
 
 
 def test_OgMapPair_isparallel():
-    assert OgMapPair(test_composite, interval.id()).isparallel
+    assert OgMapPair(composite, interval.id()).isparallel
 
 
 def test_OgMapPair_pushout():
