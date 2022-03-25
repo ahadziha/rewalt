@@ -1,5 +1,5 @@
 """
-Implements oriented graded posets, their subsets, and their maps.
+Implements oriented graded posets, their elements, subsets, and maps.
 """
 
 import numpy as np
