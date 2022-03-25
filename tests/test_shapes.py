@@ -2,7 +2,7 @@ from pytest import raises
 
 from rewal import utils
 from rewal.ogposets import (El, OgMap)
-from rewal.shapes import (Shape, ShapeMap, Simplex)
+from rewal.shapes import (Shape, ShapeMap, Simplex, Opetope)
 
 
 """ Tests for Shape """
@@ -105,6 +105,16 @@ def test_Shape_join():
     assert arrow >> point == point << point << point
     assert Shape.join() == Shape.empty()
     assert isinstance(arrow >> point, Simplex)
+
+
+def test_Shape_merge():
+    arrow = Shape.arrow()
+    binary = arrow.paste(arrow).atom(arrow)
+    ternary = arrow.paste(arrow).paste(arrow).atom(arrow)
+    assoc_l = binary.paste_at_input(0, binary)
+
+    assert assoc_l.merge() == ternary
+    assert isinstance(assoc_l.merge(), Opetope)
 
 
 def test_Shape_inflate():

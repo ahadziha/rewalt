@@ -294,6 +294,26 @@ class Shape(OgPoset):
             return Theta._upgrade(dual)
         return dual
 
+    def merge(self):
+        """
+        Returns an atom with the same boundary as the shape (if round).
+        """
+        if self.isatom:
+            return self
+        if not self.isround:
+            raise ValueError(utils.value_err(
+                self, 'not a round shape'))
+
+        merged = Shape.atom(
+                self.boundary_inclusion('-').source,
+                self.boundary_inclusion('+').source)
+
+        if isinstance(self, OpetopeTree):
+            if isinstance(self, GlobeString):
+                return Globe._upgrade(merged)
+            return Opetope._upgrade(merged)
+        return merged
+
     # Named shapes
     @staticmethod
     def empty():
