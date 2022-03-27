@@ -140,9 +140,11 @@ class Shape(OgPoset):
                         str(dim), str(dim), repr(fst))))
 
         if dim >= fst.dim:
-            return snd.id()
+            return OgMapPair(
+                    span.snd, snd.id())
         if dim >= snd.dim:
-            return fst.id()
+            return OgMapPair(
+                    fst.id(), span.fst)
         pushout = span.pushout(wfcheck=False)
         pasting = pushout.then(Shape._reorder(pushout.target).inv())
 

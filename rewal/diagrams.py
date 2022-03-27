@@ -14,8 +14,9 @@ class DiagSet:
         """ Initialises to an empty diagrammatic set. """
         self._generators = dict()
         self._by_dim = dict()
-        self._saved = dict()
+
         self._coface_data = dict()
+        self._face_data = dict()
 
     def __eq__(self, other):
         return isinstance(other, DiagSet) and \
@@ -33,6 +34,14 @@ class DiagSet:
     @property
     def by_dim(self):
         return self._by_dim
+
+    @property
+    def face_data(self):
+        return self._face_data
+
+    @property
+    def coface_data(self):
+        return self._coface_data
 
     def add(self, name, input=None, output=None, **kwargs):
         """ Adds a generator. """
@@ -86,12 +95,36 @@ class DiagSet:
         else:
             self._by_dim[new.dim] = {name}
 
+        self._face_data.update(
+                {name: set()}
+                )
         self._coface_data.update(
                 {name: set()}
                 )
         if new.dim > 0:
             for x in mapping[-2]:
                 self._coface_data[x].add(name)
+                self._face_data[name].add(x)
+
+    def remove(self, name):
+        """
+        Removes a generator.
+        """
+        to_remove = [*self.coface_data[name]]
+        for x in to_remove:
+            self.remove(x)
+
+        dim = self[name].dim
+        self._by_dim[dim].remove(name)
+        if len(self._by_dim[dim]) == 0:
+            self._by_dim.pop(dim, None)
+
+        for x in self.face_data[name]:
+            self._coface_data[x].remove(name)
+
+        self._coface_data.pop(name, None)
+        self._face_data.pop(name, None)
+        self._generators.pop(name, None)
 
 
 class Diagram:
@@ -180,18 +213,6 @@ class Diagram:
                 name)
         return pasted
 
-    def save(self, name=None):
-        """
-        Adds the current diagram to the list of saved diagrams.
-        """
-        if name is None:
-            name = self.name
-
-        self.ambient._saved.update(
-                {
-                    name: self
-                })
-
     def pullback(self, shapemap, name=None):
         """
         Pullback of the diagram by a ShapeMap.
@@ -217,8 +238,9 @@ class Diagram:
     def boundary(self, sign, dim=None):
         if dim is None:
             dim = self.dim - 1
-        name = '∂{}({})'.format(
-                str(dim), str(self.name))
+        sign = utils.mksign(sign)
+        name = '∂[{},{}]{}'.format(
+                sign, str(dim), str(self.name))
         return self.pullback(self.shape.boundary_inclusion(
             sign, dim), name)
 
