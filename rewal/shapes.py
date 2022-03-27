@@ -30,7 +30,7 @@ class Shape(OgPoset):
 
     # Main constructors
     @staticmethod
-    def atom(fst, snd):
+    def _atom_cospan(fst, snd):
         """
         Given two shapes with identical round boundaries, returns a new
         atomic shape whose input boundary is the first one and output
@@ -47,12 +47,11 @@ class Shape(OgPoset):
                     repr(fst))))
         dim = fst.dim
 
-        if dim == -1:  # Check explicitly for some simple cases.
-            return Point()
-        if dim == 0:
-            return Arrow()
-        if isinstance(fst, Globe) and isinstance(snd, Globe):
-            return Shape.suspend(fst)
+        if dim == -1:  # Avoid more work in this simple case
+            return OgMapPair(
+                    Shape.point().initial(),
+                    Shape.point().initial()
+                    )
 
         in_span = OgMapPair(
                 fst.boundary_inclusion('-'), snd.boundary_inclusion('-'))
@@ -73,29 +72,44 @@ class Shape(OgPoset):
 
         sphere = inclusion.target
         # Add a greatest element
-        face_data = sphere.face_data + [
+        face_data = [
+                *sphere.face_data,
                 [
                     {'-':
                         {inclusion.fst[x].pos for x in fst[dim]},
                      '+':
                         {inclusion.snd[x].pos for x in snd[dim]}}
                 ]]
-        coface_data = sphere.coface_data + [
+        coface_data = [
+                *sphere.coface_data,
                 [{'-': set(), '+': set()}]]
         for x in fst[dim]:
             coface_data[dim][inclusion.fst[x].pos]['-'].add(0)
         for x in snd[dim]:
             coface_data[dim][inclusion.snd[x].pos]['+'].add(0)
 
-        new_atom = Shape._reorder(
-                OgPoset(face_data, coface_data,
-                        wfcheck=False, matchcheck=False)).source
+        new_atom = OgPoset(face_data, coface_data,
+                           wfcheck=False, matchcheck=False)
+        boundary_in = OgMap(
+            fst, new_atom, inclusion.fst.mapping,
+            wfcheck=False)
+        boundary_out = OgMap(
+            snd, new_atom, inclusion.snd.mapping,
+            wfcheck=False)
+        atom_cospan = OgMapPair(boundary_in, boundary_out).then(
+                Shape._reorder(new_atom).inv())
 
-        # Recursion for positive opetopes
         if isinstance(fst, OpetopeTree) and isinstance(snd, Opetope):
-            new_atom = Opetope._upgrade(new_atom)
+            if isinstance(fst, Globe):
+                if fst.dim == 0:
+                    return Arrow._upgrademaptgt(atom_cospan)
+                return Globe._upgrademaptgt(atom_cospan)
+            return Opetope._upgrademaptgt(atom_cospan)
+        return atom_cospan
 
-        return new_atom
+    @staticmethod
+    def atom(fst, snd):
+        return Shape._atom_cospan(fst, snd).target
 
     def _atom(self, other):
         return Shape.atom(self, other)
@@ -138,11 +152,9 @@ class Shape(OgPoset):
                     and fst.dim == snd.dim == dim+1:
                 return GlobeString._upgrademaptgt(pasting)
             return Theta._upgrademaptgt(pasting)
-
         if isinstance(fst, OpetopeTree) and isinstance(snd, GlobeString) \
                 and fst.dim == snd.dim == dim+1:
             return OpetopeTree._upgrademaptgt(pasting)
-
         return pasting
 
     @staticmethod

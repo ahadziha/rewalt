@@ -17,6 +17,10 @@ class DiagSet:
         self._saved = dict()
         self._coface_data = dict()
 
+    def __eq__(self, other):
+        return isinstance(other, DiagSet) and \
+                self.generators == other.generators
+
     def __getitem__(self, key):
         if key in self.generators:
             return self._generators[key]['cell']
@@ -42,20 +46,19 @@ class DiagSet:
         for x in (input, output):
             utils.typecheck(x, {'type': Diagram})
 
-        shape = Shape.atom(
+        boundary = Shape._atom_cospan(
                 input.shape, output.shape)
-
-        boundary_in = shape.boundary_inclusion('-')
-        boundary_out = shape.boundary_inclusion('+')
+        shape = boundary.target
         mapping = [
                 [None for _ in n_data]
                 for n_data in shape.face_data
                 ]
+
         for x in input.shape:
-            y = boundary_in[x]
+            y = boundary.fst[x]
             mapping[y.dim][y.pos] = input[x]
         for x in output.shape:
-            y = boundary_out[x]
+            y = boundary.snd[x]
             if mapping[y.dim][y.pos] is None:
                 mapping[y.dim][y.pos] = output[x]
             else:
@@ -102,7 +105,7 @@ class Diagram:
         self._shape = Shape.empty()
         self._ambient = ambient
         self._mapping = []
-        self._name = 'empty'
+        self._name = '()'
 
     def __eq__(self, other):
         return isinstance(other, Diagram) and \
@@ -114,7 +117,7 @@ class Diagram:
         if element in self.shape:
             return self.mapping[element.dim][element.pos]
         raise ValueError(utils.value_err(
-            element, 'not in shape'))
+            element, 'not an element of the shape'))
 
     @property
     def name(self):
@@ -212,8 +215,12 @@ class Diagram:
                 name)
 
     def boundary(self, sign, dim=None):
+        if dim is None:
+            dim = self.dim - 1
+        name = '∂{}({})'.format(
+                str(dim), str(self.name))
         return self.pullback(self.shape.boundary_inclusion(
-            sign, dim))
+            sign, dim), name)
 
     # Internal methods
     @classmethod
