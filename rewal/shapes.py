@@ -101,15 +101,15 @@ class Shape(OgPoset):
         return Shape.atom(self, other)
 
     @staticmethod
-    def paste(fst, snd, dim=None):
+    def _paste_cospan(fst, snd, dim=None):
         """
         Returns the pasting of two shapes along the output k-boundary
         of the first and the input k-boundary of the second.
         """
-        if dim is None:  # default is principal composition
-            dim = min(fst.dim, snd.dim) - 1
         for u in fst, snd:
             utils.typecheck(u, {'type': Shape})
+        if dim is None:  # default is principal composition
+            dim = min(fst.dim, snd.dim) - 1
         utils.typecheck(dim, {
             'type': int,
             'st': lambda n: n >= 0,
@@ -126,24 +126,28 @@ class Shape(OgPoset):
                         str(dim), str(dim), repr(fst))))
 
         if dim >= fst.dim:
-            return snd
+            return snd.id()
         if dim >= snd.dim:
-            return fst
+            return fst.id()
         pushout = span.pushout(wfcheck=False)
-        pasted = Shape._reorder(pushout.target).source
+        pasting = pushout.then(Shape._reorder(pushout.target).inv())
 
         # Upgrade to named shape classes
         if isinstance(fst, Theta) and isinstance(snd, Theta):
             if isinstance(fst, GlobeString) and isinstance(snd, GlobeString) \
                     and fst.dim == snd.dim == dim+1:
-                return GlobeString._upgrade(pasted)
-            return Theta._upgrade(pasted)
+                return GlobeString._upgrademaptgt(pasting)
+            return Theta._upgrademaptgt(pasting)
 
         if isinstance(fst, OpetopeTree) and isinstance(snd, GlobeString) \
                 and fst.dim == snd.dim == dim+1:
-            return OpetopeTree._upgrade(pasted)
+            return OpetopeTree._upgrademaptgt(pasting)
 
-        return pasted
+        return pasting
+
+    @staticmethod
+    def paste(fst, snd, dim=None):
+        return Shape._paste_cospan(fst, snd, dim).target
 
     def _paste(self, other, dim=None):
         return Shape.paste(self, other, dim)
@@ -560,6 +564,10 @@ class Shape(OgPoset):
         """
         Upgrades the source of a map to the shape class.
         """
+        if isinstance(ogmap, OgMapPair):
+            return OgMapPair(
+                    cls._upgrademapsrc(ogmap.fst),
+                    cls._upgrademapsrc(ogmap.snd))
         return OgMap(
                 cls._upgrade(ogmap.source),
                 ogmap.target,
@@ -571,6 +579,10 @@ class Shape(OgPoset):
         """
         Upgrades the target of a map to the shape class.
         """
+        if isinstance(ogmap, OgMapPair):
+            return OgMapPair(
+                    cls._upgrademaptgt(ogmap.fst),
+                    cls._upgrademapsrc(ogmap.snd))
         return OgMap(
                 ogmap.source,
                 cls._upgrade(ogmap.target),
