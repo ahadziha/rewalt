@@ -28,7 +28,7 @@ class El(tuple):
         return repr(self)
 
     def __eq__(self, other):
-        return type(self) is type(other) and \
+        return isinstance(other, El) and \
                 self.dim == other.dim and self.pos == other.pos
 
     def __hash__(self):
@@ -99,7 +99,7 @@ class OgPoset:
         return iter(self.all())
 
     def __eq__(self, other):
-        return type(self) is type(other) and \
+        return isinstance(other, OgPoset) and \
                 self.face_data == other.face_data and \
                 self.coface_data == other.coface_data
 
@@ -628,7 +628,7 @@ class GrSet:
         raise KeyError(str(key))
 
     def __eq__(self, other):
-        return type(self) is type(other) and \
+        return isinstance(other, GrSet) and \
                 self._elements == other._elements
 
     @property
@@ -727,7 +727,7 @@ class GrSubset:
         self._ambient = ambient
 
     def __eq__(self, other):
-        return type(self) is type(other) and \
+        return isinstance(other, GrSubset) and \
                 self.support == other.support and \
                 self.ambient == other.ambient
 
@@ -1019,7 +1019,7 @@ class OgMap:
         self.dual = self._dual
 
     def __eq__(self, other):
-        return type(self) == type(other) and \
+        return isinstance(other, OgMap) and \
                 self.source == other.source and \
                 self.target == other.target and \
                 self.mapping == other.mapping
@@ -1325,7 +1325,7 @@ class OgMapPair(tuple):
         return '({}, {})'.format(str(self.fst), str(self.snd))
 
     def __eq__(self, other):
-        return type(self) is type(other) and \
+        return isinstance(other, OgMapPair) and \
                 self.fst == other.fst and self.snd == other.snd
 
     @property

@@ -31,7 +31,7 @@ class DiagSet:
             raise ValueError(utils.value_err(
                 name, 'already in use'))
 
-        new = Diagram._explicit(
+        new = Diagram._new(
                 Shape.point(),
                 self,
                 [name],
@@ -80,7 +80,7 @@ class Diagram:
 
     # Internal methods
     @classmethod
-    def _explicit(cls, shape, ambient, mapping, name):
+    def _new(cls, shape, ambient, mapping, name):
         new = Diagram.__new__(cls)
         new._shape = shape
         new._ambient = ambient

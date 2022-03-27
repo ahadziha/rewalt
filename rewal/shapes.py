@@ -14,12 +14,6 @@ class Shape(OgPoset):
     def __new__(self):
         return OgPoset.__new__(Empty)
 
-    # Redefining to be more lax wrt subclasses
-    def __eq__(self, other):
-        return isinstance(other, Shape) and \
-                self.face_data == other.face_data and \
-                self.coface_data == other.coface_data
-
     @property
     def isatom(self):
         """
