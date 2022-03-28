@@ -172,7 +172,15 @@ class Diagram:
     def dim(self):
         return self.shape.dim
 
-    def paste(self, other, dim=None, name=None):
+    @property
+    def isdegenerate(self):
+        if self.dim > 0:
+            for x in self.mapping[-1]:
+                if self.ambient[x].dim == self.dim:
+                    return False
+        return True
+
+    def paste(self, other, dim=None):
         utils.typecheck(other, {
                 'type': Diagram,
                 'st': lambda x: x.ambient == self.ambient,
@@ -202,9 +210,8 @@ class Diagram:
                             'output {}-boundary of {}'.format(
                                 str(dim), str(dim), repr(self))))
 
-        if name is None:
-            name = '({} #{} {})'.format(
-                    str(self.name), str(dim), str(other.name))
+        name = '({} #{} {})'.format(
+                str(self.name), str(dim), str(other.name))
 
         pasted = Diagram._new(
                 shape,
