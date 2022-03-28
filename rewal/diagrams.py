@@ -236,6 +236,9 @@ class Diagram:
                 name)
 
     def boundary(self, sign, dim=None):
+        """
+        Boundaries of the diagram.
+        """
         if dim is None:
             dim = self.dim - 1
         sign = utils.mksign(sign)
@@ -243,6 +246,34 @@ class Diagram:
                 sign, str(dim), str(self.name))
         return self.pullback(self.shape.boundary_inclusion(
             sign, dim), name)
+
+    def unit(self):
+        """
+        Unit on the diagram.
+        """
+        return self.pullback(self.shape.inflate(), self.name)
+
+    def unitor_l(self, sign):
+        """
+        Left unitor or inverse unitor.
+        """
+        sign = utils.mksign(sign)
+        unitor_map = self.shape.inflate(
+                self.shape.boundary('+'))
+        if sign == '-':
+            unitor_map = unitor_map.dual(self.dim + 1)
+        return self.pullback(unitor_map, self.name)
+
+    def unitor_r(self, sign):
+        """
+        Right unitor or inverse unitor.
+        """
+        sign = utils.mksign(sign)
+        unitor_map = self.shape.inflate(
+                self.shape.boundary('-'))
+        if sign == '+':
+            unitor_map = unitor_map.dual(self.dim + 1)
+        return self.pullback(unitor_map, self.name)
 
     # Internal methods
     @classmethod

@@ -445,10 +445,10 @@ class Shape(OgPoset):
             utils.typecheck(collapsed, {
                 'type': Closed,
                 'st': lambda x: x.ambient == self and x.support.issubset(
-                    self.all().boundary()),
+                    self.boundary()),
                 'why': "expecting a closed subset of the shape's boundary"})
         else:
-            collapsed = self.all().boundary()  # Default is whole boundary.
+            collapsed = self.boundary()  # Default is whole boundary.
 
         asmap = collapsed.as_map
         arrow = Shape.arrow()
