@@ -444,8 +444,7 @@ class Shape(OgPoset):
         if collapsed is not None:
             utils.typecheck(collapsed, {
                 'type': Closed,
-                'st': lambda x: x.ambient == self and x.support.issubset(
-                    self.boundary()),
+                'st': lambda x: x.issubset(self.boundary()),
                 'why': "expecting a closed subset of the shape's boundary"})
         else:
             collapsed = self.boundary()  # Default is whole boundary.
@@ -867,16 +866,16 @@ class ShapeMap(OgMap):
     def dual(shapemap, *dims):
         utils.typecheck(shapemap, {'type': ShapeMap})
 
-        ogdual = OgMap.dual(shapemap)
+        ogdual = OgMap.dual(shapemap, *dims)
         dual = Shape._reorder(ogdual.source).then(ogdual).then(
                 Shape._reorder(ogdual.target).inv())
         if shapemap.source == dual.source:
-            dual = shapemap.source.__class__._upgrademapsrc(shapemap)
+            dual = shapemap.source.__class__._upgrademapsrc(dual)
         else:
             if isinstance(shapemap.source, Theta):
                 dual = Theta._upgrademapsrc(dual)
         if shapemap.target == dual.target:
-            dual = shapemap.target.__class__._upgrademaptgt(shapemap)
+            dual = shapemap.target.__class__._upgrademaptgt(dual)
         else:
             if isinstance(shapemap.target, Theta):
                 dual = Theta._upgrademaptgt(dual)
