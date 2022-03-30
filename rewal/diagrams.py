@@ -10,13 +10,13 @@ class DiagSet:
     """
     Class for diagrammatic sets.
     """
-    def __init__(self):
+    def __init__(self, **kwargs):
         """ Initialises to an empty diagrammatic set. """
         self._generators = dict()
         self._by_dim = dict()
 
-        self._coface_data = dict()
-        self._face_data = dict()
+        for key, value in kwargs:  # TODO: accepted kwargs
+            setattr(self, key, value)
 
     def __eq__(self, other):
         return isinstance(other, DiagSet) and \
@@ -35,14 +35,6 @@ class DiagSet:
     def by_dim(self):
         return self._by_dim
 
-    @property
-    def face_data(self):
-        return self._face_data
-
-    @property
-    def coface_data(self):
-        return self._coface_data
-
     def add(self, name, input=None, output=None, **kwargs):
         """ Adds a generator. """
         if name in self.generators:
@@ -55,7 +47,7 @@ class DiagSet:
         for x in (input, output):
             utils.typecheck(x, {'type': Diagram})
 
-        boundary = Shape._atom_cospan(
+        boundary = Shape.atom_cospan(
                 input.shape, output.shape)
         shape = boundary.target
         mapping = [
@@ -83,9 +75,12 @@ class DiagSet:
                 mapping,
                 name)
 
+        # TODO: valid kwargs
         self._generators.update({
                 name: {
                     'cell': new,
+                    'faces': set(),
+                    'cofaces': set(),
                     **kwargs
                     }
                 })
@@ -95,22 +90,16 @@ class DiagSet:
         else:
             self._by_dim[new.dim] = {name}
 
-        self._face_data.update(
-                {name: set()}
-                )
-        self._coface_data.update(
-                {name: set()}
-                )
         if new.dim > 0:
             for x in mapping[-2]:
-                self._coface_data[x].add(name)
-                self._face_data[name].add(x)
+                self.generators[x]['cofaces'].add(name)
+                self.generators[name]['faces'].add(x)
 
     def remove(self, name):
         """
         Removes a generator.
         """
-        to_remove = [*self.coface_data[name]]
+        to_remove = [*self.generators[name]['cofaces']]
         for x in to_remove:
             self.remove(x)
 
@@ -119,11 +108,9 @@ class DiagSet:
         if len(self._by_dim[dim]) == 0:
             self._by_dim.pop(dim, None)
 
-        for x in self.face_data[name]:
-            self._coface_data[x].remove(name)
+        for x in self.generators[name]['faces']:
+            self.generators[x]['cofaces'].remove(name)
 
-        self._coface_data.pop(name, None)
-        self._face_data.pop(name, None)
         self._generators.pop(name, None)
 
 
@@ -188,7 +175,7 @@ class Diagram:
         if dim is None:
             dim = min(self.dim, other.dim) - 1
 
-        paste_cospan = Shape._paste_cospan(
+        paste_cospan = Shape.paste_cospan(
                 self.shape, other.shape, dim)
         shape = paste_cospan.target
         mapping = [
