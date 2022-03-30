@@ -79,6 +79,7 @@ class StringDiagram:
                     to_delete.add((cycle[i], cycle[i+1]))
                 to_delete.add((cycle[-1], cycle[0]))
             graph.remove_edges_from(to_delete)
+        
         remove_cycles(horiz)
         remove_cycles(depth)
 

@@ -36,7 +36,7 @@ class DiagSet:
         return self._by_dim
 
     def add(self, name, input=None, output=None, **kwargs):
-        """ Adds a generator. """
+        """ Adds a generator and returns it. """
         if name in self.generators:
             raise ValueError(utils.value_err(
                 name, 'already in use'))
@@ -98,6 +98,8 @@ class DiagSet:
                 self.generators[x]['cofaces'].add(name)
                 self.generators[name]['faces'].add(x)
 
+        return self[name]
+
     def remove(self, name):
         """
         Removes a generator.
@@ -141,6 +143,9 @@ class Diagram:
             return self.ambient[self.mapping[element.dim][element.pos]]
         raise ValueError(utils.value_err(
             element, 'not an element of the shape'))
+
+    def __call__(self, element):
+        return self[element]
 
     @property
     def name(self):
