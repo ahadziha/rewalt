@@ -441,12 +441,18 @@ class Shape(OgPoset):
         projection on the original shape.
         Used in constructing units and unitors on diagrams.
         """
+        if self.dim == -1:  # Some simple cases
+            return self.id()
+        if self.dim == 0:
+            return Shape.arrow().terminal()
+
         if collapsed is not None:
             utils.typecheck(collapsed, {
                 'type': Closed,
                 'st': lambda x: x.issubset(self.boundary()),
                 'why': "expecting a closed subset of the shape's boundary"})
         else:
+            isunit = True
             collapsed = self.boundary()  # Default is whole boundary.
 
         asmap = collapsed.as_map
@@ -468,8 +474,15 @@ class Shape(OgPoset):
 
         ogproj = OgMap(collapse.target, self, mapping,
                        wfcheck=False)
+        proj = Shape._reorder(collapse.target).then(ogproj)
+
+        if isunit and isinstance(self, Opetope):
+            if isinstance(self, Globe):
+                proj = Globe._upgrademapsrc(proj)
+            else:
+                proj = Opetope._upgrademapsrc(proj)
         return ShapeMap(
-                Shape._reorder(collapse.target).then(ogproj),
+                proj,
                 wfcheck=False)
 
     # Private methods

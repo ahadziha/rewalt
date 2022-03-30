@@ -40,12 +40,11 @@ class DiagSet:
         if name in self.generators:
             raise ValueError(utils.value_err(
                 name, 'already in use'))
-        if input is None:
-            input = Diagram(self)
-        if output is None:
-            output = Diagram(self)
         for x in (input, output):
-            utils.typecheck(x, {'type': Diagram})
+            if x is None:
+                x = Diagram(self)
+            else:
+                utils.typecheck(x, {'type': Diagram})
 
         boundary = Shape.atom_cospan(
                 input.shape, output.shape)
@@ -161,10 +160,11 @@ class Diagram:
 
     @property
     def isdegenerate(self):
-        if self.dim > 0:
-            for x in self.mapping[-1]:
-                if self.ambient[x].dim == self.dim:
-                    return False
+        if self.dim <= 0:
+            return False
+        for x in self.mapping[-1]:
+            if self.ambient[x].dim == self.dim:
+                return False
         return True
 
     def paste(self, other, dim=None):
