@@ -269,6 +269,16 @@ class Diagram:
             unitor_map = unitor_map.dual(self.dim + 1)
         return self.pullback(unitor_map, self.name)
 
+    def unitor(self, collapsed, invert=False):
+        """
+        Generic unitor.
+        """
+        unitor_map = self.shape.inflate(
+                collapsed)
+        if invert:
+            unitor_map = unitor_map.dual(self.dim + 1)
+        return self.pullback(unitor_map, self.name)
+
     # Internal methods
     @classmethod
     def _new(cls, shape, ambient, mapping, name=None):
