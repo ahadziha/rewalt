@@ -196,7 +196,7 @@ class OgPoset:
             'st': lambda x: x.dim <= self.dim and x.pos <= self.size[x.dim],
             'why': 'out of bounds'})
         return GrSet(
-                *[El(element.dim - 1, i)
+                *[El(element.dim-1, i)
                   for i in self.face_data[element.dim][element.pos][sign]]
                 )
 
@@ -832,6 +832,14 @@ class GrSubset:
             })
         return self.support.issubset(other.support)
 
+    def isdisjoint(self, other):
+        utils.typecheck(other, {
+            'type': GrSubset,
+            'st': lambda x: x.ambient == self.ambient,
+            'why': 'not a subset of the same OgPoset'
+            })
+        return self.support.isdisjoint(other.support)
+
     def closure(self):
         """
         Returns the closure of the subset as an object of type Closed.
@@ -963,7 +971,7 @@ class Closed(GrSubset):
         """
         _sign = utils.flip(
                 utils.mksign(sign)) if sign is not None else '-'
-        dim = self.dim - 1 if dim is None else dim
+        dim = self.dim-1 if dim is None else dim
 
         boundary_max = self.maximal().support[:dim]
 
@@ -1229,7 +1237,7 @@ class OgMap:
         join_bot = OgMap.gray(
                 fst.bot(), snd.bot())
         mapping = [
-                [El(x.dim - 1, x.pos) for x in n_data]
+                [El(x.dim-1, x.pos) for x in n_data]
                 for n_data in join_bot.mapping[1:]]
 
         return OgMap(

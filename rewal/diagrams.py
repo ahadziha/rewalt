@@ -40,11 +40,15 @@ class DiagSet:
         if name in self.generators:
             raise ValueError(utils.value_err(
                 name, 'already in use'))
-        for x in (input, output):
-            if x is None:
-                x = Diagram(self)
-            else:
-                utils.typecheck(x, {'type': Diagram})
+        if input is None:
+            input = Diagram(self)
+        else:
+            utils.typecheck(input, {'type': Diagram})
+
+        if output is None:
+            output = Diagram(self)
+        else:
+            utils.typecheck(output, {'type': Diagram})
 
         boundary = Shape.atom_cospan(
                 input.shape, output.shape)
@@ -56,13 +60,13 @@ class DiagSet:
 
         for x in input.shape:
             y = boundary.fst[x]
-            mapping[y.dim][y.pos] = input[x]
+            mapping[y.dim][y.pos] = input[x].name
         for x in output.shape:
             y = boundary.snd[x]
             if mapping[y.dim][y.pos] is None:
-                mapping[y.dim][y.pos] = output[x]
+                mapping[y.dim][y.pos] = output[x].name
             else:
-                if mapping[y.dim][y.pos] != output[x]:
+                if mapping[y.dim][y.pos] != output[x].name:
                     raise ValueError(utils.value_err(
                             output, 'boundary does not match '
                             'boundary of {}'.format(repr(input))))
@@ -124,7 +128,7 @@ class Diagram:
         self._shape = Shape.empty()
         self._ambient = ambient
         self._mapping = []
-        self._name = '()'
+        self._name = ''
 
     def __eq__(self, other):
         return isinstance(other, Diagram) and \
@@ -134,7 +138,7 @@ class Diagram:
 
     def __getitem__(self, element):
         if element in self.shape:
-            return self.mapping[element.dim][element.pos]
+            return self.ambient[self.mapping[element.dim][element.pos]]
         raise ValueError(utils.value_err(
             element, 'not an element of the shape'))
 
@@ -185,13 +189,13 @@ class Diagram:
 
         for x in self.shape:
             y = paste_cospan.fst[x]
-            mapping[y.dim][y.pos] = self[x]
+            mapping[y.dim][y.pos] = self[x].name
         for x in other.shape:
             y = paste_cospan.snd[x]
             if mapping[y.dim][y.pos] is None:
-                mapping[y.dim][y.pos] = other[x]
+                mapping[y.dim][y.pos] = other[x].name
             else:
-                if mapping[y.dim][y.pos] != other[x]:
+                if mapping[y.dim][y.pos] != other[x].name:
                     raise ValueError(utils.value_err(
                             other, 'input {}-boundary does not match '
                             'output {}-boundary of {}'.format(
@@ -219,7 +223,7 @@ class Diagram:
         shape = shapemap.source
         mapping = [
                 [
-                    self[x]
+                    self[x].name
                     for x in n_data
                 ]
                 for n_data in shapemap.mapping]
