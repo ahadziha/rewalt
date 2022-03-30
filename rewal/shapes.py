@@ -30,7 +30,7 @@ class Shape(OgPoset):
 
     # Main constructors
     @staticmethod
-    def _atom_cospan(fst, snd):
+    def atom_cospan(fst, snd):
         """
         Given two shapes with identical round boundaries, returns a new
         atomic shape whose input boundary is the first one and output
@@ -109,13 +109,13 @@ class Shape(OgPoset):
 
     @staticmethod
     def atom(fst, snd):
-        return Shape._atom_cospan(fst, snd).target
+        return Shape.atom_cospan(fst, snd).target
 
     def _atom(self, other):
         return Shape.atom(self, other)
 
     @staticmethod
-    def _paste_cospan(fst, snd, dim=None):
+    def paste_cospan(fst, snd, dim=None):
         """
         Returns the pasting of two shapes along the output k-boundary
         of the first and the input k-boundary of the second.
@@ -161,7 +161,7 @@ class Shape(OgPoset):
 
     @staticmethod
     def paste(fst, snd, dim=None):
-        return Shape._paste_cospan(fst, snd, dim).target
+        return Shape.paste_cospan(fst, snd, dim).target
 
     def _paste(self, other, dim=None):
         return Shape.paste(self, other, dim)
