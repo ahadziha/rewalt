@@ -144,9 +144,6 @@ class Diagram:
         raise ValueError(utils.value_err(
             element, 'not an element of the shape'))
 
-    def __call__(self, element):
-        return self[element]
-
     @property
     def name(self):
         return self._name
