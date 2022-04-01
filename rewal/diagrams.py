@@ -3,6 +3,7 @@ Implements diagrammatic sets and diagrams.
 """
 
 from rewal import utils
+from rewal.ogposets import El
 from rewal.shapes import (Shape, ShapeMap)
 
 
@@ -122,6 +123,28 @@ class DiagSet:
         new._generators = self.generators.copy()
         new._by_dim = self.by_dim.copy()
         return new
+
+    @staticmethod
+    def yoneda(shape):
+        utils.typecheck(shape, {'type': Shape})
+        yoneda = DiagSet()
+        for x in shape:
+            atom = shape.atom_inclusion(x)
+            yoneda._generators.update({
+                x: {
+                    'shape': atom.source,
+                    'mapping': atom.mapping,
+                    'faces': {y for y in shape.faces(x)},
+                    'cofaces': {y for y in shape.cofaces(x)}
+                    }
+                })
+        for n, n_size in enumerate(shape.size):
+            yoneda._by_dim.update({
+                n: {
+                    El(n, k) for k in range(n_size)
+                    }
+                })
+        return yoneda
 
 
 class Diagram:
@@ -289,6 +312,14 @@ class Diagram:
         if invert:
             unitor_map = unitor_map.dual(self.dim + 1)
         return self.pullback(unitor_map, self.name)
+
+    @staticmethod
+    def yoneda(shapemap, name=None):
+        return Diagram._new(
+                shapemap.source,
+                DiagSet.yoneda(shapemap.target),
+                shapemap.mapping,
+                name)
 
     # Internal methods
     @classmethod

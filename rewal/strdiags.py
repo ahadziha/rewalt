@@ -151,15 +151,15 @@ class StrDiag:
         longest_height = longest_paths(self.graph)
 
         xstep = 1 / (max(
-            [longest_width[x][0] for x in longest_width]) + 1)
+            [longest_width[x][0] for x in longest_width]) + 2)
         ystep = 1 / (max(
-            [longest_height[x][0] for x in longest_height]) + 1)
+            [longest_height[x][0] for x in longest_height]) + 2)
 
         coordinates = dict()
         for x in self.graph:
             coordinates[x] = (
-                    (longest_width[x][0] + .5) / (sum(longest_width[x]) + 1),
-                    (longest_height[x][0] + .5) / (sum(longest_height[x]) + 1)
+                    (longest_width[x][0] + 1) / (sum(longest_width[x]) + 2),
+                    (longest_height[x][0] + 1) / (sum(longest_height[x]) + 2)
                     )
 
         for coord in set(coordinates.values()):  # Solve clashes
