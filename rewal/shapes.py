@@ -452,7 +452,6 @@ class Shape(OgPoset):
                 'st': lambda x: x.issubset(self.boundary()),
                 'why': "expecting a closed subset of the shape's boundary"})
         else:
-            isunit = True
             collapsed = self.boundary()  # Default is whole boundary.
 
         asmap = collapsed.as_map
@@ -476,7 +475,7 @@ class Shape(OgPoset):
                        wfcheck=False)
         proj = Shape._reorder(collapse.target).then(ogproj)
 
-        if isunit and isinstance(self, Opetope):
+        if collapsed == self.boundary() and isinstance(self, Opetope):
             if isinstance(self, Globe):
                 proj = Globe._upgrademapsrc(proj)
             else:
