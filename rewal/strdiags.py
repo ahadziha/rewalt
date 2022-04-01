@@ -54,12 +54,12 @@ class StrDiag:
                 for y in diagram.shape.faces(x, '+'):
                     graph.add_edge(x, y)
 
-        width = nx.DiGraph()
-        width.add_nodes_from(self.nodes)
-        width.add_nodes_from(self.wires)
+        widthgraph = nx.DiGraph()
+        widthgraph.add_nodes_from(self.nodes)
+        widthgraph.add_nodes_from(self.wires)
         if dim >= 2:
-            for x in width:
-                for y in width:
+            for x in widthgraph:
+                for y in widthgraph:
                     if y != x:
                         out_x = GrSubset(
                             GrSet(x), diagram.shape,
@@ -70,13 +70,13 @@ class StrDiag:
                             wfcheck=False).closure().boundary_max(
                                     '-', dim-2)
                         if not out_x.isdisjoint(in_y):
-                            width.add_edge(x, y)
+                            widthgraph.add_edge(x, y)
 
-        depth = nx.DiGraph()
-        depth.add_nodes_from(self.wires)
+        depthgraph = nx.DiGraph()
+        depthgraph.add_nodes_from(self.wires)
         if dim >= 3:
-            for x in depth:
-                for y in depth:
+            for x in depthgraph:
+                for y in depthgraph:
                     if y != x:
                         out_x = GrSubset(
                             GrSet(x), diagram.shape,
@@ -87,7 +87,7 @@ class StrDiag:
                             wfcheck=False).closure().boundary_max(
                                     '-', dim-3)
                         if not out_x.isdisjoint(in_y):
-                            depth.add_edge(x, y)
+                            depthgraph.add_edge(x, y)
 
         def remove_cycles(graph):
             cycles = list(nx.simple_cycles(graph))
@@ -98,24 +98,24 @@ class StrDiag:
                 to_delete.add((cycle[-1], cycle[0]))
             graph.remove_edges_from(to_delete)
 
-        remove_cycles(width)
-        remove_cycles(depth)
+        remove_cycles(widthgraph)
+        remove_cycles(depthgraph)
 
         self._graph = graph
-        self._width = width
-        self._depth = depth
+        self._widthgraph = widthgraph
+        self._depthgraph = depthgraph
 
     @property
     def graph(self):
         return self._graph
 
     @property
-    def width(self):
-        return self._width
+    def widthgraph(self):
+        return self._widthgraph
 
     @property
-    def depth(self):
-        return self._depth
+    def depthgraph(self):
+        return self._depthgraph
 
     @property
     def nodes(self):
@@ -147,7 +147,7 @@ class StrDiag:
                         max(longest_bw.values()),
                         max(longest_fw.values()))
             return longest_paths
-        longest_width = longest_paths(self.width)
+        longest_width = longest_paths(self.widthgraph)
         longest_height = longest_paths(self.graph)
 
         xstep = 1 / (max(
@@ -177,7 +177,7 @@ class StrDiag:
         ax = plt.subplots()[1]
         coord = self.place_vertices()
 
-        wiresort = list(nx.topological_sort(self.depth))
+        wiresort = list(nx.topological_sort(self.depthgraph))
 
         contour = [
                 patheffects.Stroke(linewidth=3, alpha=1, foreground='white'),
