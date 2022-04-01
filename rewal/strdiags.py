@@ -158,8 +158,8 @@ class StrDiag:
         coordinates = dict()
         for x in self.graph:
             coordinates[x] = (
-                    (longest_width[x][0] + 0.5) / (sum(longest_width[x]) + 1),
-                    (longest_height[x][0] + 0.5) / (sum(longest_height[x]) + 1)
+                    (longest_width[x][0] + .5) / (sum(longest_width[x]) + 1),
+                    (longest_height[x][0] + .5) / (sum(longest_height[x]) + 1)
                     )
 
         for coord in set(coordinates.values()):  # Solve clashes
@@ -168,8 +168,8 @@ class StrDiag:
                 n = len(keys)
                 for k, x in enumerate(keys):
                     coordinates[x] = (
-                        coordinates[x][0] + (xstep/3)*cos(.3 + (2*pi*k)/n),
-                        coordinates[x][1] + (ystep/3)*sin(.3 + (2*pi*k)/n)
+                        coordinates[x][0] + (xstep/4)*cos(.4 + (2*pi*k)/n),
+                        coordinates[x][1] + (ystep/4)*sin(.4 + (2*pi*k)/n)
                         )
         return coordinates
 

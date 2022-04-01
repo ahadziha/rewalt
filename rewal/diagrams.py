@@ -24,7 +24,11 @@ class DiagSet:
 
     def __getitem__(self, key):
         if key in self.generators:
-            return self._generators[key]['cell']
+            return Diagram._new(
+                    self.generators[key]['shape'],
+                    self,
+                    self.generators[key]['mapping'],
+                    key)
         raise KeyError(str(key))
 
     @property
@@ -42,13 +46,13 @@ class DiagSet:
                 name, 'already in use'))
         if input is None:
             input = Diagram(self)
-        else:
-            utils.typecheck(input, {'type': Diagram})
-
         if output is None:
             output = Diagram(self)
-        else:
-            utils.typecheck(output, {'type': Diagram})
+        for x in (input, output):
+            utils.typecheck(x, {
+                'type': Diagram,
+                'st': lambda x: x.ambient == self,
+                'why': 'not a diagram in {}'.format(repr(self))})
 
         boundary = Shape.atom_cospan(
                 input.shape, output.shape)
@@ -72,28 +76,23 @@ class DiagSet:
                             'boundary of {}'.format(repr(input))))
         mapping[-1][0] = name
 
-        new = Diagram._new(
-                shape,
-                self,
-                mapping,
-                name)
-
         # TODO: valid kwargs
         self._generators.update({
                 name: {
-                    'cell': new,
+                    'shape': shape,
+                    'mapping': mapping,
                     'faces': set(),
                     'cofaces': set(),
                     **kwargs
                     }
                 })
 
-        if new.dim in self._by_dim:
-            self._by_dim[new.dim].add(name)
+        if shape.dim in self._by_dim:
+            self._by_dim[shape.dim].add(name)
         else:
-            self._by_dim[new.dim] = {name}
+            self._by_dim[shape.dim] = {name}
 
-        if new.dim > 0:
+        if shape.dim > 0:
             for x in mapping[-2]:
                 self.generators[x]['cofaces'].add(name)
                 self.generators[name]['faces'].add(x)
@@ -117,6 +116,12 @@ class DiagSet:
             self.generators[x]['cofaces'].remove(name)
 
         self._generators.pop(name, None)
+
+    def copy(self):
+        new = DiagSet()
+        new._generators = self.generators.copy()
+        new._by_dim = self.by_dim.copy()
+        return new
 
 
 class Diagram:
