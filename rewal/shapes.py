@@ -182,8 +182,8 @@ class Shape(OgPoset):
 
         fst_image = span.fst.image()
         snd_image = span.snd.image()
-        fst_output = span.fst.target.boundary('+')
-        snd_input = span.snd.target.boundary('-')
+        fst_output = span.fst.target.all().boundary('+')
+        snd_input = span.snd.target.all().boundary('-')
 
         def condition():
             t1 = span.fst.target.dim == span.snd.target.dim \
@@ -449,10 +449,10 @@ class Shape(OgPoset):
         if collapsed is not None:
             utils.typecheck(collapsed, {
                 'type': Closed,
-                'st': lambda x: x.issubset(self.boundary()),
+                'st': lambda x: x.issubset(self.all().boundary()),
                 'why': "expecting a closed subset of the shape's boundary"})
         else:
-            collapsed = self.boundary()  # Default is whole boundary.
+            collapsed = self.all().boundary()  # Default is whole boundary.
 
         asmap = collapsed.as_map
         arrow = Shape.arrow()
@@ -475,7 +475,7 @@ class Shape(OgPoset):
                        wfcheck=False)
         proj = Shape._reorder(collapse.target).then(ogproj)
 
-        if collapsed == self.boundary() and isinstance(self, Opetope):
+        if collapsed == self.all().boundary() and isinstance(self, Opetope):
             if isinstance(self, Globe):
                 proj = Globe._upgrademapsrc(proj)
             else:
@@ -819,6 +819,16 @@ class ShapeMap(OgMap):
         return ShapeMap(
                 super().then(other, *others),
                 wfcheck=False)
+
+    def boundary(self, sign, dim=None):
+        """
+        The map restricted to a boundary of its source.
+        """
+        if dim is None:
+            dim = self.source.dim - 1
+        sign = utils.mksign(sign)
+        return self.source.boundary_inclusion(
+                sign, dim).then(self)
 
     @staticmethod
     def gray(*maps):

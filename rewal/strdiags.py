@@ -12,8 +12,8 @@ from matplotlib.patches import PathPatch
 
 from math import (sin, cos, pi)
 
+import rewal
 from rewal import utils
-from rewal.ogposets import (GrSet, GrSubset)
 from rewal.diagrams import Diagram
 
 matplotlib.use('TkCairo')
@@ -24,7 +24,14 @@ class StrDiag:
     Class for string diagrams.
     """
     def __init__(self, diagram, **kwargs):
-        utils.typecheck(diagram, {'type': Diagram})
+        if isinstance(diagram, rewal.shapes.ShapeMap):
+            diagram = Diagram.yoneda(diagram)
+        else:
+            if isinstance(diagram, rewal.shapes.Shape):
+                diagram = Diagram.yoneda(diagram.id())
+            else:
+                utils.typecheck(diagram, {'type': Diagram})
+
         dim = diagram.dim
 
         self._nodes = {
@@ -61,12 +68,12 @@ class StrDiag:
             for x in widthgraph:
                 for y in widthgraph:
                     if y != x:
-                        out_x = GrSubset(
-                            GrSet(x), diagram.shape,
+                        out_x = rewal.ogposets.GrSubset(
+                            rewal.ogposets.GrSet(x), diagram.shape,
                             wfcheck=False).closure().boundary_max(
                                     '+', dim-2)
-                        in_y = GrSubset(
-                            GrSet(y), diagram.shape,
+                        in_y = rewal.ogposets.GrSubset(
+                            rewal.ogposets.GrSet(y), diagram.shape,
                             wfcheck=False).closure().boundary_max(
                                     '-', dim-2)
                         if not out_x.isdisjoint(in_y):
@@ -78,12 +85,12 @@ class StrDiag:
             for x in depthgraph:
                 for y in depthgraph:
                     if y != x:
-                        out_x = GrSubset(
-                            GrSet(x), diagram.shape,
+                        out_x = rewal.ogposets.GrSubset(
+                            rewal.ogposets.GrSet(x), diagram.shape,
                             wfcheck=False).closure().boundary_max(
                                     '+', dim-3)
-                        in_y = GrSubset(
-                            GrSet(y), diagram.shape,
+                        in_y = rewal.ogposets.GrSubset(
+                            rewal.ogposets.GrSet(y), diagram.shape,
                             wfcheck=False).closure().boundary_max(
                                     '-', dim-3)
                         if not out_x.isdisjoint(in_y):
