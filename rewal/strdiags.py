@@ -3,10 +3,14 @@ Implements string diagram visualisations.
 """
 
 import networkx as nx
+
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as patheffects
 from matplotlib.path import Path
 from matplotlib.patches import PathPatch
+
+from math import (sin, cos, pi)
 
 from rewal import utils
 from rewal.ogposets import (GrSet, GrSubset)
@@ -143,8 +147,13 @@ class StrDiag:
                         max(longest_bw.values()),
                         max(longest_fw.values()))
             return longest_paths
-        longest_height = longest_paths(self.graph)
         longest_width = longest_paths(self.width)
+        longest_height = longest_paths(self.graph)
+
+        xstep = 1 / (max(
+            [longest_width[x][0] for x in longest_width]) + 1)
+        ystep = 1 / (max(
+            [longest_height[x][0] for x in longest_height]) + 1)
 
         coordinates = dict()
         for x in self.graph:
@@ -152,12 +161,29 @@ class StrDiag:
                     (longest_width[x][0] + 0.5) / (sum(longest_width[x]) + 1),
                     (longest_height[x][0] + 0.5) / (sum(longest_height[x]) + 1)
                     )
+
+        for coord in set(coordinates.values()):  # Solve clashes
+            keys = [x for x in coordinates if coordinates[x] == coord]
+            if len(keys) > 1:
+                n = len(keys)
+                for k, x in enumerate(keys):
+                    coordinates[x] = (
+                        coordinates[x][0] + (xstep/3)*cos(.3 + (2*pi*k)/n),
+                        coordinates[x][1] + (ystep/3)*sin(.3 + (2*pi*k)/n)
+                        )
         return coordinates
 
     def draw(self):  # Just a stub to see if all works.
         ax = plt.subplots()[1]
         coord = self.place_vertices()
-        for x in self.wires:
+
+        wiresort = list(nx.topological_sort(self.depth))
+
+        contour = [
+                patheffects.Stroke(linewidth=3, alpha=1, foreground='white'),
+                patheffects.Normal()
+                ]
+        for x in reversed(wiresort):
             for y in [
                     *self.graph.predecessors(x),
                     *self.graph.successors(x)
@@ -176,7 +202,8 @@ class StrDiag:
                         path,
                         facecolor='none',
                         edgecolor=self.wires[x]['color'],
-                        alpha=0.2 if self.wires[x]['isdegenerate'] else 1,
+                        alpha=0.1 if self.wires[x]['isdegenerate'] else 1,
+                        path_effects=contour,
                         lw=1)
                 ax.add_patch(patch)
             if self.graph.in_degree(x) == 0:
@@ -187,7 +214,8 @@ class StrDiag:
                         path,
                         facecolor='none',
                         edgecolor=self.wires[x]['color'],
-                        alpha=0.2 if self.wires[x]['isdegenerate'] else 1,
+                        alpha=0.1 if self.wires[x]['isdegenerate'] else 1,
+                        path_effects=contour,
                         lw=1)
                 ax.add_patch(patch)
             if self.graph.out_degree(x) == 0:
@@ -198,16 +226,26 @@ class StrDiag:
                         path,
                         facecolor='none',
                         edgecolor=self.wires[x]['color'],
-                        alpha=0.2 if self.wires[x]['isdegenerate'] else 1,
+                        alpha=0.1 if self.wires[x]['isdegenerate'] else 1,
+                        path_effects=contour,
                         lw=1)
                 ax.add_patch(patch)
+            ax.annotate(
+                    self.wires[x]['label'],
+                    (coord[x][0]+.01, coord[x][1])
+                    )
 
         for x in (
                 x for x in self.nodes
                 if not self.nodes[x]['isdegenerate']):
             ax.scatter(
                     coord[x][0], coord[x][1],
+                    s=40,
                     c=self.nodes[x]['color'])
+            ax.annotate(
+                    self.nodes[x]['label'],
+                    (coord[x][0]+.01, coord[x][1]+.01)
+                    )
 
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
