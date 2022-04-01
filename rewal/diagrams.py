@@ -287,7 +287,7 @@ class Diagram:
         """
         sign = utils.mksign(sign)
         unitor_map = self.shape.inflate(
-                self.shape.boundary('+'))
+                self.shape.all().boundary('+'))
         if sign == '-':
             unitor_map = unitor_map.dual(self.dim + 1)
         return self.pullback(unitor_map, self.name)
@@ -298,7 +298,7 @@ class Diagram:
         """
         sign = utils.mksign(sign)
         unitor_map = self.shape.inflate(
-                self.shape.boundary('-'))
+                self.shape.all().boundary('-'))
         if sign == '+':
             unitor_map = unitor_map.dual(self.dim + 1)
         return self.pullback(unitor_map, self.name)

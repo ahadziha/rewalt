@@ -33,12 +33,15 @@ class StrDiag:
                 utils.typecheck(diagram, {'type': Diagram})
 
         dim = diagram.dim
+        generators = diagram.ambient.generators
 
         self._nodes = {
                 x: {
                     'label': diagram[x].name,
-                    'color': diagram.ambient.generators[diagram[x].name].get(
+                    'color': generators[diagram[x].name].get(
                         'color', 'black'),
+                    'draw_node': generators[diagram[x].name].get(
+                        'draw_node', True),
                     'isdegenerate': dim != diagram[x].dim
                     }
                 for x in diagram.shape[dim]}
@@ -242,9 +245,14 @@ class StrDiag:
                     (coord[x][0]+.01, coord[x][1])
                     )
 
+        def is_drawn(x):
+            if self.nodes[x]['isdegenerate']:
+                return False
+            return self.nodes[x]['draw_node']
+
         for x in (
                 x for x in self.nodes
-                if not self.nodes[x]['isdegenerate']):
+                if is_drawn(x)):
             ax.scatter(
                     coord[x][0], coord[x][1],
                     s=40,
