@@ -820,16 +820,6 @@ class ShapeMap(OgMap):
                 super().then(other, *others),
                 wfcheck=False)
 
-    def boundary(self, sign, dim=None):
-        """
-        The map restricted to a boundary of its source.
-        """
-        if dim is None:
-            dim = self.source.dim - 1
-        sign = utils.mksign(sign)
-        return self.source.boundary_inclusion(
-                sign, dim).then(self)
-
     @staticmethod
     def gray(*maps):
         for f in maps:
