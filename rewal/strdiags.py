@@ -2,11 +2,12 @@
 Implements string diagram visualisations.
 """
 
+from abc import ABC
+
 import networkx as nx
 
 import matplotlib
 import matplotlib.pyplot as plt
-import matplotlib.patheffects as patheffects
 from matplotlib.path import Path
 from matplotlib.patches import PathPatch
 
@@ -178,93 +179,140 @@ class StrDiag:
                 n = len(keys)
                 for k, x in enumerate(keys):
                     coordinates[x] = (
-                        coordinates[x][0] + (xstep/4)*cos(.4 + (2*pi*k)/n),
-                        coordinates[x][1] + (ystep/4)*sin(.4 + (2*pi*k)/n)
+                        coordinates[x][0] + (xstep/3)*cos(.4 + (2*pi*k)/n),
+                        coordinates[x][1] + (ystep/3)*sin(.4 + (2*pi*k)/n)
                         )
         return coordinates
 
-    def draw(self):  # Just a stub to see if all works.
-        ax = plt.subplots()[1]
+    def draw(self, **params):  # Just a stub to see if all works.
+        bgcolor = params.get('bg', 'white')
         coord = self.place_vertices()
+        backend = MatBackend(bg=bgcolor)
 
         wiresort = list(nx.topological_sort(self.depthgraph))
-
-        contour = [
-                patheffects.Stroke(linewidth=3, alpha=1, foreground='white'),
-                patheffects.Normal()
-                ]
-        for x in reversed(wiresort):
-            for y in [
-                    *self.graph.predecessors(x),
-                    *self.graph.successors(x)
+        for wire in reversed(wiresort):
+            for node in [
+                    *self.graph.predecessors(wire),
+                    *self.graph.successors(wire)
                     ]:
-                path = Path(
-                        [
-                            coord[x],
-                            (coord[x][0], coord[y][1]),
-                            coord[y]
-                        ], [
-                            Path.MOVETO,
-                            Path.CURVE3,
-                            Path.CURVE3
-                        ])
-                patch = PathPatch(
-                        path,
-                        facecolor='none',
-                        edgecolor=self.wires[x]['color'],
-                        alpha=0.1 if self.wires[x]['isdegenerate'] else 1,
-                        path_effects=contour,
-                        lw=1)
-                ax.add_patch(patch)
-            if self.graph.in_degree(x) == 0:
-                path = Path(
-                        [coord[x], (coord[x][0], 0)],
-                        [Path.MOVETO, Path.LINETO])
-                patch = PathPatch(
-                        path,
-                        facecolor='none',
-                        edgecolor=self.wires[x]['color'],
-                        alpha=0.1 if self.wires[x]['isdegenerate'] else 1,
-                        path_effects=contour,
-                        lw=1)
-                ax.add_patch(patch)
-            if self.graph.out_degree(x) == 0:
-                path = Path(
-                        [coord[x], (coord[x][0], 1)],
-                        [Path.MOVETO, Path.LINETO])
-                patch = PathPatch(
-                        path,
-                        facecolor='none',
-                        edgecolor=self.wires[x]['color'],
-                        alpha=0.1 if self.wires[x]['isdegenerate'] else 1,
-                        path_effects=contour,
-                        lw=1)
-                ax.add_patch(patch)
-            ax.annotate(
-                    self.wires[x]['label'],
-                    (coord[x][0]+.01, coord[x][1])
-                    )
+                backend.draw_wire(
+                        coord[wire], coord[node],
+                        self.wires[wire]['color'],
+                        self.wires[wire]['isdegenerate'])
 
-        def is_drawn(x):
-            if self.nodes[x]['isdegenerate']:
+            if self.graph.in_degree(wire) == 0:
+                backend.draw_wire(
+                        coord[wire], (coord[wire][0], 0),
+                        self.wires[wire]['color'],
+                        self.wires[wire]['isdegenerate'])
+
+            if self.graph.out_degree(wire) == 0:
+                backend.draw_wire(
+                        coord[wire], (coord[wire][0], 1),
+                        self.wires[wire]['color'],
+                        self.wires[wire]['isdegenerate'])
+
+            backend.draw_label(
+                    self.wires[wire]['label'],
+                    (coord[wire][0]+.01, coord[wire][1]+.01))
+
+        def is_drawn(node):
+            if self.nodes[node]['isdegenerate']:
                 return False
-            return self.nodes[x]['draw_node']
+            return self.nodes[node]['draw_node']
 
-        for x in (
-                x for x in self.nodes
-                if is_drawn(x)):
-            ax.scatter(
-                    coord[x][0], coord[x][1],
-                    s=40,
-                    c=self.nodes[x]['color'])
-            ax.annotate(
-                    self.nodes[x]['label'],
-                    (coord[x][0]+.01, coord[x][1]+.01)
-                    )
+        for node in (
+                node for node in self.nodes
+                if is_drawn(node)):
+            backend.draw_node(
+                    coord[node],
+                    self.nodes[node]['color'])
+            backend.draw_label(
+                    self.nodes[node]['label'],
+                    (coord[node][0]+.01, coord[node][1]+.01))
 
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        plt.axis('off')
+        backend.output()
+
+
+class DrawBackend(ABC):
+    def __init__(self, **params):
+        self.bg = params.get('bg', 'white')
+
+
+class MatBackend(DrawBackend):
+    """
+    Matplotlib drawing backend.
+    """
+    def __init__(self, **params):
+        super().__init__(**params)
+
+        self.axes = plt.axes()
+        self.axes.set_facecolor(self.bg)
+        self.axes.set_xlim(0, 1)
+        self.axes.set_ylim(0, 1)
+        for side in ('top', 'right', 'bottom', 'left'):
+            self.axes.spines[side].set_visible(False)
+
+    def draw_wire(self, wire_xy, node_xy,
+                  color, isdegenerate):
+        """
+        Draws a wire from a wire vertex to a node vertex.
+        """
+        y_offset = .2*(wire_xy[1] - node_xy[1])
+        width = .02
+
+        contour = Path(
+                [
+                    node_xy,
+                    (wire_xy[0] - (width/2), node_xy[1] + y_offset),
+                    (wire_xy[0] - (width/2), wire_xy[1]),
+                    (wire_xy[0] + (width/2), wire_xy[1]),
+                    (wire_xy[0] + (width/2), node_xy[1] + y_offset),
+                    node_xy
+                ], [
+                    Path.MOVETO,
+                    Path.CURVE3,
+                    Path.CURVE3,
+                    Path.LINETO,
+                    Path.CURVE3,
+                    Path.CURVE3
+                ])
+        wire = Path(
+                [
+                    wire_xy,
+                    (wire_xy[0], node_xy[1] + y_offset),
+                    node_xy
+                ], [
+                    Path.MOVETO,
+                    Path.CURVE3,
+                    Path.CURVE3
+                ])
+        p_contour = PathPatch(
+                contour,
+                facecolor=self.bg,
+                edgecolor='none')
+        p_wire = PathPatch(
+                wire,
+                facecolor='none',
+                edgecolor=color,
+                alpha=0.1 if isdegenerate else 1,
+                lw=1)
+        self.axes.add_patch(p_contour)
+        self.axes.add_patch(p_wire)
+
+    def draw_label(self, label, xy):
+        self.axes.annotate(
+                label,
+                xy)
+
+    def draw_node(self, xy, color):
+        self.axes.scatter(
+                xy[0],
+                xy[1],
+                s=40,
+                c=color)
+
+    def output(self):
         plt.subplots_adjust(
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         plt.show()
