@@ -24,7 +24,7 @@ class StrDiag:
     """
     Class for string diagrams.
     """
-    def __init__(self, diagram, **kwargs):
+    def __init__(self, diagram, **params):
         if isinstance(diagram, rewal.shapes.ShapeMap):
             diagram = Diagram.yoneda(diagram)
         else:
@@ -36,11 +36,14 @@ class StrDiag:
         dim = diagram.dim
         generators = diagram.ambient.generators
 
+        self.fgcolor = params.get('fgcolor', 'black')
+        self.bgcolor = params.get('bgcolor', 'white')
+
         self._nodes = {
                 x: {
                     'label': diagram[x].name,
                     'color': generators[diagram[x].name].get(
-                        'color', 'black'),
+                        'color', self.fgcolor),
                     'draw_node': generators[diagram[x].name].get(
                         'draw_node', True),
                     'isdegenerate': dim != diagram[x].dim
@@ -50,7 +53,7 @@ class StrDiag:
                 x: {
                     'label': diagram[x].name,
                     'color': generators[diagram[x].name].get(
-                        'color', 'black'),
+                        'color', self.fgcolor),
                     'isdegenerate': dim-1 != diagram[x].dim
                     }
                 for x in diagram.shape[dim-1]}
@@ -188,11 +191,12 @@ class StrDiag:
         """
         Draws the string diagram with a backend.
         """
-        bgcolor = params.get('bg', 'white')
         show = params.get('show', True)
 
         coord = self.place_vertices()
-        backend = MatBackend(bg=bgcolor)
+        backend = MatBackend(
+                bgcolor=self.bgcolor,
+                fgcolor=self.fgcolor)
 
         wiresort = list(nx.topological_sort(self.depthgraph))
         for wire in reversed(wiresort):
@@ -241,7 +245,8 @@ class StrDiag:
 
 class DrawBackend(ABC):
     def __init__(self, **params):
-        self.bg = params.get('bg', 'white')
+        self.bgcolor = params.get('bgcolor', 'white')
+        self.fgcolor = params.get('fgcolor', 'black')
 
 
 class MatBackend(DrawBackend):
@@ -252,7 +257,7 @@ class MatBackend(DrawBackend):
         super().__init__(**params)
 
         self.fig, self.axes = plt.subplots()
-        self.axes.set_facecolor(self.bg)
+        self.axes.set_facecolor(self.bgcolor)
         self.axes.set_xlim(0, 1)
         self.axes.set_ylim(0, 1)
         for side in ('top', 'right', 'bottom', 'left'):
@@ -294,7 +299,7 @@ class MatBackend(DrawBackend):
                 ])
         p_contour = PathPatch(
                 contour,
-                facecolor=self.bg,
+                facecolor=self.bgcolor,
                 edgecolor='none')
         p_wire = PathPatch(
                 wire,
@@ -309,7 +314,8 @@ class MatBackend(DrawBackend):
         xy = (xy[0] + offset[0], xy[1] + offset[1])
         self.axes.annotate(
                 label,
-                xy)
+                xy,
+                color=self.fgcolor)
 
     def draw_node(self, xy, color):
         self.axes.scatter(
