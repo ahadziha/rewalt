@@ -275,6 +275,14 @@ class Diagram:
         return self.pullback(self.shape.boundary_inclusion(
             sign, dim), name)
 
+    @property
+    def input(self):
+        return self.boundary('-')
+
+    @property
+    def output(self):
+        return self.boundary('+')
+
     def unit(self):
         """
         Unit on the diagram.

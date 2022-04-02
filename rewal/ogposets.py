@@ -241,6 +241,14 @@ class OgPoset:
     def boundary(self, sign=None, dim=None):
         return self.boundary_inclusion(sign, dim).source
 
+    @property
+    def input(self):
+        return self.boundary('-')
+
+    @property
+    def output(self):
+        return self.boundary('+')
+
     @classmethod
     def from_face_data(cls, face_data,
                        wfcheck=True):
@@ -994,6 +1002,14 @@ class Closed(GrSubset):
             return self
         return self.boundary_max(sign, dim).closure()
 
+    @property
+    def input(self):
+        return self.boundary('-')
+
+    @property
+    def output(self):
+        return self.boundary('+')
+
     @staticmethod
     def subset(grsubset,
                wfcheck=True):
@@ -1166,6 +1182,21 @@ class OgMap:
     def image(self):
         """ The image of the source through the mapping. """
         return self.source.all().image(self)
+
+    def boundary(self, sign=None, dim=None):
+        """
+        The map restricted to a boundary of its source.
+        """
+        return self.source.boundary_inclusion(
+                sign, dim).then(self)
+
+    @property
+    def input(self):
+        return self.boundary('-')
+
+    @property
+    def output(self):
+        return self.boundary('+')
 
     def bot(self):
         """

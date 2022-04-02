@@ -38,6 +38,7 @@ class StrDiag:
 
         self.fgcolor = params.get('fgcolor', 'black')
         self.bgcolor = params.get('bgcolor', 'white')
+        self.name = diagram.name
 
         self._nodes = {
                 x: {
@@ -196,7 +197,8 @@ class StrDiag:
         coord = self.place_vertices()
         backend = MatBackend(
                 bgcolor=self.bgcolor,
-                fgcolor=self.fgcolor)
+                fgcolor=self.fgcolor,
+                name=self.name)
 
         wiresort = list(nx.topological_sort(self.depthgraph))
         for wire in reversed(wiresort):
@@ -247,6 +249,7 @@ class DrawBackend(ABC):
     def __init__(self, **params):
         self.bgcolor = params.get('bgcolor', 'white')
         self.fgcolor = params.get('fgcolor', 'black')
+        self.name = params.get('name', 'String diagram')
 
 
 class MatBackend(DrawBackend):
@@ -327,4 +330,5 @@ class MatBackend(DrawBackend):
     def show(self):
         self.fig.subplots_adjust(
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+        self.fig.canvas.manager.set_window_title(self.name)
         self.fig.show()
