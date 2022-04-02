@@ -49,7 +49,7 @@ class StrDiag:
         self._wires = {
                 x: {
                     'label': diagram[x].name,
-                    'color': diagram.ambient.generators[diagram[x].name].get(
+                    'color': generators[diagram[x].name].get(
                         'color', 'black'),
                     'isdegenerate': dim-1 != diagram[x].dim
                     }
@@ -184,8 +184,13 @@ class StrDiag:
                         )
         return coordinates
 
-    def draw(self, **params):  # Just a stub to see if all works.
+    def draw(self, **params):
+        """
+        Draws the string diagram with a backend.
+        """
         bgcolor = params.get('bg', 'white')
+        show = params.get('show', True)
+
         coord = self.place_vertices()
         backend = MatBackend(bg=bgcolor)
 
@@ -214,7 +219,7 @@ class StrDiag:
 
             backend.draw_label(
                     self.wires[wire]['label'],
-                    (coord[wire][0]+.01, coord[wire][1]+.01))
+                    coord[wire], (.01, .01))
 
         def is_drawn(node):
             if self.nodes[node]['isdegenerate']:
@@ -229,9 +234,9 @@ class StrDiag:
                     self.nodes[node]['color'])
             backend.draw_label(
                     self.nodes[node]['label'],
-                    (coord[node][0]+.01, coord[node][1]+.01))
-
-        backend.output()
+                    coord[node], (.01, .01))
+        if show:
+            backend.show()
 
 
 class DrawBackend(ABC):
@@ -246,7 +251,7 @@ class MatBackend(DrawBackend):
     def __init__(self, **params):
         super().__init__(**params)
 
-        self.axes = plt.axes()
+        self.fig, self.axes = plt.subplots()
         self.axes.set_facecolor(self.bg)
         self.axes.set_xlim(0, 1)
         self.axes.set_ylim(0, 1)
@@ -300,7 +305,8 @@ class MatBackend(DrawBackend):
         self.axes.add_patch(p_contour)
         self.axes.add_patch(p_wire)
 
-    def draw_label(self, label, xy):
+    def draw_label(self, label, xy, offset):
+        xy = (xy[0] + offset[0], xy[1] + offset[1])
         self.axes.annotate(
                 label,
                 xy)
@@ -312,7 +318,7 @@ class MatBackend(DrawBackend):
                 s=40,
                 c=color)
 
-    def output(self):
-        plt.subplots_adjust(
+    def show(self):
+        self.fig.subplots_adjust(
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-        plt.show()
+        self.fig.show()
