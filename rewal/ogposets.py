@@ -360,7 +360,7 @@ class OgPoset:
                 [
                     {'-': set(), '+': set()},
                     {'-': set(), '+': set()}
-                ]] + ogp.face_data
+                ], *ogp.face_data]
         for x in ogp[0]:
             face_data[1][x.pos]['-'].add(0)
             face_data[1][x.pos]['+'].add(1)
@@ -368,7 +368,7 @@ class OgPoset:
                 [
                     {'-': {x.pos for x in ogp[0]}, '+': set()},
                     {'-': set(), '+': {x.pos for x in ogp[0]}}
-                ]] + ogp.coface_data
+                ], *ogp.coface_data]
         return OgPoset(face_data, coface_data,
                        wfcheck=False, matchcheck=False)
 

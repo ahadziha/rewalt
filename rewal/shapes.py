@@ -234,10 +234,11 @@ class Shape(OgPoset):
 
     @staticmethod
     def suspend(shape, n=1):
-        utils.typecheck(shape, {'type': Shape})
         if n == 0:
             return shape
 
+        if not isinstance(shape, Shape):
+            return OgPoset.suspend(shape, n)
         # Suspensions of Empty are not shapes
         if isinstance(shape, Empty):
             return OgPoset.suspend(shape, n)
@@ -260,7 +261,8 @@ class Shape(OgPoset):
     def gray(*shapes):
         """ Gray product of shapes. """
         for x in shapes:
-            utils.typecheck(x, {'type': Shape})
+            if not isinstance(x, Shape):
+                return OgPoset.gray(*shapes)
         if len(shapes) == 0:
             return Point()
         if len(shapes) == 1:
@@ -279,7 +281,8 @@ class Shape(OgPoset):
     @staticmethod
     def join(*shapes):
         for x in shapes:
-            utils.typecheck(x, {'type': Shape})
+            if not isinstance(x, Shape):
+                return OgPoset.join(*shapes)
         if len(shapes) == 0:
             return Empty()
         if len(shapes) == 1:
@@ -817,6 +820,9 @@ class ShapeMap(OgMap):
                          wfcheck=False)
 
     def then(self, other, *others):
+        for f in [other, *others]:
+            if not isinstance(f, ShapeMap):
+                return super().then(other, *others)
         return ShapeMap(
                 super().then(other, *others),
                 wfcheck=False)
@@ -824,7 +830,8 @@ class ShapeMap(OgMap):
     @staticmethod
     def gray(*maps):
         for f in maps:
-            utils.typecheck(f, {'type': ShapeMap})
+            if not isinstance(f, ShapeMap):
+                return OgMap.gray(*maps)
         if len(maps) == 0:
             return Point().id()
         if len(maps) == 1:
@@ -848,7 +855,8 @@ class ShapeMap(OgMap):
     @staticmethod
     def join(*maps):
         for f in maps:
-            utils.typecheck(f, {'type': ShapeMap})
+            if not isinstance(f, ShapeMap):
+                return OgMap.join(*maps)
         if len(maps) == 0:
             return Empty().id()
         if len(maps) == 1:
@@ -877,7 +885,8 @@ class ShapeMap(OgMap):
                         wfcheck=False)
 
     def dual(shapemap, *dims):
-        utils.typecheck(shapemap, {'type': ShapeMap})
+        if not isinstance(shapemap, ShapeMap):
+            return OgMap.dual(shapemap, *dims)
 
         ogdual = OgMap.dual(shapemap, *dims)
         dual = Shape._reorder(ogdual.source).then(ogdual).then(
