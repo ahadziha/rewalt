@@ -272,7 +272,7 @@ class Diagram:
         sign = utils.mksign(sign)
         name = '∂[{},{}]{}'.format(
                 sign, str(dim), str(self.name))
-        return self.pullback(self.shape.boundary_inclusion(
+        return self.pullback(self.shape.boundary(
             sign, dim), name)
 
     @property

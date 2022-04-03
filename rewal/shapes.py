@@ -54,9 +54,9 @@ class Shape(OgPoset):
                     )
 
         in_span = OgMapPair(
-                fst.boundary_inclusion('-'), snd.boundary_inclusion('-'))
+                fst.boundary('-'), snd.boundary('-'))
         out_span = OgMapPair(
-                fst.boundary_inclusion('+'), snd.boundary_inclusion('+'))
+                fst.boundary('+'), snd.boundary('+'))
         if not in_span.isspan:
             raise ValueError(utils.value_err(
                 snd, 'input boundary does not match '
@@ -130,8 +130,8 @@ class Shape(OgPoset):
             'why': 'expecting non-negative integer'})
 
         span = OgMapPair(
-                fst.boundary_inclusion('+', dim),
-                snd.boundary_inclusion('-', dim))
+                fst.boundary('+', dim),
+                snd.boundary('-', dim))
         if not span.isspan:
             raise ValueError(utils.value_err(
                     snd,
@@ -198,7 +198,7 @@ class Shape(OgPoset):
                 span, 'not a well-formed span for pasting'))
         if fst_image == fst_output:
             if snd_image == snd_input:
-                return Shape.paste(span.fst.target, span.snd.target, dim)
+                return Shape.paste(fst.target, snd.target, dim)
             if not Shape._issubmol(snd_image, snd_input):
                 raise ValueError(utils.value_err(
                     snd, 'cannot paste along this map'))
@@ -222,14 +222,14 @@ class Shape(OgPoset):
         """
         return Shape.paste_along(
             self.atom_inclusion(El(self.dim-1, pos)),
-            other.boundary_inclusion('-'))
+            other.boundary('-'))
 
     def paste_at_input(self, pos, other):
         """
         Paste along the inclusion of one of the inputs.
         """
         return Shape.paste_along(
-            other.boundary_inclusion('+'),
+            other.boundary('+'),
             self.atom_inclusion(El(self.dim-1, pos)))
 
     @staticmethod
@@ -318,8 +318,8 @@ class Shape(OgPoset):
                 self, 'not a round shape'))
 
         merged = Shape.atom(
-                self.boundary_inclusion('-').source,
-                self.boundary_inclusion('+').source)
+                self.boundary('-').source,
+                self.boundary('+').source)
 
         if isinstance(self, OpetopeTree):
             if isinstance(self, GlobeString):
@@ -382,14 +382,14 @@ class Shape(OgPoset):
         return ShapeMap(super().id(),
                         wfcheck=False)
 
-    def boundary_inclusion(self, sign=None, dim=None):
+    def boundary(self, sign=None, dim=None):
         """
         Input and output boundaries of Shapes are Shapes.
         """
         if isinstance(dim, int) and dim >= self.dim:
             return self.id()
 
-        boundary_ogmap = super().boundary_inclusion(sign, dim)
+        boundary_ogmap = super().boundary(sign, dim)
         if sign is None:
             return boundary_ogmap
         reordering = Shape._reorder(boundary_ogmap.source)
@@ -405,7 +405,7 @@ class Shape(OgPoset):
         utils.typecheck(element, {
             'type': El,
             'st': lambda x: x in self,
-            'why': 'not an element'})
+            'why': 'not an element of {}'.format(repr(self))})
         underset = GrSubset(
                 GrSet(element), self,
                 wfcheck=False).closure()

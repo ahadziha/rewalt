@@ -249,7 +249,7 @@ class DrawBackend(ABC):
     def __init__(self, **params):
         self.bgcolor = params.get('bgcolor', 'white')
         self.fgcolor = params.get('fgcolor', 'black')
-        self.name = params.get('name', 'String diagram')
+        self.name = params.get('name', None)
 
 
 class MatBackend(DrawBackend):

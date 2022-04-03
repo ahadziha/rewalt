@@ -119,11 +119,11 @@ def test_Shape_merge():
 
 def test_Shape_inflate():
     simplex2 = Shape.simplex(2)
-    assert simplex2.inflate().source.boundary_inclusion('-').source == \
+    assert simplex2.inflate().source.boundary('-').source == \
         simplex2
 
     whisker_l = Shape.arrow().paste(Shape.globe(2))
-    assert whisker_l.inflate().source.boundary_inclusion('+').source == \
+    assert whisker_l.inflate().source.boundary('+').source == \
         whisker_l
 
 

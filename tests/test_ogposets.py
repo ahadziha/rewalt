@@ -255,9 +255,9 @@ def test_OgPoset_id():
     assert whisker.image(whisker.id()) == whisker.all()
 
 
-def test_OgPoset_boundary_inclusion():
-    assert whisker.boundary_inclusion('-', 0).target == whisker
-    assert whisker.boundary_inclusion('-', 0).source == point
+def test_OgPoset_boundary():
+    assert whisker.boundary('-', 0).target == whisker
+    assert whisker.boundary('-', 0).source == point
 
 
 def test_OgPoset_coproduct():
@@ -691,5 +691,5 @@ def test_OgMapPair_isparallel():
 
 def test_OgMapPair_pushout():
     assert OgMapPair(
-            interval.boundary_inclusion('+'),
-            interval.boundary_inclusion('-')).pushout().target.size == [3, 2]
+            interval.boundary('+'),
+            interval.boundary('-')).pushout().target.size == [3, 2]

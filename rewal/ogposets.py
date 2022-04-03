@@ -232,14 +232,11 @@ class OgPoset:
         """ Returns the image of the whole OgPoset through an OgMap. """
         return self.all().image(ogmap)
 
-    def boundary_inclusion(self, sign=None, dim=None):
+    def boundary(self, sign=None, dim=None):
         """ Returns the inclusion of the n-boundary into the OgPoset. """
         if isinstance(dim, int) and dim >= self.dim:
             return self.id()
         return self.all().boundary(sign, dim).as_map
-
-    def boundary(self, sign=None, dim=None):
-        return self.boundary_inclusion(sign, dim).source
 
     @property
     def input(self):
@@ -1187,7 +1184,7 @@ class OgMap:
         """
         The map restricted to a boundary of its source.
         """
-        return self.source.boundary_inclusion(
+        return self.source.boundary(
                 sign, dim).then(self)
 
     @property
