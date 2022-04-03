@@ -168,50 +168,51 @@ class Shape(OgPoset):
 
     # Other constructors
     @staticmethod
-    def paste_along(span):
+    def paste_along(fst, snd):
         """
-        Returns the pasting of two shapes along the entire codim-1 input
-        (output) boundary of one, and a subshape of the codim-1 output
-        (input) boundary of the other.
+        Returns the pasting of two shapes along the entire input
+        (output) k-boundary of one, and a subshape of the output
+        (input) k-boundary of the other.
         """
+        span = OgMapPair(fst, snd)
         utils.typecheck(span, {
             'type': OgMapPair,
             'st': lambda x: x.isspan and x.isinjective,
             'why': 'expecting a span of injective maps'
             }, {'type': ShapeMap})
 
-        fst_image = span.fst.image()
-        snd_image = span.snd.image()
-        fst_output = span.fst.target.all().boundary('+')
-        snd_input = span.snd.target.all().boundary('-')
+        dim = span.source.dim
+        fst_image = fst.image()
+        snd_image = snd.image()
+        fst_output = fst.target.all().boundary('+', dim)
+        snd_input = snd.target.all().boundary('-', dim)
 
         def condition():
-            t1 = span.fst.target.dim == span.snd.target.dim \
-                == span.source.dim + 1
-            t2 = fst_image.issubset(fst_output)
-            t3 = snd_image.issubset(snd_input)
-            t4 = fst_image == fst_output or snd_image == snd_input
-            return t1 and t2 and t3 and t4
+            t1 = fst_image.issubset(fst_output)
+            t2 = snd_image.issubset(snd_input)
+            t3 = fst_image == fst_output or snd_image == snd_input
+            return t1 and t2 and t3
 
         if not condition():
             raise ValueError(utils.value_err(
                 span, 'not a well-formed span for pasting'))
         if fst_image == fst_output:
             if snd_image == snd_input:
-                return Shape.paste(span.fst.target, span.snd.target)
+                return Shape.paste(span.fst.target, span.snd.target, dim)
             if not Shape._issubmol(snd_image, snd_input):
                 raise ValueError(utils.value_err(
-                    span.snd, 'cannot paste along this map'))
+                    snd, 'cannot paste along this map'))
         else:
             if not Shape._issubmol(fst_image, fst_output):
                 raise ValueError(utils.value_err(
-                    span.fst, 'cannot paste along this map'))
+                    fst, 'cannot paste along this map'))
 
         pushout = span.pushout(wfcheck=False)
         pasted = Shape._reorder(pushout.target).source
 
-        if isinstance(span.fst.target, OpetopeTree) and \
-                isinstance(span.snd.target, OpetopeTree):
+        if isinstance(fst.target, OpetopeTree) and \
+                isinstance(snd.target, OpetopeTree) and \
+                fst.target.dim == snd.target.dim == dim+1:
             pasted = OpetopeTree._upgrade(pasted)
         return pasted
 
@@ -219,17 +220,17 @@ class Shape(OgPoset):
         """
         Paste along the inclusion of one of the outputs.
         """
-        return Shape.paste_along(OgMapPair(
-            self.atom_inclusion(El(self.dim - 1, pos)),
-            other.boundary_inclusion('-')))
+        return Shape.paste_along(
+            self.atom_inclusion(El(self.dim-1, pos)),
+            other.boundary_inclusion('-'))
 
     def paste_at_input(self, pos, other):
         """
         Paste along the inclusion of one of the inputs.
         """
-        return Shape.paste_along(OgMapPair(
+        return Shape.paste_along(
             other.boundary_inclusion('+'),
-            self.atom_inclusion(El(self.dim - 1, pos))))
+            self.atom_inclusion(El(self.dim-1, pos)))
 
     @staticmethod
     def suspend(shape, n=1):
