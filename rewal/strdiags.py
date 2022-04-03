@@ -192,11 +192,13 @@ class StrDiag:
         """
         # Parameters
         show = params.get('show', True)
-        fgcolor = params.get('fgcolor', 'black')
         bgcolor = params.get('bgcolor', 'white')
+        fgcolor = params.get('fgcolor', 'black')
+        wirecolor = params.get('wirecolor', fgcolor)
+        nodecolor = params.get('nodecolor', fgcolor)
         labels = params.get('labels', True)
-        wire_labels = params.get('wire_labels', labels)
-        node_labels = params.get('node_labels', labels)
+        wirelabels = params.get('wirelabels', labels)
+        nodelabels = params.get('nodelabels', labels)
         orientation = params.get('orientation', 'bt')
 
         coord = self.place_vertices()
@@ -209,7 +211,7 @@ class StrDiag:
         wiresort = list(nx.topological_sort(self.depthgraph))
         for wire in reversed(wiresort):
             if self.wires[wire]['color'] is None:
-                color = fgcolor
+                color = wirecolor
             else:
                 color = self.wires[wire]['color']
             for node in [
@@ -233,7 +235,7 @@ class StrDiag:
                         color,
                         self.wires[wire]['isdegenerate'])
 
-            if wire_labels:
+            if wirelabels:
                 backend.draw_label(
                         self.wires[wire]['label'],
                         coord[wire], (.01, .01))
@@ -247,14 +249,14 @@ class StrDiag:
                 node for node in self.nodes
                 if is_drawn(node)):
             if self.nodes[node]['color'] is None:
-                color = fgcolor
+                color = nodecolor
             else:
                 color = self.nodes[node]['color']
             backend.draw_node(
                     coord[node],
                     color)
 
-            if node_labels:
+            if nodelabels:
                 backend.draw_label(
                         self.nodes[node]['label'],
                         coord[node], (.01, .01))
