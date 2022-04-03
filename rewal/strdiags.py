@@ -36,15 +36,13 @@ class StrDiag:
         dim = diagram.dim
         generators = diagram.ambient.generators
 
-        self.fgcolor = params.get('fgcolor', 'black')
-        self.bgcolor = params.get('bgcolor', 'white')
         self.name = diagram.name
 
         self._nodes = {
                 x: {
                     'label': diagram[x].name,
                     'color': generators[diagram[x].name].get(
-                        'color', self.fgcolor),
+                        'color', None),
                     'draw_node': generators[diagram[x].name].get(
                         'draw_node', True),
                     'isdegenerate': dim != diagram[x].dim
@@ -54,7 +52,7 @@ class StrDiag:
                 x: {
                     'label': diagram[x].name,
                     'color': generators[diagram[x].name].get(
-                        'color', self.fgcolor),
+                        'color', None),
                     'isdegenerate': dim-1 != diagram[x].dim
                     }
                 for x in diagram.shape[dim-1]}
@@ -192,40 +190,53 @@ class StrDiag:
         """
         Draws the string diagram with a backend.
         """
+        # Parameters
         show = params.get('show', True)
+        fgcolor = params.get('fgcolor', 'black')
+        bgcolor = params.get('bgcolor', 'white')
+        labels = params.get('labels', True)
+        wire_labels = params.get('wire_labels', labels)
+        node_labels = params.get('node_labels', labels)
+        orientation = params.get('orientation', 'bt')
 
         coord = self.place_vertices()
         backend = MatBackend(
-                bgcolor=self.bgcolor,
-                fgcolor=self.fgcolor,
+                bgcolor=bgcolor,
+                fgcolor=fgcolor,
+                orientation=orientation,
                 name=self.name)
 
         wiresort = list(nx.topological_sort(self.depthgraph))
         for wire in reversed(wiresort):
+            if self.wires[wire]['color'] is None:
+                color = fgcolor
+            else:
+                color = self.wires[wire]['color']
             for node in [
                     *self.graph.predecessors(wire),
                     *self.graph.successors(wire)
                     ]:
                 backend.draw_wire(
                         coord[wire], coord[node],
-                        self.wires[wire]['color'],
+                        color,
                         self.wires[wire]['isdegenerate'])
 
             if self.graph.in_degree(wire) == 0:
                 backend.draw_wire(
                         coord[wire], (coord[wire][0], 0),
-                        self.wires[wire]['color'],
+                        color,
                         self.wires[wire]['isdegenerate'])
 
             if self.graph.out_degree(wire) == 0:
                 backend.draw_wire(
                         coord[wire], (coord[wire][0], 1),
-                        self.wires[wire]['color'],
+                        color,
                         self.wires[wire]['isdegenerate'])
 
-            backend.draw_label(
-                    self.wires[wire]['label'],
-                    coord[wire], (.01, .01))
+            if wire_labels:
+                backend.draw_label(
+                        self.wires[wire]['label'],
+                        coord[wire], (.01, .01))
 
         def is_drawn(node):
             if self.nodes[node]['isdegenerate']:
@@ -235,21 +246,28 @@ class StrDiag:
         for node in (
                 node for node in self.nodes
                 if is_drawn(node)):
+            if self.nodes[node]['color'] is None:
+                color = fgcolor
+            else:
+                color = self.nodes[node]['color']
             backend.draw_node(
                     coord[node],
-                    self.nodes[node]['color'])
-            backend.draw_label(
-                    self.nodes[node]['label'],
-                    coord[node], (.01, .01))
+                    color)
+
+            if node_labels:
+                backend.draw_label(
+                        self.nodes[node]['label'],
+                        coord[node], (.01, .01))
         if show:
             backend.show()
 
 
 class DrawBackend(ABC):
     def __init__(self, **params):
-        self.bgcolor = params.get('bgcolor', 'white')
-        self.fgcolor = params.get('fgcolor', 'black')
-        self.name = params.get('name', None)
+        self.bgcolor = params.get('bgcolor')
+        self.fgcolor = params.get('fgcolor')
+        self.orientation = params.get('orientation')
+        self.name = params.get('name')
 
 
 class MatBackend(DrawBackend):
@@ -276,12 +294,16 @@ class MatBackend(DrawBackend):
 
         contour = Path(
                 [
-                    node_xy,
-                    (wire_xy[0] - (width/2), node_xy[1] + y_offset),
-                    (wire_xy[0] - (width/2), wire_xy[1]),
-                    (wire_xy[0] + (width/2), wire_xy[1]),
-                    (wire_xy[0] + (width/2), node_xy[1] + y_offset),
-                    node_xy
+                    self.rotate(node_xy),
+                    self.rotate(
+                        (wire_xy[0] - (width/2), node_xy[1] + y_offset)),
+                    self.rotate(
+                        (wire_xy[0] - (width/2), wire_xy[1])),
+                    self.rotate(
+                        (wire_xy[0] + (width/2), wire_xy[1])),
+                    self.rotate(
+                        (wire_xy[0] + (width/2), node_xy[1] + y_offset)),
+                    self.rotate(node_xy)
                 ], [
                     Path.MOVETO,
                     Path.CURVE3,
@@ -292,9 +314,10 @@ class MatBackend(DrawBackend):
                 ])
         wire = Path(
                 [
-                    wire_xy,
-                    (wire_xy[0], node_xy[1] + y_offset),
-                    node_xy
+                    self.rotate(wire_xy),
+                    self.rotate(
+                        (wire_xy[0], node_xy[1] + y_offset)),
+                    self.rotate(node_xy)
                 ], [
                     Path.MOVETO,
                     Path.CURVE3,
@@ -314,6 +337,7 @@ class MatBackend(DrawBackend):
         self.axes.add_patch(p_wire)
 
     def draw_label(self, label, xy, offset):
+        xy = self.rotate(xy)
         xy = (xy[0] + offset[0], xy[1] + offset[1])
         self.axes.annotate(
                 label,
@@ -321,6 +345,7 @@ class MatBackend(DrawBackend):
                 color=self.fgcolor)
 
     def draw_node(self, xy, color):
+        xy = self.rotate(xy)
         self.axes.scatter(
                 xy[0],
                 xy[1],
@@ -332,3 +357,12 @@ class MatBackend(DrawBackend):
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         self.fig.canvas.manager.set_window_title(self.name)
         self.fig.show()
+
+    def rotate(self, xy):
+        if self.orientation == 'tb':
+            return (xy[0], 1-xy[1])
+        if self.orientation == 'lr':
+            return (xy[1], 1-xy[0])
+        if self.orientation == 'rl':
+            return (1-xy[1], 1-xy[0])
+        return xy
