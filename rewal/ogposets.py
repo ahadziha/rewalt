@@ -1324,8 +1324,9 @@ class OgMap:
                         img_underset.boundary(sign, n):
                     raise ValueError(utils.value_err(
                         image,
-                        'assignment does not respect ({}, {})-boundary'.format(
-                            sign, repr(n))))
+                        'assignment does not respect '
+                        '({}, {})-boundary of {}'.format(
+                            sign, repr(n), repr(element))))
 
     @staticmethod
     def _wfcheck(source, target, mapping):
