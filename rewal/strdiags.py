@@ -120,6 +120,11 @@ class StrDiag:
         self._widthgraph = widthgraph
         self._depthgraph = depthgraph
 
+    def __str__(self):
+        return '{} with {} nodes and {} wires'.format(
+                type(self).__name__, str(len(self.nodes)),
+                str(len(self.wires)))
+
     def __eq__(self, other):
         return isinstance(other, StrDiag) and \
                 self.graph == other.graph and \
@@ -257,17 +262,12 @@ class StrDiag:
         for node in (
                 node for node in self.nodes
                 if is_drawn(node)):
-            if self.nodes[node]['color'] is None:
-                color = nodecolor
-            else:
-                color = self.nodes[node]['color']
-            if self.nodes[node]['stroke'] is None:
-                if self.nodes[node]['color'] is None:
-                    stroke = nodestroke
-                else:
-                    stroke = color
-            else:
-                stroke = self.nodes[node]['stroke']
+            stroke = self.nodes[node]['stroke']
+            color = self.nodes[node]['color']
+
+            stroke = color if stroke is None else stroke
+            stroke = nodestroke if stroke is None else stroke
+            color = nodecolor if color is None else color
 
             backend.draw_node(
                     coord[node],

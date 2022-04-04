@@ -19,6 +19,10 @@ class DiagSet:
         for key, value in kwargs:  # TODO: accepted kwargs
             setattr(self, key, value)
 
+    def __str__(self):
+        return '{} with {} generators'.format(
+                type(self).__name__, str(len(self)))
+
     def __eq__(self, other):
         return isinstance(other, DiagSet) and \
                 self.generators == other.generators
@@ -31,6 +35,12 @@ class DiagSet:
                     self.generators[key]['mapping'],
                     key)
         raise KeyError(str(key))
+
+    def __len__(self):
+        return len(self.generators)
+
+    def __iter__(self):
+        return iter(self.generators)
 
     @property
     def generators(self):
@@ -160,11 +170,18 @@ class Diagram:
         self._mapping = []
         self._name = ''
 
+    def __str__(self):
+        return '{} of {} cells in {}'.format(
+                type(self).__name__, str(len(self)), str(self.ambient))
+
     def __eq__(self, other):
         return isinstance(other, Diagram) and \
                 self.shape == other.shape and \
                 self.ambient == other.ambient and \
                 self.mapping == other.mapping
+
+    def __len__(self):
+        return len(self.shape)
 
     def __getitem__(self, element):
         if element in self.shape:
@@ -201,6 +218,11 @@ class Diagram:
                 return False
         return True
 
+    def rename(self, name):
+        """ Renames the diagram. """
+        self._name = name
+
+    # Methods for creating new diagrams
     def paste_cospan(self, other, dim=None):
         utils.typecheck(other, {
                 'type': Diagram,
@@ -324,6 +346,7 @@ class Diagram:
             unitor_map = unitor_map.dual(self.dim + 1)
         return self.pullback(unitor_map, self.name)
 
+    # Alternative constructors
     @staticmethod
     def yoneda(shapemap, name=None):
         return Diagram._new(
@@ -331,6 +354,11 @@ class Diagram:
                 DiagSet.yoneda(shapemap.target),
                 shapemap.mapping,
                 name)
+
+    @staticmethod
+    def from_layers(fst, *layers):
+        """ Alternative constructor for LayeredDiagram. """
+        return LayeredDiagram(fst, *layers)
 
     # Internal methods
     @staticmethod
@@ -385,20 +413,21 @@ class LayeredDiagram(Diagram):
                 self.layers[-1].output
                 ]
         for n, step in enumerate(rewrite_steps):
-            step._name = 'step {} of {}'.format(
-                    str(n), self.name)
+            step.rename('step {} of {}'.format(
+                    str(n), self.name))
         return rewrite_steps
 
-    @staticmethod
-    def concatenate(fst, *others):
-        # TODO: should I typecheck?
+    def concatenate(self, *others):
+        for x in others:
+            utils.typecheck(x, {'type': LayeredDiagram})
+
         if len(others) == 0:
-            return fst
+            return self
         if len(others) > 1:
-            return LayeredDiagram.concatenate(
-                    fst, others[0], others[1:])
-        snd = others[0]
-        diagram, cospan = fst.paste_cospan(snd)
+            return self.concatenate(
+                    others[0]).concatenate(others[1:])
+        other = others[0]
+        diagram, cospan = self.paste_cospan(other)
 
         concat = Diagram.__new__(LayeredDiagram)
         concat._shape = diagram.shape
@@ -407,7 +436,6 @@ class LayeredDiagram(Diagram):
         concat._name = diagram.name
 
         concat._layers = [
-            *[f.then(cospan.fst) for f in fst._layers],
-            *[f.then(cospan.snd) for f in snd._layers]]
-
+            *[f.then(cospan.fst) for f in self._layers],
+            *[f.then(cospan.snd) for f in other._layers]]
         return concat
