@@ -201,7 +201,7 @@ class Diagram:
                 return False
         return True
 
-    def paste(self, other, dim=None):
+    def paste_cospan(self, other, dim=None):
         utils.typecheck(other, {
                 'type': Diagram,
                 'st': lambda x: x.ambient == self.ambient,
@@ -239,7 +239,10 @@ class Diagram:
                 self.ambient,
                 mapping,
                 name)
-        return pasted
+        return pasted, paste_cospan
+
+    def paste(self, other, dim=None):
+        return self.paste_cospan(other, dim)[0]
 
     def pullback(self, shapemap, name=None):
         """
@@ -330,11 +333,81 @@ class Diagram:
                 name)
 
     # Internal methods
-    @classmethod
-    def _new(cls, shape, ambient, mapping, name=None):
-        new = Diagram.__new__(cls)
+    @staticmethod
+    def _new(shape, ambient, mapping, name=None):
+        new = Diagram.__new__(Diagram)
         new._shape = shape
         new._ambient = ambient
         new._mapping = mapping
         new._name = name
         return new
+
+
+class LayeredDiagram(Diagram):
+    """
+    A diagram that remembers a layering in the top dimension.
+    """
+    def __init__(self, fst, *others):
+        utils.typecheck(fst, {'type': Diagram})
+        dim = fst.dim
+
+        diagram = fst
+        layers = [fst.shape.id()]
+        for x in others:
+            utils.typecheck(x, {
+                'type': Diagram,
+                'st': lambda x: x.dim == dim,
+                'why': 'expecting diagram of dimension {}'.format(
+                    str(dim))})
+            diagram, cospan = diagram.paste_cospan(x)
+            layers = [
+                    *[f.then(cospan.fst) for f in layers],
+                    cospan.snd]
+
+        self._shape = diagram.shape
+        self._ambient = diagram.ambient
+        self._mapping = diagram.mapping
+        self._name = diagram.name
+
+        self._layers = layers
+
+    @property
+    def layers(self):
+        return [
+                self.pullback(f, 'layer {} of {}'.format(
+                    str(n), self.name))
+                for n, f in enumerate(self._layers)]
+
+    @property
+    def rewrite_steps(self):
+        rewrite_steps = [
+                *[layer.input for layer in self.layers],
+                self.layers[-1].output
+                ]
+        for n, step in enumerate(rewrite_steps):
+            step._name = 'step {} of {}'.format(
+                    str(n), self.name)
+        return rewrite_steps
+
+    @staticmethod
+    def concatenate(fst, *others):
+        # TODO: should I typecheck?
+        if len(others) == 0:
+            return fst
+        if len(others) > 1:
+            return LayeredDiagram.concatenate(
+                    fst, others[0], others[1:])
+        snd = others[0]
+        diagram, cospan = fst.paste_cospan(snd)
+
+        concat = Diagram.__new__(LayeredDiagram)
+        concat._shape = diagram.shape
+        concat._mapping = diagram.mapping
+        concat._ambient = diagram.ambient
+        concat._name = diagram.name
+
+        concat._layers = [
+            *[f.then(cospan.fst) for f in fst._layers],
+            *[f.then(cospan.snd) for f in snd._layers]]
+
+        return concat

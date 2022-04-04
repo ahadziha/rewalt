@@ -43,6 +43,8 @@ class StrDiag:
                     'label': diagram[x].name,
                     'color': generators[diagram[x].name].get(
                         'color', None),
+                    'stroke': generators[diagram[x].name].get(
+                        'stroke', None),
                     'draw_node': generators[diagram[x].name].get(
                         'draw_node', True),
                     'isdegenerate': dim != diagram[x].dim
@@ -117,6 +119,12 @@ class StrDiag:
         self._graph = graph
         self._widthgraph = widthgraph
         self._depthgraph = depthgraph
+
+    def __eq__(self, other):
+        return isinstance(other, StrDiag) and \
+                self.graph == other.graph and \
+                self.widthgraph == other.widthgraph and \
+                self.depthgraph == other.depthgraph
 
     @property
     def graph(self):
@@ -196,6 +204,7 @@ class StrDiag:
         fgcolor = params.get('fgcolor', 'black')
         wirecolor = params.get('wirecolor', fgcolor)
         nodecolor = params.get('nodecolor', fgcolor)
+        nodestroke = params.get('nodestroke', nodecolor)
         labels = params.get('labels', True)
         wirelabels = params.get('wirelabels', labels)
         nodelabels = params.get('nodelabels', labels)
@@ -252,14 +261,24 @@ class StrDiag:
                 color = nodecolor
             else:
                 color = self.nodes[node]['color']
+            if self.nodes[node]['stroke'] is None:
+                if self.nodes[node]['color'] is None:
+                    stroke = nodestroke
+                else:
+                    stroke = color
+            else:
+                stroke = self.nodes[node]['stroke']
+
             backend.draw_node(
                     coord[node],
-                    color)
+                    color,
+                    stroke)
 
             if nodelabels:
                 backend.draw_label(
                         self.nodes[node]['label'],
                         coord[node], (.01, .01))
+
         if show:
             backend.show()
 
@@ -346,13 +365,14 @@ class MatBackend(DrawBackend):
                 xy,
                 color=self.fgcolor)
 
-    def draw_node(self, xy, color):
+    def draw_node(self, xy, color, stroke):
         xy = self.rotate(xy)
         self.axes.scatter(
                 xy[0],
                 xy[1],
                 s=40,
-                c=color)
+                c=color,
+                edgecolors=stroke)
 
     def show(self):
         self.fig.subplots_adjust(

@@ -96,8 +96,12 @@ class Shape(OgPoset):
         boundary_out = OgMap(
             snd, new_atom, inclusion.snd.mapping,
             wfcheck=False)
+
         atom_cospan = OgMapPair(boundary_in, boundary_out).then(
                 Shape._reorder(new_atom).inv())
+        atom_cospan = OgMapPair(
+                ShapeMap(atom_cospan.fst, wfcheck=False),
+                ShapeMap(atom_cospan.snd, wfcheck=False))
 
         if isinstance(fst, OpetopeTree) and isinstance(snd, Opetope):
             if isinstance(fst, Globe):
@@ -145,8 +149,12 @@ class Shape(OgPoset):
         if dim >= snd.dim:
             return OgMapPair(
                     fst.id(), span.fst)
+
         pushout = span.pushout(wfcheck=False)
         pasting = pushout.then(Shape._reorder(pushout.target).inv())
+        pasting = OgMapPair(
+                ShapeMap(pasting.fst, wfcheck=False),
+                ShapeMap(pasting.snd, wfcheck=False))
 
         # Upgrade to named shape classes
         if isinstance(fst, Theta) and isinstance(snd, Theta):
