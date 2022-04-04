@@ -171,8 +171,7 @@ class Diagram:
         self._name = ''
 
     def __str__(self):
-        return '{} of {} cells in {}'.format(
-                type(self).__name__, str(len(self)), str(self.ambient))
+        return str(self.name)
 
     def __eq__(self, other):
         return isinstance(other, Diagram) and \
@@ -356,7 +355,7 @@ class Diagram:
                 name)
 
     @staticmethod
-    def from_layers(fst, *layers):
+    def with_layers(fst, *layers):
         """ Alternative constructor for LayeredDiagram. """
         return LayeredDiagram(fst, *layers)
 
