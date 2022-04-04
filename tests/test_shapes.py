@@ -153,6 +153,7 @@ def test_Shape_terminal():
 
 
 def test_Simplex():
+    arrow = Shape.arrow()
     triangle = Shape.simplex(2)
     tetra = Shape.simplex(3)
 
@@ -160,28 +161,29 @@ def test_Simplex():
     assert tetra.simplex_face(0) == tetra.atom_inclusion(
             El(2, 3))
 
-    assert tetra.simplex_degeneracy(2).then(
-            triangle.simplex_degeneracy(1)) == \
-        tetra.simplex_degeneracy(1).then(
-            triangle.simplex_degeneracy(1))
+    assert triangle.simplex_degeneracy(2).then(
+            arrow.simplex_degeneracy(1)) == \
+        triangle.simplex_degeneracy(1).then(
+            arrow.simplex_degeneracy(1))
 
 
 def test_Cube():
+    arrow = Shape.arrow()
     square = Shape.cube(2)
     cube = Shape.cube(3)
 
-    assert cube.cube_degeneracy(2).then(
-            square.cube_degeneracy(1)) == \
-        cube.cube_degeneracy(1).then(
-            square.cube_degeneracy(1))
+    assert square.cube_degeneracy(2).then(
+            arrow.cube_degeneracy(1)) == \
+        square.cube_degeneracy(1).then(
+            arrow.cube_degeneracy(1))
     assert square.cube_face(0, '+').then(
             cube.cube_face(2, '-')) == \
         square.cube_face(1, '-').then(
             cube.cube_face(0, '+'))
-    assert cube.connection(2, '-').then(
-            square.connection(1, '-')) == \
-        cube.connection(1, '-').then(
-            square.connection(1, '-'))
+    assert square.connection(1, '-').then(
+            arrow.connection(0, '-')) == \
+        square.connection(0, '-').then(
+            arrow.connection(0, '-'))
 
 
 """ Tests for ShapeMap """

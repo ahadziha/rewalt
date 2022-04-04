@@ -641,21 +641,25 @@ class Simplex(Shape):
             'st': lambda k: k in range(self.dim + 1),
             'why': 'out of bounds'})
         pointid = Point().id()
-        maps = [pointid for _ in range(k)] + \
-            [Empty().terminal()] + \
-            [pointid for _ in range(self.dim - k)]
+        maps = [
+                *[pointid for _ in range(k)],
+                Empty().terminal(),
+                *[pointid for _ in range(self.dim - k)]
+            ]
         return ShapeMap.join(*maps)
 
     def simplex_degeneracy(self, k):
         """ Simplicial degeneracy maps. """
         utils.typecheck(k, {
             'type': int,
-            'st': lambda k: k in range(self.dim),
+            'st': lambda k: k in range(self.dim + 1),
             'why': 'out of bounds'})
         pointid = Point().id()
-        maps = [pointid for _ in range(k)] + \
-            [Arrow().terminal()] + \
-            [pointid for _ in range(self.dim - k - 1)]
+        maps = [
+                *[pointid for _ in range(k)],
+                Arrow().terminal(),
+                *[pointid for _ in range(self.dim - k)]
+            ]
         return ShapeMap.join(*maps)
 
 
@@ -695,21 +699,25 @@ class Cube(Shape):
                 [[El(0, 1)]],
                 wfcheck=False), wfcheck=False)}
         arrowid = Arrow().id()
-        maps = [arrowid for _ in range(k)] + \
-            [basic_faces[sign]] + \
-            [arrowid for _ in range(self.dim - k - 1)]
+        maps = [
+                *[arrowid for _ in range(k)],
+                basic_faces[sign],
+                *[arrowid for _ in range(self.dim - k - 1)]
+            ]
         return ShapeMap.gray(*maps)
 
     def cube_degeneracy(self, k):
         """ Cubical degeneracy maps. """
         utils.typecheck(k, {
             'type': int,
-            'st': lambda k: k in range(self.dim),
+            'st': lambda k: k in range(self.dim + 1),
             'why': 'out of bounds'})
         arrowid = Arrow().id()
-        maps = [arrowid for _ in range(k)] + \
-            [Arrow().terminal()] + \
-            [arrowid for _ in range(self.dim - k - 1)]
+        maps = [
+                *[arrowid for _ in range(k)],
+                Arrow().terminal(),
+                *[arrowid for _ in range(self.dim - k)]
+            ]
         return ShapeMap.gray(*maps)
 
     def connection(self, k, sign):
@@ -733,9 +741,11 @@ class Cube(Shape):
                          [El(1, 0)]],
                         wfcheck=False), wfcheck=False)}
         arrowid = Arrow().id()
-        maps = [arrowid for _ in range(k)] + \
-            [basic_connections[sign]] + \
-            [arrowid for _ in range(self.dim - k - 1)]
+        maps = [
+                *[arrowid for _ in range(k)],
+                basic_connections[sign],
+                *[arrowid for _ in range(self.dim - k - 1)]
+            ]
         return ShapeMap.gray(*maps)
 
 
