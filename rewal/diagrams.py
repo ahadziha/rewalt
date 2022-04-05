@@ -2,8 +2,8 @@
 Implements diagrammatic sets and diagrams.
 """
 
+import rewal
 from rewal import utils
-from rewal.ogposets import El
 from rewal.shapes import (Shape, ShapeMap)
 
 
@@ -151,7 +151,7 @@ class DiagSet:
         for n, n_size in enumerate(shape.size):
             yoneda._by_dim.update({
                 n: {
-                    El(n, k) for k in range(n_size)
+                    rewal.ogposets.El(n, k) for k in range(n_size)
                     }
                 })
         return yoneda
@@ -311,7 +311,8 @@ class Diagram:
         """
         Unit on the diagram.
         """
-        return self.pullback(self.shape.inflate(), self.name)
+        name = '1{}'.format(str(self.name))
+        return self.pullback(self.shape.inflate(), name)
 
     def unitor_l(self, sign):
         """
@@ -322,7 +323,10 @@ class Diagram:
                 self.shape.all().boundary('+'))
         if sign == '-':
             unitor_map = unitor_map.dual(self.dim + 1)
-        return self.pullback(unitor_map, self.name)
+        name = 'λ[{}]{}'.format(
+                sign, str(self.name))
+
+        return self.pullback(unitor_map, name)
 
     def unitor_r(self, sign):
         """
@@ -333,7 +337,10 @@ class Diagram:
                 self.shape.all().boundary('-'))
         if sign == '+':
             unitor_map = unitor_map.dual(self.dim + 1)
-        return self.pullback(unitor_map, self.name)
+        name = 'ρ[{}]{}'.format(
+                sign, str(self.name))
+
+        return self.pullback(unitor_map, name)
 
     def unitor(self, collapsed, invert=False):
         """
@@ -343,7 +350,9 @@ class Diagram:
                 collapsed)
         if invert:
             unitor_map = unitor_map.dual(self.dim + 1)
-        return self.pullback(unitor_map, self.name)
+
+        name = 'unitor on {}'.format(str(self.name))
+        return self.pullback(unitor_map, name)
 
     # Alternative constructors
     @staticmethod
@@ -362,12 +371,80 @@ class Diagram:
     # Internal methods
     @staticmethod
     def _new(shape, ambient, mapping, name=None):
-        new = Diagram.__new__(Diagram)
+        def diagramclass(x):
+            if isinstance(x, rewal.shapes.Cube):
+                if isinstance(x, rewal.shapes.Point):
+                    return PointDiagram
+                if isinstance(x, rewal.shapes.Arrow):
+                    return ArrowDiagram
+                return CubeDiagram
+            if isinstance(x, rewal.shapes.Simplex):
+                return SimplexDiagram
+            return Diagram
+
+        new = Diagram.__new__(diagramclass(shape))
         new._shape = shape
         new._ambient = ambient
         new._mapping = mapping
         new._name = name
         return new
+
+
+class SimplexDiagram(Diagram):
+    def __new__(self):
+        return Diagram.__new__(Diagram)
+
+    def simplex_face(self, k):
+        face_map = self.shape.simplex_face(k)
+        name = 'd[{}]{}'.format(
+                str(k), str(self.name))
+        return self.pullback(face_map, name)
+
+    def simplex_degeneracy(self, k):
+        degeneracy_map = self.shape.simplex_degeneracy(k)
+        name = 's[{}]{}'.format(
+                str(k), str(self.name))
+        return self.pullback(degeneracy_map, name)
+
+
+class CubeDiagram(Diagram):
+    def __new__(self):
+        return Diagram.__new__(Diagram)
+
+    def cube_face(self, k, sign):
+        sign = utils.mksign(sign)
+        face_map = self.shape.cube_face(k, sign)
+        name = 'δ[{},{}]{}'.format(
+                str(k), sign, str(self.name))
+        return self.pullback(face_map, name)
+
+    def cube_degeneracy(self, k):
+        degeneracy_map = self.shape.cube_degeneracy(k)
+        name = 'σ[{}]{}'.format(
+                str(k), str(self.name))
+        return self.pullback(degeneracy_map, name)
+
+    def cube_connection(self, k, sign):
+        sign = utils.mksign(sign)
+        connection_map = self.shape.cube_connection(k, sign)
+        name = 'γ[{},{}]{}'.format(
+                str(k), sign, str(self.name))
+        return self.pullback(connection_map, name)
+
+
+class ArrowDiagram(SimplexDiagram, CubeDiagram):
+    def __new__(self):
+        return Diagram.__new__(Diagram)
+
+
+class PointDiagram(SimplexDiagram, CubeDiagram):
+    def __new__(self):
+        return Diagram.__new__(Diagram)
+
+    def degeneracy(self, shape):
+        utils.typecheck(shape, {'type': rewal.shapes.Shape})
+        return self.pullback(
+                shape.terminal(), self.name)
 
 
 class LayeredDiagram(Diagram):

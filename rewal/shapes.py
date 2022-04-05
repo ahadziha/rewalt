@@ -753,7 +753,7 @@ class Cube(Shape):
             ]
         return ShapeMap.gray(*maps)
 
-    def connection(self, k, sign):
+    def cube_connection(self, k, sign):
         """ Cubical connection maps. """
         sign = utils.mksign(sign)
         utils.typecheck(k, {

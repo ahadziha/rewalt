@@ -180,10 +180,10 @@ def test_Cube():
             cube.cube_face(2, '-')) == \
         square.cube_face(1, '-').then(
             cube.cube_face(0, '+'))
-    assert square.connection(1, '-').then(
-            arrow.connection(0, '-')) == \
-        square.connection(0, '-').then(
-            arrow.connection(0, '-'))
+    assert square.cube_connection(1, '-').then(
+            arrow.cube_connection(0, '-')) == \
+        square.cube_connection(0, '-').then(
+            arrow.cube_connection(0, '-'))
 
 
 """ Tests for ShapeMap """
