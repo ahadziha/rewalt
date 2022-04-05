@@ -348,16 +348,16 @@ class Shape(OgPoset):
                 self.boundary('-').source,
                 self.boundary('+').source)
 
-        def inheritance(x):
-            if isinstance(x, OpetopeTree):
-                if isinstance(x, GlobeString):
-                    if x.dim == 1:
+        def inheritance():
+            if isinstance(self, OpetopeTree):
+                if isinstance(self, GlobeString):
+                    if self.dim == 1:
                         return Arrow
                     return Globe
                 return Opetope
             return Shape
 
-        return inheritance(self)._upgrade(merged)
+        return inheritance()._upgrade(merged)
 
     # Named shapes
     @staticmethod
@@ -428,16 +428,16 @@ class Shape(OgPoset):
         reordering = Shape._reorder(boundary_ogmap.source)
         boundary = reordering.then(boundary_ogmap)
 
-        def inheritance(x):
-            if isinstance(x, OpetopeTree):
-                if isinstance(x, GlobeString):
+        def inheritance():
+            if isinstance(self, OpetopeTree):
+                if isinstance(self, GlobeString):
                     return Globe
                 if utils.mksign(sign) == '+':
                     return Opetope
                 return OpetopeTree
             return Shape
 
-        return inheritance(self)._upgrademapsrc(boundary)
+        return inheritance()._upgrademapsrc(boundary)
 
     def atom_inclusion(self, element):
         """
@@ -489,13 +489,14 @@ class Shape(OgPoset):
         if self.dim == 0:
             return Shape.arrow().terminal()
 
+        boundary_set = self.all().boundary()
         if collapsed is not None:
             utils.typecheck(collapsed, {
                 'type': Closed,
-                'st': lambda x: x.issubset(self.all().boundary()),
+                'st': lambda x: x.issubset(boundary_set),
                 'why': "expecting a closed subset of the shape's boundary"})
         else:
-            collapsed = self.all().boundary()  # Default is whole boundary.
+            collapsed = boundary_set  # Default is whole boundary.
 
         asmap = collapsed.as_map
         arrow = Shape.arrow()
@@ -518,14 +519,14 @@ class Shape(OgPoset):
                        wfcheck=False)
         proj = Shape._reorder(collapse.target).then(ogproj)
 
-        def inheritance(x):
-            if collapsed == x.all().boundary() and isinstance(x, Opetope):
-                if isinstance(x, Globe):
+        def inheritance():
+            if collapsed == boundary_set and isinstance(self, Opetope):
+                if isinstance(self, Globe):
                     return Globe
                 return Opetope
             return Shape
 
-        return inheritance(self)._upgrademapsrc(proj)
+        return inheritance()._upgrademapsrc(proj)
 
     # Private methods
     @staticmethod
