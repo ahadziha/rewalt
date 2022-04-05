@@ -99,17 +99,17 @@ class Shape(OgPoset):
 
         atom_cospan = OgMapPair(boundary_in, boundary_out).then(
                 Shape._reorder(new_atom).inv())
-        atom_cospan = OgMapPair(
-                ShapeMap(atom_cospan.fst, wfcheck=False),
-                ShapeMap(atom_cospan.snd, wfcheck=False))
 
-        if isinstance(fst, OpetopeTree) and isinstance(snd, Opetope):
-            if isinstance(fst, Globe):
-                if fst.dim == 0:
-                    return Arrow._upgrademaptgt(atom_cospan)
-                return Globe._upgrademaptgt(atom_cospan)
-            return Opetope._upgrademaptgt(atom_cospan)
-        return atom_cospan
+        def inheritance(x, y):
+            if isinstance(x, OpetopeTree) and isinstance(y, Opetope):
+                if isinstance(x, Globe):
+                    if x.dim == 0:
+                        return Arrow
+                    return Globe
+                return Opetope
+            return Shape
+
+        return inheritance(fst, snd)._upgrademaptgt(atom_cospan)
 
     @staticmethod
     def atom(fst, snd):
@@ -152,20 +152,19 @@ class Shape(OgPoset):
 
         pushout = span.pushout(wfcheck=False)
         pasting = pushout.then(Shape._reorder(pushout.target).inv())
-        pasting = OgMapPair(
-                ShapeMap(pasting.fst, wfcheck=False),
-                ShapeMap(pasting.snd, wfcheck=False))
 
-        # Upgrade to named shape classes
-        if isinstance(fst, Theta) and isinstance(snd, Theta):
-            if isinstance(fst, GlobeString) and isinstance(snd, GlobeString) \
-                    and fst.dim == snd.dim == dim+1:
-                return GlobeString._upgrademaptgt(pasting)
-            return Theta._upgrademaptgt(pasting)
-        if isinstance(fst, OpetopeTree) and isinstance(snd, GlobeString) \
-                and fst.dim == snd.dim == dim+1:
-            return OpetopeTree._upgrademaptgt(pasting)
-        return pasting
+        def inheritance(x, y):
+            if isinstance(x, Theta) and isinstance(y, Theta):
+                if isinstance(x, GlobeString) and isinstance(y, GlobeString) \
+                        and x.dim == y.dim == dim+1:
+                    return GlobeString
+                return Theta
+            if isinstance(x, OpetopeTree) and isinstance(y, GlobeString) \
+                    and x.dim == y.dim == dim+1:
+                return OpetopeTree
+            return Shape
+
+        return inheritance(fst, snd)._upgrademaptgt(pasting)
 
     @staticmethod
     def paste(fst, snd, dim=None):
@@ -176,7 +175,7 @@ class Shape(OgPoset):
 
     # Other constructors
     @staticmethod
-    def paste_along(fst, snd):
+    def paste_along_cospan(fst, snd):
         """
         Returns the pasting of two shapes along the entire input
         (output) k-boundary of one, and a subshape of the output
@@ -216,13 +215,22 @@ class Shape(OgPoset):
                     fst, 'cannot paste along this map'))
 
         pushout = span.pushout(wfcheck=False)
-        pasted = Shape._reorder(pushout.target).source
+        pasting = pushout.then(Shape._reorder(pushout.target).inv())
+        pasting = OgMapPair(
+                ShapeMap(pasting.fst, wfcheck=False),
+                ShapeMap(pasting.snd, wfcheck=False))
 
-        if isinstance(fst.target, OpetopeTree) and \
-                isinstance(snd.target, OpetopeTree) and \
-                fst.target.dim == snd.target.dim == dim+1:
-            pasted = OpetopeTree._upgrade(pasted)
-        return pasted
+        def inheritance(x, y):
+            if isinstance(x, OpetopeTree) and isinstance(y, OpetopeTree) \
+                    and x.dim == y.dim == dim+1:
+                return OpetopeTree
+            return Shape
+
+        return inheritance(fst.target, snd.target)._upgrademaptgt(pasting)
+
+    @staticmethod
+    def paste_along(fst, snd):
+        return Shape.paste_along_cospan(fst, snd).target
 
     def paste_at_output(self, pos, other):
         """
@@ -245,10 +253,7 @@ class Shape(OgPoset):
         if n == 0:
             return shape
 
-        if not isinstance(shape, Shape):
-            return OgPoset.suspend(shape, n)
-        # Suspensions of Empty are not shapes
-        if isinstance(shape, Empty):
+        if not isinstance(shape, Shape) or isinstance(shape, Empty):
             return OgPoset.suspend(shape, n)
         if isinstance(shape, Point) and n == 1:
             return Arrow()
@@ -256,14 +261,16 @@ class Shape(OgPoset):
         suspension = Shape._reorder(
                 OgPoset.suspend(shape, n)).source
 
-        # Theta, GlobeString, Globe are closed under suspension
-        if isinstance(shape, Theta):
-            if isinstance(shape, GlobeString):
-                if isinstance(shape, Globe):
-                    return Globe._upgrade(suspension)
-                return GlobeString._upgrade(suspension)
-            return Theta._upgrade(suspension)
-        return suspension
+        def inheritance(x):
+            if isinstance(x, Theta):
+                if isinstance(x, GlobeString):
+                    if isinstance(x, Globe):
+                        return Globe
+                    return GlobeString
+                return Theta
+            return Shape
+
+        return inheritance(shape)._upgrade(suspension)
 
     @staticmethod
     def gray(*shapes):
@@ -281,10 +288,13 @@ class Shape(OgPoset):
             return oggray
 
         gray = Shape._reorder(oggray).source
-        # Cubes are closed under Gray products
-        if all([isinstance(x, Cube) for x in shapes]):
-            return Cube._upgrade(gray)
-        return gray
+
+        def inheritance(l):
+            if all([isinstance(x, Cube) for x in l]):
+                return Cube
+            return Shape
+
+        return inheritance(shapes)._upgrade(gray)
 
     @staticmethod
     def join(*shapes):
@@ -303,20 +313,26 @@ class Shape(OgPoset):
             return ogjoin
 
         join = Shape._reorder(ogjoin).source
-        # Simplices are closed under joins
-        if all([isinstance(x, Simplex) for x in shapes]):
-            return Simplex._upgrade(join)
-        return join
+
+        def inheritance(l):
+            if all([isinstance(x, Simplex) for x in l]):
+                return Simplex
+            return Shape
+
+        return inheritance(shapes)._upgrade(join)
 
     @staticmethod
     def dual(shape, *dims):
         dual = Shape._reorder(OgPoset.dual(shape, *dims)).source
         if shape == dual:
             return shape
-        # Theta is closed (but not invariant) under dualities
-        if isinstance(shape, Theta):
-            return Theta._upgrade(dual)
-        return dual
+
+        def inheritance(x):
+            if isinstance(x, Theta):
+                return Theta
+            return Shape
+
+        return inheritance(shape)._upgrade(dual)
 
     def merge(self):
         """
@@ -332,11 +348,16 @@ class Shape(OgPoset):
                 self.boundary('-').source,
                 self.boundary('+').source)
 
-        if isinstance(self, OpetopeTree):
-            if isinstance(self, GlobeString):
-                return Globe._upgrade(merged)
-            return Opetope._upgrade(merged)
-        return merged
+        def inheritance(x):
+            if isinstance(x, OpetopeTree):
+                if isinstance(x, GlobeString):
+                    if x.dim == 1:
+                        return Arrow
+                    return Globe
+                return Opetope
+            return Shape
+
+        return inheritance(self)._upgrade(merged)
 
     # Named shapes
     @staticmethod
@@ -403,10 +424,20 @@ class Shape(OgPoset):
         boundary_ogmap = super().boundary(sign, dim)
         if sign is None:
             return boundary_ogmap
-        reordering = Shape._reorder(boundary_ogmap.source)
 
-        return ShapeMap(reordering.then(boundary_ogmap),
-                        wfcheck=False)
+        reordering = Shape._reorder(boundary_ogmap.source)
+        boundary = reordering.then(boundary_ogmap)
+
+        def inheritance(x):
+            if isinstance(x, OpetopeTree):
+                if isinstance(x, GlobeString):
+                    return Globe
+                if utils.mksign(sign) == '+':
+                    return Opetope
+                return OpetopeTree
+            return Shape
+
+        return inheritance(self)._upgrademapsrc(boundary)
 
     def atom_inclusion(self, element):
         """
@@ -487,14 +518,14 @@ class Shape(OgPoset):
                        wfcheck=False)
         proj = Shape._reorder(collapse.target).then(ogproj)
 
-        if collapsed == self.all().boundary() and isinstance(self, Opetope):
-            if isinstance(self, Globe):
-                proj = Globe._upgrademapsrc(proj)
-            else:
-                proj = Opetope._upgrademapsrc(proj)
-        return ShapeMap(
-                proj,
-                wfcheck=False)
+        def inheritance(x):
+            if collapsed == x.all().boundary() and isinstance(x, Opetope):
+                if isinstance(x, Globe):
+                    return Globe
+                return Opetope
+            return Shape
+
+        return inheritance(self)._upgrademapsrc(proj)
 
     # Private methods
     @staticmethod
@@ -599,32 +630,34 @@ class Shape(OgPoset):
     @classmethod
     def _upgrademapsrc(cls, ogmap):
         """
-        Upgrades the source of a map to the shape class.
+        Upgrades the source of an OgMap to a shape class, and declares
+        it a ShapeMap.
         """
         if isinstance(ogmap, OgMapPair):
             return OgMapPair(
                     cls._upgrademapsrc(ogmap.fst),
                     cls._upgrademapsrc(ogmap.snd))
-        return OgMap(
+        return ShapeMap(OgMap(
                 cls._upgrade(ogmap.source),
                 ogmap.target,
                 ogmap.mapping,
-                wfcheck=False)
+                wfcheck=False), wfcheck=False)
 
     @classmethod
     def _upgrademaptgt(cls, ogmap):
         """
-        Upgrades the target of a map to the shape class.
+        Upgrades the target of an OgMap to a shape class, and declares
+        it a ShapeMap.
         """
         if isinstance(ogmap, OgMapPair):
             return OgMapPair(
                     cls._upgrademaptgt(ogmap.fst),
-                    cls._upgrademapsrc(ogmap.snd))
-        return OgMap(
-                ogmap.source,
-                cls._upgrade(ogmap.target),
-                ogmap.mapping,
-                wfcheck=False)
+                    cls._upgrademaptgt(ogmap.snd))
+        return ShapeMap(OgMap(
+            ogmap.source,
+            cls._upgrade(ogmap.target),
+            ogmap.mapping,
+            wfcheck=False), wfcheck=False)
 
 
 class Simplex(Shape):
@@ -859,16 +892,20 @@ class ShapeMap(OgMap):
         if gray.source in [f.source for f in maps]:
             if gray.target in [f.target for f in maps]:
                 return gray
+
         if gray.source not in [f.source for f in maps]:
             gray = Shape._reorder(gray.source).then(gray)
-            if all([isinstance(x, Cube) for x in [f.source for f in maps]]):
-                gray = Cube._upgrademapsrc(gray)
         if gray.target not in [f.target for f in maps]:
             gray = gray.then(Shape._reorder(gray.target).inv())
-            if all([isinstance(x, Cube) for x in [f.target for f in maps]]):
-                gray = Cube._upgrademaptgt(gray)
-        return ShapeMap(gray,
-                        wfcheck=False)
+
+        def inheritance(l):
+            if all([isinstance(x, Cube) for x in l]):
+                return Cube
+            return Shape
+
+        return inheritance([f.source for f in maps])._upgrademapsrc(
+                inheritance([f.target for f in maps])._upgrademaptgt(
+                    gray))
 
     @staticmethod
     def join(*maps):
@@ -884,23 +921,22 @@ class ShapeMap(OgMap):
         if join.source in [f.source for f in maps]:
             if join.target in [f.target for f in maps]:
                 return join
+
         if join.source not in [f.source for f in maps]:
             join = Shape._reorder(join.source).then(join)
-            if all([isinstance(x, Simplex) for x in [f.source for f in maps]]):
-                if len(join.source) == 3:
-                    join = Arrow._upgrademapsrc(join)
-                else:
-                    join = Simplex._upgrademapsrc(join)
         if join.target not in [f.target for f in maps]:
             join = join.then(Shape._reorder(join.target).inv())
-            if all([isinstance(x, Simplex) for x in [f.target for f in maps]]):
-                if len(join.target) == 3:
-                    join = Arrow._upgrademaptgt(join)
-                else:
-                    join = Simplex._upgrademaptgt(join)
 
-        return ShapeMap(join,
-                        wfcheck=False)
+        def inheritance(l):
+            if all([isinstance(x, Simplex) for x in l]):
+                if sum([x.dim+1 for x in l]) == 2:
+                    return Arrow
+                return Simplex
+            return Shape
+
+        return inheritance([f.source for f in maps])._upgrademapsrc(
+                inheritance([f.target for f in maps])._upgrademaptgt(
+                    join))
 
     def dual(shapemap, *dims):
         if not isinstance(shapemap, ShapeMap):
@@ -909,16 +945,15 @@ class ShapeMap(OgMap):
         ogdual = OgMap.dual(shapemap, *dims)
         dual = Shape._reorder(ogdual.source).then(ogdual).then(
                 Shape._reorder(ogdual.target).inv())
-        if shapemap.source == dual.source:
-            dual = shapemap.source.__class__._upgrademapsrc(dual)
-        else:
-            if isinstance(shapemap.source, Theta):
-                dual = Theta._upgrademapsrc(dual)
-        if shapemap.target == dual.target:
-            dual = shapemap.target.__class__._upgrademaptgt(dual)
-        else:
-            if isinstance(shapemap.target, Theta):
-                dual = Theta._upgrademaptgt(dual)
 
-        return ShapeMap(dual,
-                        wfcheck=False)
+        def inheritance(x, y):
+            if x == y:
+                return x.__class__
+            else:
+                if isinstance(x, Theta):
+                    return Theta
+            return Shape
+
+        return inheritance(shapemap.source, dual.source)._upgrademapsrc(
+                inheritance(shapemap.target, dual.target)._upgrademaptgt(
+                    dual))
