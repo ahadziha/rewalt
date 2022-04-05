@@ -1275,7 +1275,7 @@ class OgMap:
                 wfcheck=False)
 
     def _join(self, *others):
-        return self.__class__.join(self, others)
+        return self.__class__.join(self, *others)
 
     @staticmethod
     def dual(ogmap, *dims):
