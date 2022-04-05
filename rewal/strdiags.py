@@ -49,6 +49,8 @@ class StrDiag:
                             'color', None)),
                     'draw_node': generators[diagram[x].name].get(
                         'draw_node', True),
+                    'draw_label': generators[diagram[x].name].get(
+                        'draw_label', True),
                     'isdegenerate': dim != diagram[x].dim
                     }
                 for x in diagram.shape[dim]}
@@ -59,6 +61,8 @@ class StrDiag:
                         'stroke',
                         generators[diagram[x].name].get(
                             'color', None)),
+                    'draw_label': generators[diagram[x].name].get(
+                        'draw_label', True),
                     'isdegenerate': dim-1 != diagram[x].dim
                     }
                 for x in diagram.shape[dim-1]}
@@ -252,7 +256,7 @@ class StrDiag:
                         color,
                         self.wires[wire]['isdegenerate'])
 
-            if wirelabels:
+            if wirelabels and self.wires[wire]['draw_label']:
                 backend.draw_label(
                         self.wires[wire]['label'],
                         coord[wire], (.01, .01))
@@ -263,8 +267,8 @@ class StrDiag:
             return self.nodes[node]['draw_node']
 
         for node in (
-                node for node in self.nodes
-                if is_drawn(node)):
+                node for node in self.nodes if is_drawn(node)
+                ):
             stroke = nodestroke if self.nodes[node]['stroke'] is None \
                 else self.nodes[node]['stroke']
             color = nodecolor if self.nodes[node]['color'] is None \
@@ -275,7 +279,7 @@ class StrDiag:
                     color,
                     stroke)
 
-            if nodelabels:
+            if nodelabels and self.nodes[node]['draw_label']:
                 backend.draw_label(
                         self.nodes[node]['label'],
                         coord[node], (.01, .01))
