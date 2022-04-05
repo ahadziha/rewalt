@@ -75,13 +75,13 @@ class DiagSet:
 
         for x in input.shape:
             y = boundary.fst[x]
-            mapping[y.dim][y.pos] = input[x].name
+            mapping[y.dim][y.pos] = input.mapping[x.dim][x.pos]
         for x in output.shape:
             y = boundary.snd[x]
             if mapping[y.dim][y.pos] is None:
-                mapping[y.dim][y.pos] = output[x].name
+                mapping[y.dim][y.pos] = output.mapping[x.dim][x.pos]
             else:
-                if mapping[y.dim][y.pos] != output[x].name:
+                if mapping[y.dim][y.pos] != output.mapping[x.dim][x.pos]:
                     raise ValueError(utils.value_err(
                             output, 'boundary does not match '
                             'boundary of {}'.format(repr(input))))
@@ -240,13 +240,13 @@ class Diagram:
 
         for x in self.shape:
             y = paste_cospan.fst[x]
-            mapping[y.dim][y.pos] = self[x].name
+            mapping[y.dim][y.pos] = self.mapping[x.dim][x.pos]
         for x in other.shape:
             y = paste_cospan.snd[x]
             if mapping[y.dim][y.pos] is None:
-                mapping[y.dim][y.pos] = other[x].name
+                mapping[y.dim][y.pos] = other.mapping[x.dim][x.pos]
             else:
-                if mapping[y.dim][y.pos] != other[x].name:
+                if mapping[y.dim][y.pos] != other.mapping[x.dim][x.pos]:
                     raise ValueError(utils.value_err(
                             other, 'input {}-boundary does not match '
                             'output {}-boundary of {}'.format(
@@ -277,7 +277,7 @@ class Diagram:
         shape = shapemap.source
         mapping = [
                 [
-                    self[x].name
+                    self.mapping[x.dim][x.pos]
                     for x in n_data
                 ]
                 for n_data in shapemap.mapping]
@@ -371,18 +371,18 @@ class Diagram:
     # Internal methods
     @staticmethod
     def _new(shape, ambient, mapping, name=None):
-        def diagramclass(x):
-            if isinstance(x, rewal.shapes.Cube):
-                if isinstance(x, rewal.shapes.Point):
+        def diagramclass():
+            if isinstance(shape, rewal.shapes.Cube):
+                if isinstance(shape, rewal.shapes.Point):
                     return PointDiagram
-                if isinstance(x, rewal.shapes.Arrow):
+                if isinstance(shape, rewal.shapes.Arrow):
                     return ArrowDiagram
                 return CubeDiagram
-            if isinstance(x, rewal.shapes.Simplex):
+            if isinstance(shape, rewal.shapes.Simplex):
                 return SimplexDiagram
             return Diagram
 
-        new = Diagram.__new__(diagramclass(shape))
+        new = Diagram.__new__(diagramclass())
         new._shape = shape
         new._ambient = ambient
         new._mapping = mapping

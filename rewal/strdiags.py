@@ -44,7 +44,9 @@ class StrDiag:
                     'color': generators[diagram[x].name].get(
                         'color', None),
                     'stroke': generators[diagram[x].name].get(
-                        'stroke', None),
+                        'stroke',
+                        generators[diagram[x].name].get(
+                            'color', None)),
                     'draw_node': generators[diagram[x].name].get(
                         'draw_node', True),
                     'isdegenerate': dim != diagram[x].dim
@@ -54,7 +56,9 @@ class StrDiag:
                 x: {
                     'label': diagram[x].name,
                     'color': generators[diagram[x].name].get(
-                        'color', None),
+                        'stroke',
+                        generators[diagram[x].name].get(
+                            'color', None)),
                     'isdegenerate': dim-1 != diagram[x].dim
                     }
                 for x in diagram.shape[dim-1]}
@@ -224,10 +228,9 @@ class StrDiag:
 
         wiresort = list(nx.topological_sort(self.depthgraph))
         for wire in reversed(wiresort):
-            if self.wires[wire]['color'] is None:
-                color = wirecolor
-            else:
-                color = self.wires[wire]['color']
+            color = wirecolor if self.wires[wire]['color'] is None \
+                else self.wires[wire]['color']
+
             for node in [
                     *self.graph.predecessors(wire),
                     *self.graph.successors(wire)
@@ -262,12 +265,10 @@ class StrDiag:
         for node in (
                 node for node in self.nodes
                 if is_drawn(node)):
-            stroke = self.nodes[node]['stroke']
-            color = self.nodes[node]['color']
-
-            stroke = color if stroke is None else stroke
-            stroke = nodestroke if stroke is None else stroke
-            color = nodecolor if color is None else color
+            stroke = nodestroke if self.nodes[node]['stroke'] is None \
+                else self.nodes[node]['stroke']
+            color = nodecolor if self.nodes[node]['color'] is None \
+                else self.nodes[node]['color']
 
             backend.draw_node(
                     coord[node],
@@ -290,6 +291,15 @@ class DrawBackend(ABC):
         self.orientation = params.get('orientation')
         self.name = params.get('name')
 
+    def rotate(self, xy):
+        if self.orientation == 'tb':
+            return (xy[0], 1-xy[1])
+        if self.orientation == 'lr':
+            return (xy[1], 1-xy[0])
+        if self.orientation == 'rl':
+            return (1-xy[1], 1-xy[0])
+        return xy
+
 
 class MatBackend(DrawBackend):
     """
@@ -310,7 +320,8 @@ class MatBackend(DrawBackend):
         """
         Draws a wire from a wire vertex to a node vertex.
         """
-        y_offset = .2*(wire_xy[1] - node_xy[1])
+        y_offset = 0
+        # y_offset = .2*(wire_xy[1] - node_xy[1])
         width = .02
 
         contour = Path(
@@ -379,12 +390,3 @@ class MatBackend(DrawBackend):
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         self.fig.canvas.manager.set_window_title(self.name)
         self.fig.show()
-
-    def rotate(self, xy):
-        if self.orientation == 'tb':
-            return (xy[0], 1-xy[1])
-        if self.orientation == 'lr':
-            return (xy[1], 1-xy[0])
-        if self.orientation == 'rl':
-            return (1-xy[1], 1-xy[0])
-        return xy
