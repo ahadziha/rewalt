@@ -224,10 +224,9 @@ class StrDiag:
         labels = params.get('labels', True)
         wirelabels = params.get('wirelabels', labels)
         nodelabels = params.get('nodelabels', labels)
+        labeloffset = params.get('labeloffset', (4, 4))
 
         positions = params.get('positions', False)
-        wirepositions = params.get('wirepositions', positions)
-        nodepositions = params.get('nodepositions', positions)
 
         orientation = params.get('orientation', 'bt')
 
@@ -264,17 +263,18 @@ class StrDiag:
                         color,
                         self.wires[wire]['isdegenerate'])
 
-            if wirelabels and self.wires[wire]['draw_label']:
-                backend.draw_label(
-                        self.wires[wire]['label'],
-                        coord[wire], (.01, .01))
-
-            if wirepositions:
+            if positions:
                 backend.draw_label(
                         str(wire.pos),
-                        coord[wire], (0, 0),
-                        color=infocolor,
-                        size='large')
+                        coord[wire],
+                        labeloffset,
+                        color=infocolor)
+            else:
+                if wirelabels and self.wires[wire]['draw_label']:
+                    backend.draw_label(
+                            self.wires[wire]['label'],
+                            coord[wire],
+                            labeloffset)
 
         def is_drawn(node):
             if self.nodes[node]['isdegenerate']:
@@ -295,14 +295,7 @@ class StrDiag:
                 if nodelabels and self.nodes[node]['draw_label']:
                     backend.draw_label(
                         self.nodes[node]['label'],
-                        coord[node], (.01, .01))
-
-            if nodepositions:
-                backend.draw_label(
-                        str(node.pos),
-                        coord[node], (0, 0),
-                        color=infocolor,
-                        size='large')
+                        coord[node], labeloffset)
 
         if show:
             backend.show()
@@ -403,6 +396,7 @@ class MatBackend(DrawBackend):
                 label,
                 xy,
                 xytext=xytext,
+                textcoords='offset pixels',
                 color=color,
                 fontsize=size,
                 fontweight=weight)
