@@ -331,26 +331,10 @@ class Diagram:
 
         paste_cospan = Shape.paste_cospan(
                 self.shape, other.shape, dim)
+
         shape = paste_cospan.target
-        mapping = [
-                [None for _ in n_data]
-                for n_data in shape.face_data
-                ]
-
-        for x in self.shape:
-            y = paste_cospan.fst[x]
-            mapping[y.dim][y.pos] = self.mapping[x.dim][x.pos]
-        for x in other.shape:
-            y = paste_cospan.snd[x]
-            if mapping[y.dim][y.pos] is None:
-                mapping[y.dim][y.pos] = other.mapping[x.dim][x.pos]
-            else:
-                if mapping[y.dim][y.pos] != other.mapping[x.dim][x.pos]:
-                    raise ValueError(utils.value_err(
-                            other, 'input {}-boundary does not match '
-                            'output {}-boundary of {}'.format(
-                                str(dim), str(dim), repr(self))))
-
+        mapping = Diagram._paste_fill_mapping(
+                self, other, paste_cospan)
         name = '({} #{} {})'.format(
                 str(self.name), str(dim), str(other.name))
 
@@ -363,6 +347,65 @@ class Diagram:
 
     def paste(self, other, dim=None):
         return self.paste_cospan(other, dim)[0]
+
+    def paste_along_cospan(self, other, fst, snd, name=None):
+        utils.typecheck(other, {
+                'type': Diagram,
+                'st': lambda x: x.ambient == self.ambient,
+                'why': 'not the same ambient DiagSet'})
+        assoc = ((fst, self), (snd, other))
+        for x in assoc:
+            utils.typecheck(x[0], {
+                'type': ShapeMap,
+                'st': lambda f: f.target == x[1].shape,
+                'why': 'expecting a map with target {}'.format(
+                    repr(x[1].shape))}
+                )
+        paste_cospan = Shape.paste_along_cospan(
+                fst, snd)
+
+        shape = paste_cospan.target
+        mapping = Diagram._paste_fill_mapping(
+                self, other, paste_cospan)
+        if name is None:
+            name = '({} ## {})'.format(
+                    str(self.name), str(other.name))
+
+        pasted = Diagram._new(
+                shape,
+                self.ambient,
+                mapping,
+                name)
+        return pasted, paste_cospan
+
+    def paste_along(self, other, fst, snd, name=None):
+        return self.paste_along_cospan(other, fst, snd, name)[0]
+
+    def paste_at_output_cospan(self, pos, other):
+        name = '([{} -> {}]{})'.format(
+                str(other.name), str(pos), str(self.name))
+        return self.paste_along_cospan(
+                other,
+                self.shape.atom_inclusion(
+                    rewal.ogposets.El(self.dim-1, pos)),
+                other.shape.boundary('-'),
+                name)
+
+    def paste_at_output(self, pos, other):
+        return self.paste_at_output_cospan(pos, other)[0]
+
+    def paste_at_input_cospan(self, pos, other):
+        name = '({}[{} <- {}])'.format(
+                str(self.name), str(pos), str(other.name))
+        return other.paste_along_cospan(
+                self,
+                other.shape.boundary('+'),
+                self.shape.atom_inclusion(
+                    rewal.ogposets.El(self.dim-1, pos)),
+                name)
+
+    def paste_at_input(self, pos, other):
+        return self.paste_at_input_cospan(pos, other)[0]
 
     def pullback(self, shapemap, name=None):
         """
@@ -487,6 +530,28 @@ class Diagram:
         new._mapping = mapping
         new._name = name
         return new
+
+    @staticmethod
+    def _paste_fill_mapping(fst, snd, paste_cospan):
+        shape = paste_cospan.target
+        mapping = [
+            [None for _ in n_data]
+            for n_data in shape.face_data
+            ]
+
+        for x in fst.shape:
+            y = paste_cospan.fst[x]
+            mapping[y.dim][y.pos] = fst.mapping[x.dim][x.pos]
+        for x in snd.shape:
+            y = paste_cospan.snd[x]
+            if mapping[y.dim][y.pos] is None:
+                mapping[y.dim][y.pos] = snd.mapping[x.dim][x.pos]
+            else:
+                if mapping[y.dim][y.pos] != snd.mapping[x.dim][x.pos]:
+                    raise ValueError(utils.value_err(
+                            snd, 'boundary does not match '
+                            'boundary of {}'.format(repr(fst))))
+        return mapping
 
 
 class SimplexDiagram(Diagram):

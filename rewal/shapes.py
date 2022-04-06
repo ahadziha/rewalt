@@ -155,7 +155,8 @@ class Shape(OgPoset):
 
         def inheritance():
             if isinstance(fst, Theta) and isinstance(snd, Theta):
-                if isinstance(fst, GlobeString) and isinstance(snd, GlobeString) \
+                if isinstance(fst, GlobeString) and \
+                        isinstance(snd, GlobeString) \
                         and fst.dim == snd.dim == dim+1:
                     return GlobeString
                 return Theta
@@ -205,7 +206,7 @@ class Shape(OgPoset):
                 span, 'not a well-formed span for pasting'))
         if fst_image == fst_output:
             if snd_image == snd_input:
-                return Shape.paste(fst.target, snd.target, dim)
+                return Shape.paste_cospan(fst.target, snd.target, dim)
             if not Shape._issubmol(snd_image, snd_input):
                 raise ValueError(utils.value_err(
                     snd, 'cannot paste along this map'))
@@ -216,9 +217,6 @@ class Shape(OgPoset):
 
         pushout = span.pushout(wfcheck=False)
         pasting = pushout.then(Shape._reorder(pushout.target).inv())
-        pasting = OgMapPair(
-                ShapeMap(pasting.fst, wfcheck=False),
-                ShapeMap(pasting.snd, wfcheck=False))
 
         def inheritance():
             if isinstance(fst.target, OpetopeTree) and \
@@ -233,21 +231,27 @@ class Shape(OgPoset):
     def paste_along(fst, snd):
         return Shape.paste_along_cospan(fst, snd).target
 
-    def paste_at_output(self, pos, other):
+    def paste_at_output_cospan(self, pos, other):
         """
         Paste along the inclusion of one of the outputs.
         """
-        return Shape.paste_along(
+        return Shape.paste_along_cospan(
             self.atom_inclusion(El(self.dim-1, pos)),
             other.boundary('-'))
 
-    def paste_at_input(self, pos, other):
+    def paste_at_output(self, pos, other):
+        return self.paste_at_output_cospan(pos, other).target
+
+    def paste_at_input_cospan(self, pos, other):
         """
         Paste along the inclusion of one of the inputs.
         """
         return Shape.paste_along(
             other.boundary('+'),
             self.atom_inclusion(El(self.dim-1, pos)))
+
+    def paste_at_input(self, pos, other):
+        return self.paste_at_input_cospan(pos, other).target
 
     @staticmethod
     def suspend(shape, n=1):

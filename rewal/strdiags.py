@@ -213,14 +213,22 @@ class StrDiag:
         """
         # Parameters
         show = params.get('show', True)
+
         bgcolor = params.get('bgcolor', 'white')
         fgcolor = params.get('fgcolor', 'black')
+        infocolor = params.get('infocolor', 'red')
         wirecolor = params.get('wirecolor', fgcolor)
         nodecolor = params.get('nodecolor', fgcolor)
         nodestroke = params.get('nodestroke', nodecolor)
+
         labels = params.get('labels', True)
         wirelabels = params.get('wirelabels', labels)
         nodelabels = params.get('nodelabels', labels)
+
+        positions = params.get('positions', False)
+        wirepositions = params.get('wirepositions', positions)
+        nodepositions = params.get('nodepositions', positions)
+
         orientation = params.get('orientation', 'bt')
 
         coord = self.place_vertices()
@@ -261,28 +269,38 @@ class StrDiag:
                         self.wires[wire]['label'],
                         coord[wire], (.01, .01))
 
+            if wirepositions:
+                backend.draw_label(
+                        str(wire.pos),
+                        coord[wire], (0, 0),
+                        color=infocolor)
+
         def is_drawn(node):
             if self.nodes[node]['isdegenerate']:
                 return False
             return self.nodes[node]['draw_node']
 
-        for node in (
-                node for node in self.nodes if is_drawn(node)
-                ):
+        for node in self.nodes:
             stroke = nodestroke if self.nodes[node]['stroke'] is None \
                 else self.nodes[node]['stroke']
             color = nodecolor if self.nodes[node]['color'] is None \
                 else self.nodes[node]['color']
 
-            backend.draw_node(
+            if is_drawn(node):
+                backend.draw_node(
                     coord[node],
                     color,
                     stroke)
-
-            if nodelabels and self.nodes[node]['draw_label']:
-                backend.draw_label(
+                if nodelabels and self.nodes[node]['draw_label']:
+                    backend.draw_label(
                         self.nodes[node]['label'],
                         coord[node], (.01, .01))
+
+            if nodepositions:
+                backend.draw_label(
+                        str(node.pos),
+                        coord[node], (0, 0),
+                        color=infocolor)
 
         if show:
             backend.show()
@@ -372,13 +390,17 @@ class MatBackend(DrawBackend):
         self.axes.add_patch(p_contour)
         self.axes.add_patch(p_wire)
 
-    def draw_label(self, label, xy, offset):
+    def draw_label(self, label, xy, offset,
+                   color=None):
+        if color is None:
+            color = self.fgcolor
         xy = self.rotate(xy)
-        xy = (xy[0] + offset[0], xy[1] + offset[1])
+        xytext = (xy[0] + offset[0], xy[1] + offset[1])
         self.axes.annotate(
                 label,
                 xy,
-                color=self.fgcolor)
+                xytext=xytext,
+                color=color)
 
     def draw_node(self, xy, color, stroke):
         xy = self.rotate(xy)
