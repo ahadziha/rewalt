@@ -436,6 +436,10 @@ class Shape(OgPoset):
         def inheritance():
             if isinstance(self, OpetopeTree):
                 if isinstance(self, GlobeString):
+                    if dim == 0:
+                        return Point
+                    if dim == 1:
+                        return Arrow
                     return Globe
                 if utils.mksign(sign) == '+':
                     return Opetope
@@ -472,6 +476,7 @@ class Shape(OgPoset):
                 return Simplex
             if isinstance(self, Cube):
                 return Cube
+            return Shape
 
         return inheritance()._upgrademapsrc(inclusion)
 
