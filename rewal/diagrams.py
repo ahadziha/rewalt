@@ -68,7 +68,7 @@ class DiagSet:
         """ Adds a generator and returns it. """
         if name in self.generators:
             raise ValueError(utils.value_err(
-                name, 'already in use'))
+                name, 'name already in use'))
         if input is None:
             input = Diagram(self)
         if output is None:
@@ -100,26 +100,42 @@ class DiagSet:
                             output, 'boundary does not match '
                             'boundary of {}'.format(repr(input))))
         mapping[-1][0] = name
+        self._update_generators(name, shape, mapping, **kwargs)
 
-        self._generators.update({
-                name: {
-                    'shape': shape,
-                    'mapping': mapping,
-                    'faces': set(),
-                    'cofaces': set(),
-                    **kwargs
-                    }
-                })
+        return self[name]
 
-        if shape.dim in self._by_dim:
-            self._by_dim[shape.dim].add(name)
-        else:
-            self._by_dim[shape.dim] = {name}
+    def add_simplex(self, name, *faces, **kwargs):
+        if name in self.generators:
+            raise ValueError(utils.value_err(
+                name, 'name already in use'))
 
-        if shape.dim > 0:
-            for x in mapping[-2]:
-                self.generators[x]['cofaces'].add(name)
-                self.generators[name]['faces'].add(x)
+        dim = len(faces) - 1
+        for x in faces:
+            utils.typecheck(x, {
+                'type': SimplexDiagram,
+                'st': lambda x: x.ambient == self and x.dim == dim-1,
+                'why': 'expecting a {}-simplex in {}'.format(
+                    str(dim - 1), repr(self))})
+
+        shape = Shape.simplex(dim)
+        mapping = [
+                [None for _ in n_data]
+                for n_data in shape.face_data
+                ]
+
+        for k, face in enumerate(faces):
+            face_map = shape.simplex_face(k)
+            for x in face:
+                y = face_map[x]
+                if mapping[y.dim][y.pos] is None:
+                    mapping[y.dim][y.pos] = face.mapping[x.dim][x.pos]
+                else:
+                    if mapping[y.dim][y.pos] != face.mapping[x.dim][x.pos]:
+                        raise ValueError(utils.value_err(
+                            face, 'boundary does not match other faces'))
+
+        mapping[-1][0] = name
+        self._update_generators(name, shape, mapping, **kwargs)
 
         return self[name]
 
@@ -169,6 +185,28 @@ class DiagSet:
                 })
         return yoneda
 
+    # Internal methods
+    def _update_generators(self, name, shape, mapping, **kwargs):
+        self._generators.update({
+                name: {
+                    'shape': shape,
+                    'mapping': mapping,
+                    'faces': set(),
+                    'cofaces': set(),
+                    **kwargs
+                    }
+                })
+
+        if shape.dim in self._by_dim:
+            self._by_dim[shape.dim].add(name)
+        else:
+            self._by_dim[shape.dim] = {name}
+
+        if shape.dim > 0:
+            for x in mapping[-2]:
+                self.generators[x]['cofaces'].add(name)
+                self.generators[name]['faces'].add(x)
+
 
 class Diagram:
     """
@@ -200,6 +238,9 @@ class Diagram:
             return self.ambient[self.mapping[element.dim][element.pos]]
         raise ValueError(utils.value_err(
             element, 'not an element of the shape'))
+
+    def __iter__(self):
+        return iter(self.shape)
 
     @property
     def name(self):
