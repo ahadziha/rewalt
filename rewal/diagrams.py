@@ -50,6 +50,20 @@ class DiagSet:
     def by_dim(self):
         return self._by_dim
 
+    @property
+    def issimplicial(self):
+        for x in self:
+            if not isinstance(self[x], SimplexDiagram):
+                return False
+        return True
+
+    @property
+    def iscubical(self):
+        for x in self:
+            if not isinstance(self[x], CubeDiagram):
+                return False
+        return True
+
     def add(self, name, input=None, output=None, **kwargs):
         """ Adds a generator and returns it. """
         if name in self.generators:
