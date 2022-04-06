@@ -273,7 +273,8 @@ class StrDiag:
                 backend.draw_label(
                         str(wire.pos),
                         coord[wire], (0, 0),
-                        color=infocolor)
+                        color=infocolor,
+                        size='large')
 
         def is_drawn(node):
             if self.nodes[node]['isdegenerate']:
@@ -300,7 +301,8 @@ class StrDiag:
                 backend.draw_label(
                         str(node.pos),
                         coord[node], (0, 0),
-                        color=infocolor)
+                        color=infocolor,
+                        size='large')
 
         if show:
             backend.show()
@@ -390,17 +392,20 @@ class MatBackend(DrawBackend):
         self.axes.add_patch(p_contour)
         self.axes.add_patch(p_wire)
 
-    def draw_label(self, label, xy, offset,
-                   color=None):
-        if color is None:
-            color = self.fgcolor
+    def draw_label(self, label, xy, offset, **params):
+        color = params.get('color', self.fgcolor)
+        size = params.get('size', 'medium')
+        weight = params.get('weight', 'regular')
+
         xy = self.rotate(xy)
         xytext = (xy[0] + offset[0], xy[1] + offset[1])
         self.axes.annotate(
                 label,
                 xy,
                 xytext=xytext,
-                color=color)
+                color=color,
+                fontsize=size,
+                fontweight=weight)
 
     def draw_node(self, xy, color, stroke):
         xy = self.rotate(xy)
