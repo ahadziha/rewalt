@@ -105,6 +105,9 @@ class DiagSet:
         return self[name]
 
     def add_simplex(self, name, *faces, **kwargs):
+        if len(faces) <= 1:
+            return self.add(name, **kwargs)
+
         if name in self.generators:
             raise ValueError(utils.value_err(
                 name, 'name already in use'))
@@ -132,7 +135,49 @@ class DiagSet:
                 else:
                     if mapping[y.dim][y.pos] != face.mapping[x.dim][x.pos]:
                         raise ValueError(utils.value_err(
-                            face, 'boundary does not match other faces'))
+                            face, 'boundary of face does not '
+                            'match other faces'))
+
+        mapping[-1][0] = name
+        self._update_generators(name, shape, mapping, **kwargs)
+
+        return self[name]
+
+    def add_cube(self, name, *faces, **kwargs):
+        if len(faces) % 2 == 1:
+            raise ValueError(utils.value_err(
+                faces, 'expecting an even number of faces'))
+        if name in self.generators:
+            raise ValueError(utils.value_err(
+                name, 'name already in use'))
+
+        dim = int(len(faces) / 2)
+        for x in faces:
+            utils.typecheck(x, {
+                'type': CubeDiagram,
+                'st': lambda x: x.ambient == self and x.dim == dim-1,
+                'why': 'expecting a {}-cube in {}'.format(
+                    str(dim - 1), repr(self))})
+
+        shape = Shape.cube(dim)
+        mapping = [
+                [None for _ in n_data]
+                for n_data in shape.face_data
+                ]
+
+        for n, face in enumerate(faces):
+            k = int(n/2)
+            sign = utils.mksign(n % 2)
+            face_map = shape.cube_face(k, sign)
+            for x in face:
+                y = face_map[x]
+                if mapping[y.dim][y.pos] is None:
+                    mapping[y.dim][y.pos] = face.mapping[x.dim][x.pos]
+                else:
+                    if mapping[y.dim][y.pos] != face.mapping[x.dim][x.pos]:
+                        raise ValueError(utils.value_err(
+                            face, 'boundary of face does not '
+                            'match other faces'))
 
         mapping[-1][0] = name
         self._update_generators(name, shape, mapping, **kwargs)
