@@ -100,16 +100,16 @@ class Shape(OgPoset):
         atom_cospan = OgMapPair(boundary_in, boundary_out).then(
                 Shape._reorder(new_atom).inv())
 
-        def inheritance(x, y):
-            if isinstance(x, OpetopeTree) and isinstance(y, Opetope):
-                if isinstance(x, Globe):
-                    if x.dim == 0:
+        def inheritance():
+            if isinstance(fst, OpetopeTree) and isinstance(snd, Opetope):
+                if isinstance(fst, Globe):
+                    if fst.dim == 0:
                         return Arrow
                     return Globe
                 return Opetope
             return Shape
 
-        return inheritance(fst, snd)._upgrademaptgt(atom_cospan)
+        return inheritance()._upgrademaptgt(atom_cospan)
 
     @staticmethod
     def atom(fst, snd):
@@ -153,18 +153,18 @@ class Shape(OgPoset):
         pushout = span.pushout(wfcheck=False)
         pasting = pushout.then(Shape._reorder(pushout.target).inv())
 
-        def inheritance(x, y):
-            if isinstance(x, Theta) and isinstance(y, Theta):
-                if isinstance(x, GlobeString) and isinstance(y, GlobeString) \
-                        and x.dim == y.dim == dim+1:
+        def inheritance():
+            if isinstance(fst, Theta) and isinstance(snd, Theta):
+                if isinstance(fst, GlobeString) and isinstance(snd, GlobeString) \
+                        and fst.dim == snd.dim == dim+1:
                     return GlobeString
                 return Theta
-            if isinstance(x, OpetopeTree) and isinstance(y, GlobeString) \
-                    and x.dim == y.dim == dim+1:
+            if isinstance(fst, OpetopeTree) and isinstance(snd, GlobeString) \
+                    and fst.dim == snd.dim == dim+1:
                 return OpetopeTree
             return Shape
 
-        return inheritance(fst, snd)._upgrademaptgt(pasting)
+        return inheritance()._upgrademaptgt(pasting)
 
     @staticmethod
     def paste(fst, snd, dim=None):
@@ -220,13 +220,14 @@ class Shape(OgPoset):
                 ShapeMap(pasting.fst, wfcheck=False),
                 ShapeMap(pasting.snd, wfcheck=False))
 
-        def inheritance(x, y):
-            if isinstance(x, OpetopeTree) and isinstance(y, OpetopeTree) \
-                    and x.dim == y.dim == dim+1:
+        def inheritance():
+            if isinstance(fst.target, OpetopeTree) and \
+                    isinstance(snd.target, OpetopeTree) \
+                    and fst.target.dim == snd.target.dim == dim+1:
                 return OpetopeTree
             return Shape
 
-        return inheritance(fst.target, snd.target)._upgrademaptgt(pasting)
+        return inheritance()._upgrademaptgt(pasting)
 
     @staticmethod
     def paste_along(fst, snd):
@@ -261,16 +262,16 @@ class Shape(OgPoset):
         suspension = Shape._reorder(
                 OgPoset.suspend(shape, n)).source
 
-        def inheritance(x):
-            if isinstance(x, Theta):
-                if isinstance(x, GlobeString):
-                    if isinstance(x, Globe):
+        def inheritance():
+            if isinstance(shape, Theta):
+                if isinstance(shape, GlobeString):
+                    if isinstance(shape, Globe):
                         return Globe
                     return GlobeString
                 return Theta
             return Shape
 
-        return inheritance(shape)._upgrade(suspension)
+        return inheritance()._upgrade(suspension)
 
     @staticmethod
     def gray(*shapes):
@@ -327,12 +328,12 @@ class Shape(OgPoset):
         if shape == dual:
             return shape
 
-        def inheritance(x):
-            if isinstance(x, Theta):
+        def inheritance():
+            if isinstance(shape, Theta):
                 return Theta
             return Shape
 
-        return inheritance(shape)._upgrade(dual)
+        return inheritance()._upgrade(dual)
 
     def merge(self):
         """
@@ -452,9 +453,23 @@ class Shape(OgPoset):
                 GrSet(element), self,
                 wfcheck=False).closure()
         reordering = Shape._reorder(underset.as_map.source)
+        inclusion = reordering.then(underset.as_map)
 
-        return ShapeMap(reordering.then(underset.as_map),
-                        wfcheck=False)
+        def inheritance():
+            if element.dim == 0:
+                return Point
+            if element.dim == 1:
+                return Arrow
+            if isinstance(self, Theta):
+                return Globe
+            if isinstance(self, OpetopeTree):
+                return Opetope
+            if isinstance(self, Simplex):
+                return Simplex
+            if isinstance(self, Cube):
+                return Cube
+
+        return inheritance()._upgrademapsrc(inclusion)
 
     def initial(self):
         """

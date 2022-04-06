@@ -16,7 +16,7 @@ class DiagSet:
         self._generators = dict()
         self._by_dim = dict()
 
-        for key, value in kwargs:  # TODO: accepted kwargs
+        for key, value in kwargs:
             setattr(self, key, value)
 
     def __str__(self):
@@ -87,7 +87,6 @@ class DiagSet:
                             'boundary of {}'.format(repr(input))))
         mapping[-1][0] = name
 
-        # TODO: valid kwargs
         self._generators.update({
                 name: {
                     'shape': shape,
@@ -391,9 +390,6 @@ class Diagram:
 
 
 class SimplexDiagram(Diagram):
-    def __new__(self):
-        return Diagram.__new__(Diagram)
-
     def simplex_face(self, k):
         face_map = self.shape.simplex_face(k)
         name = 'd[{}]{}'.format(
@@ -408,9 +404,6 @@ class SimplexDiagram(Diagram):
 
 
 class CubeDiagram(Diagram):
-    def __new__(self):
-        return Diagram.__new__(Diagram)
-
     def cube_face(self, k, sign):
         sign = utils.mksign(sign)
         face_map = self.shape.cube_face(k, sign)
@@ -433,14 +426,10 @@ class CubeDiagram(Diagram):
 
 
 class ArrowDiagram(SimplexDiagram, CubeDiagram):
-    def __new__(self):
-        return Diagram.__new__(Diagram)
+    pass
 
 
 class PointDiagram(SimplexDiagram, CubeDiagram):
-    def __new__(self):
-        return Diagram.__new__(Diagram)
-
     def degeneracy(self, shape):
         utils.typecheck(shape, {'type': rewal.shapes.Shape})
         return self.pullback(
