@@ -111,7 +111,7 @@ def test_Shape_merge():
     arrow = Shape.arrow()
     binary = arrow.paste(arrow).atom(arrow)
     ternary = arrow.paste(arrow).paste(arrow).atom(arrow)
-    assoc_l = binary.paste_at_input(0, binary)
+    assoc_l = binary.to_input(0, binary)
 
     assert assoc_l.merge() == ternary
     assert isinstance(assoc_l.merge(), Opetope)

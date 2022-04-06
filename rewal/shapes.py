@@ -231,7 +231,7 @@ class Shape(OgPoset):
     def paste_along(fst, snd):
         return Shape.paste_along_cospan(fst, snd).target
 
-    def paste_at_output_cospan(self, pos, other):
+    def to_output_cospan(self, pos, other):
         """
         Paste along the inclusion of one of the outputs.
         """
@@ -239,10 +239,10 @@ class Shape(OgPoset):
             self.atom_inclusion(El(self.dim-1, pos)),
             other.boundary('-'))
 
-    def paste_at_output(self, pos, other):
-        return self.paste_at_output_cospan(pos, other).target
+    def to_output(self, pos, other):
+        return self.to_output_cospan(pos, other).target
 
-    def paste_at_input_cospan(self, pos, other):
+    def to_input_cospan(self, pos, other):
         """
         Paste along the inclusion of one of the inputs.
         """
@@ -250,8 +250,8 @@ class Shape(OgPoset):
             other.boundary('+'),
             self.atom_inclusion(El(self.dim-1, pos)))
 
-    def paste_at_input(self, pos, other):
-        return self.paste_at_input_cospan(pos, other).target
+    def to_input(self, pos, other):
+        return self.to_input_cospan(pos, other).target
 
     @staticmethod
     def suspend(shape, n=1):

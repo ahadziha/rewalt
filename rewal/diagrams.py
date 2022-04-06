@@ -381,7 +381,7 @@ class Diagram:
     def paste_along(self, other, fst, snd, name=None):
         return self.paste_along_cospan(other, fst, snd, name)[0]
 
-    def paste_at_output_cospan(self, pos, other):
+    def to_output_cospan(self, pos, other):
         name = '([{} -> {}]{})'.format(
                 str(other.name), str(pos), str(self.name))
         return self.paste_along_cospan(
@@ -391,10 +391,10 @@ class Diagram:
                 other.shape.boundary('-'),
                 name)
 
-    def paste_at_output(self, pos, other):
-        return self.paste_at_output_cospan(pos, other)[0]
+    def to_output(self, pos, other):
+        return self.to_output_cospan(pos, other)[0]
 
-    def paste_at_input_cospan(self, pos, other):
+    def to_input_cospan(self, pos, other):
         name = '({}[{} <- {}])'.format(
                 str(self.name), str(pos), str(other.name))
         return other.paste_along_cospan(
@@ -404,8 +404,8 @@ class Diagram:
                     rewal.ogposets.El(self.dim-1, pos)),
                 name)
 
-    def paste_at_input(self, pos, other):
-        return self.paste_at_input_cospan(pos, other)[0]
+    def to_input(self, pos, other):
+        return self.to_input_cospan(pos, other)[0]
 
     def pullback(self, shapemap, name=None):
         """
