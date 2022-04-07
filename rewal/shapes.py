@@ -30,7 +30,8 @@ class Shape(OgPoset):
 
     # Main constructors
     @staticmethod
-    def atom_cospan(fst, snd):
+    def atom(fst, snd,
+             cospan=False):
         """
         Given two shapes with identical round boundaries, returns a new
         atomic shape whose input boundary is the first one and output
@@ -48,10 +49,12 @@ class Shape(OgPoset):
         dim = fst.dim
 
         if dim == -1:  # Avoid more work in this simple case
-            return OgMapPair(
-                    Shape.point().initial(),
-                    Shape.point().initial()
+            if cospan:
+                return OgMapPair(
+                        Shape.point().initial(),
+                        Shape.point().initial()
                     )
+            return Shape.point()
 
         in_span = OgMapPair(
                 fst.boundary('-'), snd.boundary('-'))
@@ -88,38 +91,39 @@ class Shape(OgPoset):
         for x in snd[dim]:
             coface_data[dim][inclusion.snd[x].pos]['+'].add(0)
 
-        new_atom = OgPoset(face_data, coface_data,
-                           wfcheck=False, matchcheck=False)
-        boundary_in = OgMap(
-            fst, new_atom, inclusion.fst.mapping,
-            wfcheck=False)
-        boundary_out = OgMap(
-            snd, new_atom, inclusion.snd.mapping,
-            wfcheck=False)
-
-        atom_cospan = OgMapPair(boundary_in, boundary_out).then(
-                Shape._reorder(new_atom).inv())
+        ogatom = OgPoset(face_data, coface_data,
+                         wfcheck=False, matchcheck=False)
 
         def inheritance():
             if isinstance(fst, OpetopeTree) and isinstance(snd, Opetope):
+                if fst.dim == 0:
+                    return Arrow
                 if isinstance(fst, Globe):
-                    if fst.dim == 0:
-                        return Arrow
                     return Globe
                 return Opetope
             return Shape
 
-        return inheritance()._upgrademaptgt(atom_cospan)
+        if cospan:
+            boundary_in = OgMap(
+                fst, ogatom, inclusion.fst.mapping,
+                wfcheck=False)
+            boundary_out = OgMap(
+                snd, ogatom, inclusion.snd.mapping,
+                wfcheck=False)
+            atom_cospan = OgMapPair(boundary_in, boundary_out).then(
+                    Shape._reorder(ogatom).inv())
+            return inheritance()._upgrademaptgt(atom_cospan)
+
+        atom = Shape._reorder(ogatom).source
+        return inheritance()._upgrade(atom)
+
+    def _atom(self, other,
+              cospan=False):
+        return Shape.atom(self, other, cospan)
 
     @staticmethod
-    def atom(fst, snd):
-        return Shape.atom_cospan(fst, snd).target
-
-    def _atom(self, other):
-        return Shape.atom(self, other)
-
-    @staticmethod
-    def paste_cospan(fst, snd, dim=None):
+    def paste(fst, snd, dim=None,
+              cospan=False):
         """
         Returns the pasting of two shapes along the output k-boundary
         of the first and the input k-boundary of the second.
@@ -144,14 +148,11 @@ class Shape(OgPoset):
                         str(dim), str(dim), repr(fst))))
 
         if dim >= fst.dim:
-            return OgMapPair(
-                    span.snd, snd.id())
+            return OgMapPair(span.snd, snd.id()) if cospan else snd
         if dim >= snd.dim:
-            return OgMapPair(
-                    fst.id(), span.fst)
+            return OgMapPair(fst.id(), span.fst) if cospan else fst
 
         pushout = span.pushout(wfcheck=False)
-        pasting = pushout.then(Shape._reorder(pushout.target).inv())
 
         def inheritance():
             if isinstance(fst, Theta) and isinstance(snd, Theta):
@@ -165,18 +166,21 @@ class Shape(OgPoset):
                 return OpetopeTree
             return Shape
 
-        return inheritance()._upgrademaptgt(pasting)
+        if cospan:
+            paste_cospan = pushout.then(Shape._reorder(pushout.target).inv())
+            return inheritance()._upgrademaptgt(paste_cospan)
 
-    @staticmethod
-    def paste(fst, snd, dim=None):
-        return Shape.paste_cospan(fst, snd, dim).target
+        paste = Shape._reorder(pushout.target).source
+        return inheritance()._upgrade(paste)
 
-    def _paste(self, other, dim=None):
-        return Shape.paste(self, other, dim)
+    def _paste(self, other, dim=None,
+               cospan=False):
+        return Shape.paste(self, other, dim, cospan)
 
     # Other constructors
     @staticmethod
-    def paste_along_cospan(fst, snd):
+    def paste_along(fst, snd,
+                    cospan=False):
         """
         Returns the pasting of two shapes along the entire input
         (output) k-boundary of one, and a subshape of the output
@@ -206,7 +210,10 @@ class Shape(OgPoset):
                 span, 'not a well-formed span for pasting'))
         if fst_image == fst_output:
             if snd_image == snd_input:
-                return Shape.paste_cospan(fst.target, snd.target, dim)
+                if cospan:
+                    return Shape.paste(
+                            fst.target, snd.target, dim, cospan=True)
+                return Shape.paste(fst.target, snd.target, dim)
             if not Shape._issubmol(snd_image, snd_input):
                 raise ValueError(utils.value_err(
                     snd, 'cannot paste along this map'))
@@ -216,7 +223,6 @@ class Shape(OgPoset):
                     fst, 'cannot paste along this map'))
 
         pushout = span.pushout(wfcheck=False)
-        pasting = pushout.then(Shape._reorder(pushout.target).inv())
 
         def inheritance():
             if isinstance(fst.target, OpetopeTree) and \
@@ -225,33 +231,33 @@ class Shape(OgPoset):
                 return OpetopeTree
             return Shape
 
-        return inheritance()._upgrademaptgt(pasting)
+        if cospan:
+            paste_cospan = pushout.then(
+                    Shape._reorder(pushout.target).inv())
+            return inheritance()._upgrademaptgt(paste_cospan)
 
-    @staticmethod
-    def paste_along(fst, snd):
-        return Shape.paste_along_cospan(fst, snd).target
+        paste = Shape._reorder(pushout.target).source
+        return inheritance()._upgrade(paste)
 
-    def to_output_cospan(self, pos, other):
+    def to_output(self, pos, other,
+                  cospan=False):
         """
         Paste along the inclusion of one of the outputs.
         """
-        return Shape.paste_along_cospan(
+        return Shape.paste_along(
             self.atom_inclusion(El(self.dim-1, pos)),
-            other.boundary('-'))
+            other.boundary('-'),
+            cospan)
 
-    def to_output(self, pos, other):
-        return self.to_output_cospan(pos, other).target
-
-    def to_input_cospan(self, pos, other):
+    def to_input(self, pos, other,
+                 cospan=False):
         """
         Paste along the inclusion of one of the inputs.
         """
         return Shape.paste_along(
             other.boundary('+'),
-            self.atom_inclusion(El(self.dim-1, pos)))
-
-    def to_input(self, pos, other):
-        return self.to_input_cospan(pos, other).target
+            self.atom_inclusion(El(self.dim-1, pos)),
+            cospan)
 
     @staticmethod
     def suspend(shape, n=1):
@@ -354,11 +360,11 @@ class Shape(OgPoset):
                 self.boundary('+').source)
 
         def inheritance():
+            if self.dim == 1:
+                return Arrow
+            if isinstance(self, GlobeString):
+                return Globe
             if isinstance(self, OpetopeTree):
-                if isinstance(self, GlobeString):
-                    if self.dim == 1:
-                        return Arrow
-                    return Globe
                 return Opetope
             return Shape
 
@@ -434,10 +440,10 @@ class Shape(OgPoset):
         boundary = reordering.then(boundary_ogmap)
 
         def inheritance():
+            if dim == 0:
+                return Point
             if isinstance(self, OpetopeTree):
                 if isinstance(self, GlobeString):
-                    if dim == 0:
-                        return Point
                     if dim == 1:
                         return Arrow
                     return Globe
@@ -974,9 +980,8 @@ class ShapeMap(OgMap):
         def inheritance(x, y):
             if x == y:
                 return x.__class__
-            else:
-                if isinstance(x, Theta):
-                    return Theta
+            if isinstance(x, Theta):
+                return Theta
             return Shape
 
         return inheritance(shapemap.source, dual.source)._upgrademapsrc(

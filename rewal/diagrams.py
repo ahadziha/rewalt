@@ -79,8 +79,8 @@ class DiagSet:
                 'st': lambda x: x.ambient == self,
                 'why': 'not a diagram in {}'.format(repr(self))})
 
-        boundary = Shape.atom_cospan(
-                input.shape, output.shape)
+        boundary = Shape.atom(
+                input.shape, output.shape, cospan=True)
         shape = boundary.target
         mapping = [
                 [None for _ in n_data]
@@ -321,7 +321,8 @@ class Diagram:
         self._name = name
 
     # Methods for creating new diagrams
-    def paste_cospan(self, other, dim=None):
+    def paste(self, other, dim=None,
+              cospan=False):
         utils.typecheck(other, {
                 'type': Diagram,
                 'st': lambda x: x.ambient == self.ambient,
@@ -329,8 +330,8 @@ class Diagram:
         if dim is None:
             dim = min(self.dim, other.dim) - 1
 
-        paste_cospan = Shape.paste_cospan(
-                self.shape, other.shape, dim)
+        paste_cospan = Shape.paste(
+                self.shape, other.shape, dim, cospan=True)
 
         shape = paste_cospan.target
         mapping = Diagram._paste_fill_mapping(
@@ -343,12 +344,12 @@ class Diagram:
                 self.ambient,
                 mapping,
                 name)
-        return pasted, paste_cospan
+        if cospan:
+            return pasted, paste_cospan
+        return pasted
 
-    def paste(self, other, dim=None):
-        return self.paste_cospan(other, dim)[0]
-
-    def paste_along_cospan(self, other, fst, snd, name=None):
+    def paste_along(self, other, fst, snd, name=None,
+                    cospan=False):
         utils.typecheck(other, {
                 'type': Diagram,
                 'st': lambda x: x.ambient == self.ambient,
@@ -361,8 +362,8 @@ class Diagram:
                 'why': 'expecting a map with target {}'.format(
                     repr(x[1].shape))}
                 )
-        paste_cospan = Shape.paste_along_cospan(
-                fst, snd)
+        paste_cospan = Shape.paste_along(
+                fst, snd, cospan=True)
 
         shape = paste_cospan.target
         mapping = Diagram._paste_fill_mapping(
@@ -376,36 +377,33 @@ class Diagram:
                 self.ambient,
                 mapping,
                 name)
-        return pasted, paste_cospan
+        if cospan:
+            return pasted, paste_cospan
+        return pasted
 
-    def paste_along(self, other, fst, snd, name=None):
-        return self.paste_along_cospan(other, fst, snd, name)[0]
-
-    def to_output_cospan(self, pos, other):
+    def to_output(self, pos, other,
+                  cospan=False):
         name = '([{} -> {}]{})'.format(
                 str(other.name), str(pos), str(self.name))
-        return self.paste_along_cospan(
+        return self.paste_along(
                 other,
                 self.shape.atom_inclusion(
                     rewal.ogposets.El(self.dim-1, pos)),
                 other.shape.boundary('-'),
-                name)
+                name,
+                cospan)
 
-    def to_output(self, pos, other):
-        return self.to_output_cospan(pos, other)[0]
-
-    def to_input_cospan(self, pos, other):
+    def to_input(self, pos, other,
+                 cospan=False):
         name = '({}[{} <- {}])'.format(
                 str(self.name), str(pos), str(other.name))
-        return other.paste_along_cospan(
+        return other.paste_along(
                 self,
                 other.shape.boundary('+'),
                 self.shape.atom_inclusion(
                     rewal.ogposets.El(self.dim-1, pos)),
-                name)
-
-    def to_input(self, pos, other):
-        return self.to_input_cospan(pos, other)[0]
+                name,
+                cospan)
 
     def pullback(self, shapemap, name=None):
         """
@@ -514,11 +512,11 @@ class Diagram:
     @staticmethod
     def _new(shape, ambient, mapping, name=None):
         def diagramclass():
+            if isinstance(shape, rewal.shapes.Point):
+                return PointDiagram
+            if isinstance(shape, rewal.shapes.Arrow):
+                return ArrowDiagram
             if isinstance(shape, rewal.shapes.Cube):
-                if isinstance(shape, rewal.shapes.Point):
-                    return PointDiagram
-                if isinstance(shape, rewal.shapes.Arrow):
-                    return ArrowDiagram
                 return CubeDiagram
             if isinstance(shape, rewal.shapes.Simplex):
                 return SimplexDiagram
@@ -617,7 +615,7 @@ class LayeredDiagram(Diagram):
                 'st': lambda x: x.dim == dim,
                 'why': 'expecting diagram of dimension {}'.format(
                     str(dim))})
-            diagram, cospan = diagram.paste_cospan(x)
+            diagram, cospan = diagram.paste(x, cospan=True)
             layers = [
                     *[f.then(cospan.fst) for f in layers],
                     cospan.snd]
@@ -657,7 +655,7 @@ class LayeredDiagram(Diagram):
             return self.concatenate(
                     others[0]).concatenate(others[1:])
         other = others[0]
-        diagram, cospan = self.paste_cospan(other)
+        diagram, cospan = self.paste(other, cospan=True)
 
         concat = Diagram.__new__(LayeredDiagram)
         concat._shape = diagram.shape

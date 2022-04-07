@@ -177,6 +177,10 @@ class OgPoset:
         return Closed(GrSet(), self,
                       wfcheck=False)
 
+    def underset(self, *elements):
+        """ Returns the closure of a set of elements in the OgPoset. """
+        return GrSubset(GrSet(*elements), self).closure()
+
     def maximal(self):
         """ Returns the GrSubset of maximal elements. """
         return self.all().maximal()
@@ -1309,7 +1313,7 @@ class OgMap:
                 image, 'exceeds dimension of {}'.format(
                     repr(element))))
 
-        el_underset = GrSubset(GrSet(element), self.source).closure()
+        el_underset = self.source.underset(element)
 
         for x in el_underset[:element.dim]:
             if not self.isdefined(x):
