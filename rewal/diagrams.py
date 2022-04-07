@@ -184,6 +184,51 @@ class DiagSet:
 
         return self[name]
 
+    def invert(self, name,
+               inversename=None,
+               rightinvertorname=None,
+               leftinvertorname=None,
+               **kwargs):
+        """
+        Adds an inverse and 'invertors' for a generator.
+        """
+        generator = self[name]
+        if generator.dim == 0:
+            raise ValueError(utils.value_err(
+                name, 'cannot invert 0-cell'))
+        if 'inverse' in self.generators[name]:
+            raise ValueError(utils.value_err(
+                name, 'already inverted'))
+
+        if inversename is None:
+            inversename = '{}⁻¹'.format(str(name))
+        if rightinvertorname is None:
+            rightinvertorname = 'inv({}, {})'.format(
+                    str(name), str(inversename))
+        if leftinvertorname is None:
+            leftinvertorname = 'inv({}, {})'.format(
+                    str(inversename), str(name))
+
+        self._generators[name].update(
+                {'inverse': inversename})
+
+        inverse = self.add(
+                inversename,
+                generator.output,
+                generator.input,
+                inverse=name,
+                **kwargs)
+        leftinvertor = self.add(
+                rightinvertorname,
+                generator.paste(inverse),
+                generator.input.unit())
+        rightinvertor = self.add(
+                leftinvertorname,
+                inverse.paste(generator),
+                generator.output.unit())
+
+        return inverse, leftinvertor, rightinvertor
+
     def remove(self, name):
         """
         Removes a generator.
@@ -201,6 +246,18 @@ class DiagSet:
             self.generators[x]['cofaces'].remove(name)
 
         self._generators.pop(name, None)
+
+    def update(self, name, **kwargs):
+        """
+        Updates the optional arguments of a generator.
+        """
+        for key in (
+                'shape', 'mapping', 'faces', 'cofaces', 'inverse'
+                ):
+            if key in kwargs:
+                raise ValueError(utils.value_err(
+                    key, 'cannot modify {}'.format(key)))
+        self._generators[name].update(kwargs)
 
     def copy(self):
         new = DiagSet()
@@ -315,6 +372,14 @@ class Diagram:
             if self.ambient[x].dim == self.dim:
                 return False
         return True
+
+    @property
+    def iscell(self):
+        """
+        Returns whether the diagram is a cell, that is, its shape
+        is an atom.
+        """
+        return self.shape.isatom
 
     def rename(self, name):
         """ Renames the diagram. """
