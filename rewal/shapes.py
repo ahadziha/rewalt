@@ -435,11 +435,12 @@ class Shape(OgPoset):
         boundary_ogmap = super().boundary(sign, dim)
         if sign is None:
             return boundary_ogmap
-
         reordering = Shape._reorder(boundary_ogmap.source)
         boundary = reordering.then(boundary_ogmap)
 
         def inheritance():
+            if dim == -1:
+                return Empty
             if dim == 0:
                 return Point
             if isinstance(self, OpetopeTree):
@@ -459,15 +460,9 @@ class Shape(OgPoset):
         Returns the inclusion of an atom as the closure of an element
         in the shape.
         """
-        utils.typecheck(element, {
-            'type': El,
-            'st': lambda x: x in self,
-            'why': 'not an element of {}'.format(repr(self))})
-        underset = GrSubset(
-                GrSet(element), self,
-                wfcheck=False).closure()
-        reordering = Shape._reorder(underset.as_map.source)
-        inclusion = reordering.then(underset.as_map)
+        oginclusion = self.underset(element).as_map
+        reordering = Shape._reorder(oginclusion.source)
+        inclusion = reordering.then(oginclusion)
 
         def inheritance():
             if element.dim == 0:

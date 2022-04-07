@@ -86,7 +86,8 @@ def test_OgPoset_init():
     test_face[1][0]['+'] = {0}
     with raises(ValueError) as err:
         OgPoset(test_face, test_coface)
-    assert str(err.value) == 'Face and coface data do not match.'
+    assert str(err.value) == utils.value_err(
+            test_coface, 'face and coface data do not match')
 
     test_face[1][0]['-'] = {'x'}
     with raises(TypeError) as err:
@@ -595,7 +596,7 @@ def test_OgMap_setitem():
         test_setitem[El(1, 0)] = El(1, 1)
     assert str(err.value) == utils.value_err(
             El(1, 1),
-            'assignment does not respect (-, 0)-boundary')
+            'assignment does not respect (-, 0)-boundary of El(1, 0)')
 
     test_setitem[El(1, 0)] = El(1, 2)
 

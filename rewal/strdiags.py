@@ -227,6 +227,7 @@ class StrDiag:
         labeloffset = params.get('labeloffset', (4, 4))
 
         positions = params.get('positions', False)
+        positionoffset = params.get('positionoffset', (4, -12))
 
         orientation = params.get('orientation', 'bt')
 
@@ -267,7 +268,7 @@ class StrDiag:
                 backend.draw_label(
                         str(wire.pos),
                         coord[wire],
-                        (labeloffset[0], labeloffset[1]-16),
+                        positionoffset,
                         color=infocolor)
 
             if wirelabels and self.wires[wire]['draw_label']:

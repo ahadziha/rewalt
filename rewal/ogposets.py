@@ -63,7 +63,8 @@ class OgPoset:
 
         if matchcheck:
             if not coface_data == OgPoset._coface_from_face(face_data):
-                raise ValueError("Face and coface data do not match.")
+                raise ValueError(utils.value_err(
+                    coface_data, 'face and coface data do not match'))
 
         self._face_data = face_data
         self._coface_data = coface_data
@@ -110,9 +111,9 @@ class OgPoset:
         """ Returns the Gray product. """
         return self.gray(other)
 
-    def __pow__(self, other):
-        utils.typecheck(other, {'type': int})
-        return self.__class__.gray(*[self for _ in range(other)])
+    def __pow__(self, times):
+        utils.typecheck(times, {'type': int})
+        return self.__class__.gray(*[self for _ in range(times)])
 
     def __rshift__(self, other):
         """ Returns the join. """
@@ -167,8 +168,8 @@ class OgPoset:
     def all(self):
         """ Returns the Closed subset of all elements. """
         return Closed(
-                GrSet(*[El(n, k) for n in range(len(self.size))
-                        for k in range(self.size[n])]),
+                GrSet(*[El(n, k) for n, n_data in enumerate(self.face_data)
+                        for k, x in enumerate(n_data)]),
                 self,
                 wfcheck=False)
 
@@ -189,8 +190,6 @@ class OgPoset:
         """
         Returns the faces of an element as a graded set.
         """
-        if element.dim == 0:
-            return GrSet()
         if sign is None:
             return self.faces(element, '-').union(
                 self.faces(element, '+'))
@@ -199,6 +198,8 @@ class OgPoset:
             'type': El,
             'st': lambda x: x.dim <= self.dim and x.pos <= self.size[x.dim],
             'why': 'out of bounds'})
+        if element.dim == 0:
+            return GrSet()
         return GrSet(
                 *[El(element.dim-1, i)
                   for i in self.face_data[element.dim][element.pos][sign]]
@@ -208,8 +209,6 @@ class OgPoset:
         """
         Returns the cofaces of an element as a graded set.
         """
-        if element.dim == self.dim:
-            return GrSet()
         if sign is None:
             return self.cofaces(element, '-').union(
                 self.cofaces(element, '+'))
@@ -218,6 +217,8 @@ class OgPoset:
             'type': El,
             'st': lambda x: x.dim <= self.dim and x.pos <= self.size[x.dim],
             'why': 'out of bounds'})
+        if element.dim == self.dim:
+            return GrSet()
         return GrSet(
                 *[El(element.dim + 1, i)
                   for i in self.coface_data[element.dim][element.pos][sign]]
@@ -226,8 +227,10 @@ class OgPoset:
     def id(self):
         """ Returns the identity map on the OgPoset. """
         mapping = [
-                [El(n, k) for k in range(self.size[n])]
-                for n in range(self.dim + 1)
+                [
+                    El(n, k) for k, x in enumerate(n_data)
+                ]
+                for n, n_data in enumerate(self.face_data)
                 ]
         return OgMap(self, self, mapping,
                      wfcheck=False)
@@ -451,12 +454,12 @@ class OgPoset:
         """
         if len(self) == 0:
             return OgPoset.point()
-        face_data = [[{'-': set(), '+': set()}]] + self.face_data
+        face_data = [[{'-': set(), '+': set()}], *self.face_data]
         for x in face_data[1]:
             x['+'].add(0)
         coface_data = [[
             {'-': set(), '+': {k for k in range(self.size[0])}}
-            ]] + self.coface_data
+            ], *self.coface_data]
         return OgPoset(face_data, coface_data,
                        wfcheck=False, matchcheck=False)
 
@@ -551,7 +554,7 @@ class OgPoset:
             'st': lambda x: x >= 0,
             'why': 'expecting non-negative integer'})
 
-        sizes = [len(_) for _ in face_data]
+        sizes = [len(n_data) for n_data in face_data]
         for n, n_data in enumerate(face_data):
             # Check that faces are within bounds.
             k = max([i for x in n_data for sign in x for i in x[sign]],
@@ -1034,8 +1037,8 @@ class OgMap:
         self._source = source
         self._target = target
         if mapping is None:
-            mapping = [[None for _ in range(source.size[n])]
-                       for n in range(len(source.size))]
+            mapping = [[None for _ in n_data]
+                       for n_data in self.source.face_data]
         self._mapping = mapping
 
         # Enable method chaining syntax
