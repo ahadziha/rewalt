@@ -267,14 +267,14 @@ class StrDiag:
                 backend.draw_label(
                         str(wire.pos),
                         coord[wire],
-                        labeloffset,
+                        (labeloffset[0], labeloffset[1]-16),
                         color=infocolor)
-            else:
-                if wirelabels and self.wires[wire]['draw_label']:
-                    backend.draw_label(
-                            self.wires[wire]['label'],
-                            coord[wire],
-                            labeloffset)
+
+            if wirelabels and self.wires[wire]['draw_label']:
+                backend.draw_label(
+                        self.wires[wire]['label'],
+                        coord[wire],
+                        labeloffset)
 
         def is_drawn(node):
             if self.nodes[node]['isdegenerate']:
