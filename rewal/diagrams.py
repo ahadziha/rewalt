@@ -16,12 +16,17 @@ class DiagSet:
             'mapping',
             'faces',
             'cofaces',
-            'inverse')
+            'inverse',
+            'linvertor',
+            'rinvertor',
+            'compositor',
+            'composite')
 
     def __init__(self):
         """ Initialises to an empty diagrammatic set. """
         self._generators = dict()
         self._by_dim = dict()
+        self._compositors = dict()
 
     def __str__(self):
         return '{} with {} generators'.format(
@@ -29,7 +34,8 @@ class DiagSet:
 
     def __eq__(self, other):
         return isinstance(other, DiagSet) and \
-                self.generators == other.generators
+                self.generators == other.generators and \
+                self.compositors == other.compositors
 
     def __getitem__(self, key):
         if key in self.generators:
@@ -53,6 +59,10 @@ class DiagSet:
     @property
     def by_dim(self):
         return self._by_dim
+
+    @property
+    def compositors(self):
+        return self._compositors
 
     @property
     def dim(self):
@@ -207,18 +217,18 @@ class DiagSet:
         if generator.dim == 0:
             raise ValueError(utils.value_err(
                 name, 'cannot invert 0-cell'))
-        if 'inverse' in self.generators[name]:
+        if generator.isinvertiblecell:
             raise ValueError(utils.value_err(
                 name, 'already inverted'))
 
         if inversename is None:
             inversename = '{}⁻¹'.format(str(name))
         if rinvertorname is None:
-            rinvertorname = 'rinv({}, {})'.format(
+            rinvertorname = 'inv({}, {})'.format(
                     str(name), str(inversename))
         if linvertorname is None:
-            linvertorname = 'linv({}, {})'.format(
-                    str(name), str(inversename))
+            linvertorname = 'inv({}, {})'.format(
+                    str(inversename), str(name))
         for x in (inversename, rinvertorname, linvertorname):
             if x in self.generators:
                 raise ValueError(utils.value_err(
@@ -238,10 +248,14 @@ class DiagSet:
                 inverse.paste(generator),
                 generator.output.unit())
 
-        self._generators[name].update(
-                {'inverse': inversename})
-        self._generators[inversename].update(
-                {'inverse': name})
+        self._generators[name].update({
+            'inverse': inversename,
+            'rinvertor': rinvertorname,
+            'linvertor': linvertorname})
+        self._generators[inversename].update({
+            'inverse': name,
+            'rinvertor': linvertorname,
+            'linvertor': rinvertorname})
 
         return inverse, rinvertor, linvertor
 
@@ -253,8 +267,10 @@ class DiagSet:
         """
         generator1 = self[name1]
         generator2 = self[name2]
-        for x in (name1, name2):
-            if 'inverse' in self.generators[x]:
+
+        selfinverse = name1 == name2
+        for x in (generator1, generator2):
+            if x.isinvertiblecell:
                 raise ValueError(utils.value_err(
                     x, 'already inverted'))
 
@@ -262,41 +278,60 @@ class DiagSet:
         lpaste = generator2.paste(generator1)
 
         if rinvertorname is None:
-            rinvertorname = 'rinv({}, {})'.format(
+            rinvertorname = 'inv({}, {})'.format(
                     str(name1), str(name2))
-        if linvertorname is None:
-            linvertorname = 'linv({}, {})'.format(
-                    str(name1), str(name2))
+
+        if selfinverse:
+            linvertorname = rinvertorname
+        else:
+            if linvertorname is None:
+                linvertorname = 'inv({}, {})'.format(
+                        str(name2), str(name1))
+
         for x in (rinvertorname, linvertorname):
             if x in self.generators:
                 raise ValueError(utils.value_err(
                     x, 'name already in use'))
+
         rinvertor = self.add(
                 rinvertorname,
                 rpaste,
                 generator1.input.unit())
-        linvertor = self.add(
-                linvertorname,
-                lpaste,
-                generator2.input.unit())
+        if selfinverse:
+            linvertor = rinvertor
+        else:
+            linvertor = self.add(
+                    linvertorname,
+                    lpaste,
+                    generator2.input.unit())
 
-        self._generators[name1].update(
-                {'inverse': name2})
-        self._generators[name2].update(
-                {'inverse': name1})
+        self._generators[name1].update({
+            'inverse': name2,
+            'rinvertor': rinvertorname,
+            'linvertor': linvertorname})
+        if not selfinverse:
+            self._generators[name2].update({
+                'inverse': name1,
+                'rinvertor': linvertorname,
+                'linvertor': rinvertorname})
 
         return rinvertor, linvertor
 
     def compose(self, diagram,
-                name=None, compositorname=None, sign='+',
+                name=None, compositorname=None,
                 **kwargs):
         """
         Adds the 'weak composite' of a diagram together with
         a compositor, and returns them.
         """
-        if not diagram.shape.isround:
+        utils.typecheck(diagram, {
+            'type': Diagram,
+            'st': lambda x: x.shape.isround,
+            'why': 'composable diagrams must have round shape'})
+
+        if diagram.hascomposite:
             raise ValueError(utils.value_err(
-                diagram, 'composable diagrams must have round shape'))
+                diagram, 'already has a composite'))
 
         if name is None:
             name = '⟨{}⟩'.format(str(diagram.name))
@@ -313,13 +348,20 @@ class DiagSet:
                 diagram.output,
                 **kwargs)
 
-        input, output = diagram, composite
-        if utils.mksign(sign) == '-':
-            input, output = composite, diagram
         compositor = self.add(
                 compositorname,
-                input,
-                output)
+                diagram,
+                composite)
+
+        self._generators[name].update({
+            'compositor': compositorname})
+        self._generators[compositorname].update({
+            'composite': name})
+        self._compositors.update({
+            compositorname: {
+                'shape': diagram.shape,
+                'mapping': diagram.mapping}
+            })
 
         return composite, compositor
 
@@ -339,6 +381,14 @@ class DiagSet:
         if 'inverse' in self.generators[name]:
             inverse = self.generators[name]['inverse']
             self.generators[inverse].pop('inverse', None)
+            self.generators[inverse].pop('linvertor', None)
+            self.generators[inverse].pop('rinvertor', None)
+
+        if 'composite' in self.generators[name]:
+            # This does not remove the composite!
+            composite = self.generators[name]['composite']
+            self.generators[composite].pop('compositor', None)
+            self.compositors.pop(name, None)
 
         for x in self.generators[name]['faces']:
             self.generators[x]['cofaces'].remove(name)
@@ -358,6 +408,7 @@ class DiagSet:
         new = DiagSet()
         new._generators = self.generators.copy()
         new._by_dim = self.by_dim.copy()
+        new._compositors = self.compositors.copy()
         return new
 
     @staticmethod
@@ -487,6 +538,17 @@ class Diagram:
             if 'inverse' in self.ambient.generators[self.mapping[-1][0]]:
                 return True
         return False
+
+    @property
+    def hascomposite(self):
+        """
+        Returns whether the diagram has a composite.
+        """
+        if self.iscell:
+            return True
+        if self._find_compositor() is None:
+            return False
+        return True
 
     def rename(self, name):
         """ Renames the diagram. """
@@ -628,7 +690,7 @@ class Diagram:
         name = '1({})'.format(str(self.name))
         return self.pullback(self.shape.inflate(), name)
 
-    def unitor_l(self, sign='-'):
+    def lunitor(self, sign='-'):
         """
         Left unitor or inverse unitor.
         """
@@ -642,7 +704,7 @@ class Diagram:
             name = '({})⁻¹'.format(name)
         return self.pullback(unitor_map, name)
 
-    def unitor_r(self, sign='-'):
+    def runitor(self, sign='-'):
         """
         Right unitor or inverse unitor.
         """
@@ -667,7 +729,8 @@ class Diagram:
         name = 'unitor on {}'.format(str(self.name))
         return self.pullback(unitor_map, name)
 
-    def inv(self):
+    @property
+    def inverse(self):
         """
         Returns the inverse of an invertible cell.
         """
@@ -698,6 +761,35 @@ class Diagram:
                 self.ambient,
                 mapping,
                 name)
+
+    @property
+    def composite(self):
+        """
+        Returns the composite of the diagram, if it exists.
+        """
+        if not self.hascomposite:
+            raise ValueError(utils.value_err(
+                self, 'does not have a composite'))
+
+        if self.iscell:
+            return self
+        compositorname = self._find_compositor()
+        name = self.ambient.generators[compositorname]['composite']
+        return self.ambient[name]
+
+    @property
+    def compositor(self):
+        """
+        Returns the compositor of the diagram, if it exists.
+        """
+        if not self.hascomposite:
+            raise ValueError(utils.value_err(
+                self, 'does not have a compositor'))
+
+        if self.iscell:
+            return self.unit()
+        compositorname = self._find_compositor()
+        return self.ambient[compositorname]
 
     # Alternative constructors
     @staticmethod
@@ -733,6 +825,15 @@ class Diagram:
         new._mapping = mapping
         new._name = name
         return new
+
+    def _find_compositor(self):
+        description = {
+                'shape': self.shape,
+                'mapping': self.mapping}
+        for x in self.ambient.compositors:
+            if self.ambient.compositors[x] == description:
+                return x
+        return None
 
     @staticmethod
     def _paste_fill_mapping(fst, snd, paste_cospan):
