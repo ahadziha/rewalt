@@ -275,15 +275,15 @@ class DiagSet:
                     x, 'already inverted'))
 
         rpaste = generator1.paste(generator2)
-        lpaste = generator2.paste(generator1)
-
         if rinvertorname is None:
             rinvertorname = 'inv({}, {})'.format(
                     str(name1), str(name2))
 
         if selfinverse:
+            lpaste = rpaste
             linvertorname = rinvertorname
         else:
+            lpaste = generator2.paste(generator1)
             if linvertorname is None:
                 linvertorname = 'inv({}, {})'.format(
                         str(name2), str(name1))
