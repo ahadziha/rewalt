@@ -23,14 +23,14 @@ def typecheck(x, constraint, *more_constraints):
 
 def type_err(expected, got):
     """ Type error message. """
-    return "Expected {}.{}, got {} of type {}.{} instead.".format(
-           expected.__module__, expected.__name__,
-           repr(got), type(got).__module__, type(got).__name__)
+    return "{} (expected {}.{}, got {}.{} instead).".format(
+           repr(got), expected.__module__, expected.__name__,
+           type(got).__module__, type(got).__name__)
 
 
 def value_err(got, why):
     """ Value error message. """
-    return "{} is not an acceptable value ({}).".format(repr(got), why)
+    return "{} ({}).".format(repr(got), why)
 
 
 def mksign(key):

@@ -333,9 +333,13 @@ class Shape(OgPoset):
         return inheritance(shapes)._upgrade(join)
 
     @staticmethod
-    def dual(shape, *dims):
-        dual = Shape._reorder(OgPoset.dual(shape, *dims)).source
+    def dual(shape, *dims,
+             reordering=False):
+        reordermap = Shape._reorder(OgPoset.dual(shape, *dims))
+        dual = reordermap.source
         if shape == dual:
+            if reordering:
+                return shape.id()
             return shape
 
         def inheritance():
@@ -343,6 +347,8 @@ class Shape(OgPoset):
                 return Theta
             return Shape
 
+        if reordering:
+            return inheritance()._upgrademapsrc(reordermap)
         return inheritance()._upgrade(dual)
 
     def merge(self):

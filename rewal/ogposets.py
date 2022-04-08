@@ -508,6 +508,7 @@ class OgPoset:
         """
         Reverses the orientation in the specified dimensions.
         """
+        utils.typecheck(ogp, {'type': OgPoset})
         for x in dims:
             utils.typecheck(x, {'type': int})
         if len(dims) == 0:  # default is dualising in all dimensions

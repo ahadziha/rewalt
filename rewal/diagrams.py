@@ -55,6 +55,10 @@ class DiagSet:
         return self._by_dim
 
     @property
+    def dim(self):
+        return max(self.by_dim, default=-1)
+
+    @property
     def issimplicial(self):
         for x in self:
             if not isinstance(self[x], SimplexDiagram):
@@ -193,8 +197,8 @@ class DiagSet:
 
     def invert(self, name,
                inversename=None,
-               rightinvertorname=None,
-               leftinvertorname=None,
+               rinvertorname=None,
+               linvertorname=None,
                **kwargs):
         """
         Adds an inverse and 'invertors' for a generator.
@@ -209,32 +213,79 @@ class DiagSet:
 
         if inversename is None:
             inversename = '{}⁻¹'.format(str(name))
-        if rightinvertorname is None:
-            rightinvertorname = 'inv({}, {})'.format(
+        if rinvertorname is None:
+            rinvertorname = 'rinv({}, {})'.format(
                     str(name), str(inversename))
-        if leftinvertorname is None:
-            leftinvertorname = 'inv({}, {})'.format(
-                    str(inversename), str(name))
-
-        self._generators[name].update(
-                {'inverse': inversename})
+        if linvertorname is None:
+            linvertorname = 'linv({}, {})'.format(
+                    str(name), str(inversename))
+        for x in (inversename, rinvertorname, linvertorname):
+            if x in self.generators:
+                raise ValueError(utils.value_err(
+                    name, 'name already in use'))
 
         inverse = self.add(
                 inversename,
                 generator.output,
                 generator.input,
-                inverse=name,
                 **kwargs)
-        leftinvertor = self.add(
-                rightinvertorname,
+        rinvertor = self.add(
+                rinvertorname,
                 generator.paste(inverse),
                 generator.input.unit())
-        rightinvertor = self.add(
-                leftinvertorname,
+        linvertor = self.add(
+                linvertorname,
                 inverse.paste(generator),
                 generator.output.unit())
 
-        return inverse, leftinvertor, rightinvertor
+        self._generators[name].update(
+                {'inverse': inversename})
+        self._generators[inversename].update(
+                {'inverse': name})
+
+        return inverse, rinvertor, linvertor
+
+    def make_inverses(self, name1, name2,
+                      rinvertorname=None,
+                      linvertorname=None):
+        """
+        Makes two pre-existing cells each other's inverse.
+        """
+        generator1 = self[name1]
+        generator2 = self[name2]
+        for x in (name1, name2):
+            if 'inverse' in self.generators[x]:
+                raise ValueError(utils.value_err(
+                    x, 'already inverted'))
+
+        rpaste = generator1.paste(generator2)
+        lpaste = generator2.paste(generator1)
+
+        if rinvertorname is None:
+            rinvertorname = 'rinv({}, {})'.format(
+                    str(name1), str(name2))
+        if linvertorname is None:
+            linvertorname = 'linv({}, {})'.format(
+                    str(name1), str(name2))
+        for x in (rinvertorname, linvertorname):
+            if x in self.generators:
+                raise ValueError(utils.value_err(
+                    x, 'name already in use'))
+        rinvertor = self.add(
+                rinvertorname,
+                rpaste,
+                generator1.input.unit())
+        linvertor = self.add(
+                linvertorname,
+                lpaste,
+                generator2.input.unit())
+
+        self._generators[name1].update(
+                {'inverse': name2})
+        self._generators[name2].update(
+                {'inverse': name1})
+
+        return rinvertor, linvertor
 
     def remove(self, name):
         """
@@ -389,6 +440,18 @@ class Diagram:
         """
         return self.shape.isatom
 
+    @property
+    def isinvertiblecell(self):
+        """
+        Returns whether the diagram is an invertible cell.
+        """
+        if self.iscell:
+            if self.isdegenerate:
+                return True
+            if 'inverse' in self.ambient.generators[self.mapping[-1][0]]:
+                return True
+        return False
+
     def rename(self, name):
         """ Renames the diagram. """
         self._name = name
@@ -495,7 +558,7 @@ class Diagram:
                 ]
                 for n_data in shapemap.mapping]
         if name is None:
-            name = 'pullback_of_{}'.format(str(self.name))
+            name = '(pullback of {})'.format(str(self.name))
         return Diagram._new(
                 shape,
                 self.ambient,
@@ -509,7 +572,7 @@ class Diagram:
         if dim is None:
             dim = self.dim - 1
         sign = utils.mksign(sign)
-        name = '∂[{},{}]{}'.format(
+        name = '(∂[{},{}]{})'.format(
                 sign, str(dim), str(self.name))
         return self.pullback(self.shape.boundary(
             sign, dim), name)
@@ -526,35 +589,34 @@ class Diagram:
         """
         Unit on the diagram.
         """
-        name = '1{}'.format(str(self.name))
+        name = '(1{})'.format(str(self.name))
         return self.pullback(self.shape.inflate(), name)
 
-    def unitor_l(self, sign):
+    def unitor_l(self, sign='-'):
         """
         Left unitor or inverse unitor.
         """
         sign = utils.mksign(sign)
         unitor_map = self.shape.inflate(
                 self.shape.all().boundary('+'))
+        name = '(λ{})'.format(str(self.name))
         if sign == '-':
             unitor_map = unitor_map.dual(self.dim + 1)
-        name = 'λ[{}]{}'.format(
-                sign, str(self.name))
-
+        else:
+            name += '⁻¹'
         return self.pullback(unitor_map, name)
 
-    def unitor_r(self, sign):
+    def unitor_r(self, sign='-'):
         """
         Right unitor or inverse unitor.
         """
         sign = utils.mksign(sign)
         unitor_map = self.shape.inflate(
                 self.shape.all().boundary('-'))
+        name = '(ρ{})'.format(str(self.name))
         if sign == '+':
             unitor_map = unitor_map.dual(self.dim + 1)
-        name = 'ρ[{}]{}'.format(
-                sign, str(self.name))
-
+            name += '⁻¹'
         return self.pullback(unitor_map, name)
 
     def unitor(self, collapsed, invert=False):
@@ -566,8 +628,40 @@ class Diagram:
         if invert:
             unitor_map = unitor_map.dual(self.dim + 1)
 
-        name = 'unitor_on_{}'.format(str(self.name))
+        name = '(unitor on {})'.format(str(self.name))
         return self.pullback(unitor_map, name)
+
+    def inv(self):
+        """
+        Returns the inverse of an invertible cell.
+        """
+        if not self.isinvertiblecell:
+            raise ValueError(utils.value_err(
+                self, 'not an invertible cell'))
+
+        if not self.isdegenerate:
+            top = self.mapping[-1][0]
+            top_inv = self.ambient.generators[top]['inverse']
+
+            if self.shape == self.ambient.generators[top]['shape']:
+                return self.ambient[top_inv]
+
+        reordering = Shape.dual(self.shape, self.dim,
+                                reordering=True)
+        shape = reordering.source
+        mapping = [
+                [self[x] for x in n_data]
+                for n_data in reordering.mapping
+                ]
+        if not self.isdegenerate:
+            mapping[-1][0] = top_inv
+        name = '{}⁻¹'.format(self.name)
+
+        return Diagram._new(
+                shape,
+                self.ambient,
+                mapping,
+                name)
 
     # Alternative constructors
     @staticmethod
