@@ -11,13 +11,17 @@ class DiagSet:
     """
     Class for diagrammatic sets.
     """
-    def __init__(self, **kwargs):
+    _PRIVATE = (
+            'shape',
+            'mapping',
+            'faces',
+            'cofaces',
+            'inverse')
+
+    def __init__(self):
         """ Initialises to an empty diagrammatic set. """
         self._generators = dict()
         self._by_dim = dict()
-
-        for key, value in kwargs:
-            setattr(self, key, value)
 
     def __str__(self):
         return '{} with {} generators'.format(
@@ -69,6 +73,9 @@ class DiagSet:
         if name in self.generators:
             raise ValueError(utils.value_err(
                 name, 'name already in use'))
+        for key in self._PRIVATE:
+            kwargs.pop(key, None)
+
         if input is None:
             input = Diagram(self)
         if output is None:
@@ -242,22 +249,23 @@ class DiagSet:
         if len(self._by_dim[dim]) == 0:
             self._by_dim.pop(dim, None)
 
+        if 'inverse' in self.generators[name]:
+            inverse = self.generators[name]['inverse']
+            self.generators[inverse].pop('inverse', None)
+
         for x in self.generators[name]['faces']:
             self.generators[x]['cofaces'].remove(name)
 
-        self._generators.pop(name, None)
+        self.generators.pop(name, None)
 
     def update(self, name, **kwargs):
         """
         Updates the optional arguments of a generator.
         """
-        for key in (
-                'shape', 'mapping', 'faces', 'cofaces', 'inverse'
-                ):
+        for key in self._PRIVATE:
             if key in kwargs:
-                raise ValueError(utils.value_err(
-                    key, 'cannot modify {}'.format(key)))
-        self._generators[name].update(kwargs)
+                raise AttributeError(key, 'private attribute')
+        self.generators[name].update(kwargs)
 
     def copy(self):
         new = DiagSet()
