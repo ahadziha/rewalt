@@ -287,6 +287,42 @@ class DiagSet:
 
         return rinvertor, linvertor
 
+    def compose(self, diagram,
+                name=None, compositorname=None, sign='+',
+                **kwargs):
+        """
+        Adds the 'weak composite' of a diagram together with
+        a compositor, and returns them.
+        """
+        if not diagram.shape.isround:
+            raise ValueError(utils.value_err(
+                diagram, 'composable diagrams must have round shape'))
+
+        if name is None:
+            name = '⟨{}⟩'.format(str(diagram.name))
+        if compositorname is None:
+            compositorname = 'comp({})'.format(str(diagram.name))
+        for x in (name, compositorname):
+            if x in self.generators:
+                raise ValueError(utils.value_err(
+                    x, 'name already in use'))
+
+        composite = self.add(
+                name,
+                diagram.input,
+                diagram.output,
+                **kwargs)
+
+        input, output = diagram, composite
+        if utils.mksign(sign) == '-':
+            input, output = composite, diagram
+        compositor = self.add(
+                compositorname,
+                input,
+                output)
+
+        return composite, compositor
+
     def remove(self, name):
         """
         Removes a generator.
@@ -472,7 +508,7 @@ class Diagram:
         shape = paste_cospan.target
         mapping = Diagram._paste_fill_mapping(
                 self, other, paste_cospan)
-        name = '({} #{} {})'.format(
+        name = '({}) #{} ({})'.format(
                 str(self.name), str(dim), str(other.name))
 
         pasted = Diagram._new(
@@ -505,7 +541,7 @@ class Diagram:
         mapping = Diagram._paste_fill_mapping(
                 self, other, paste_cospan)
         if name is None:
-            name = '({} ## {})'.format(
+            name = '({}) ## ({})'.format(
                     str(self.name), str(other.name))
 
         pasted = Diagram._new(
@@ -519,7 +555,7 @@ class Diagram:
 
     def to_output(self, pos, other,
                   cospan=False):
-        name = '({{{} -> {}}}{})'.format(
+        name = '{{{} -> {}}}({})'.format(
                 str(other.name), str(pos), str(self.name))
         return self.paste_along(
                 other,
@@ -531,7 +567,7 @@ class Diagram:
 
     def to_input(self, pos, other,
                  cospan=False):
-        name = '({}{{{} <- {}}})'.format(
+        name = '({}){{{} <- {}}}'.format(
                 str(self.name), str(pos), str(other.name))
         return other.paste_along(
                 self,
@@ -558,7 +594,7 @@ class Diagram:
                 ]
                 for n_data in shapemap.mapping]
         if name is None:
-            name = '(pullback of {})'.format(str(self.name))
+            name = 'pullback of {}'.format(str(self.name))
         return Diagram._new(
                 shape,
                 self.ambient,
@@ -572,7 +608,7 @@ class Diagram:
         if dim is None:
             dim = self.dim - 1
         sign = utils.mksign(sign)
-        name = '(∂[{},{}]{})'.format(
+        name = '∂[{},{}]({})'.format(
                 sign, str(dim), str(self.name))
         return self.pullback(self.shape.boundary(
             sign, dim), name)
@@ -589,7 +625,7 @@ class Diagram:
         """
         Unit on the diagram.
         """
-        name = '(1{})'.format(str(self.name))
+        name = '1({})'.format(str(self.name))
         return self.pullback(self.shape.inflate(), name)
 
     def unitor_l(self, sign='-'):
@@ -599,11 +635,11 @@ class Diagram:
         sign = utils.mksign(sign)
         unitor_map = self.shape.inflate(
                 self.shape.all().boundary('+'))
-        name = '(λ{})'.format(str(self.name))
+        name = 'λ({})'.format(str(self.name))
         if sign == '-':
             unitor_map = unitor_map.dual(self.dim + 1)
         else:
-            name += '⁻¹'
+            name = '({})⁻¹'.format(name)
         return self.pullback(unitor_map, name)
 
     def unitor_r(self, sign='-'):
@@ -613,10 +649,10 @@ class Diagram:
         sign = utils.mksign(sign)
         unitor_map = self.shape.inflate(
                 self.shape.all().boundary('-'))
-        name = '(ρ{})'.format(str(self.name))
+        name = 'ρ({})'.format(str(self.name))
         if sign == '+':
             unitor_map = unitor_map.dual(self.dim + 1)
-            name += '⁻¹'
+            name = '({})⁻¹'.format(name)
         return self.pullback(unitor_map, name)
 
     def unitor(self, collapsed, invert=False):
@@ -628,7 +664,7 @@ class Diagram:
         if invert:
             unitor_map = unitor_map.dual(self.dim + 1)
 
-        name = '(unitor on {})'.format(str(self.name))
+        name = 'unitor on {}'.format(str(self.name))
         return self.pullback(unitor_map, name)
 
     def inv(self):
@@ -655,7 +691,7 @@ class Diagram:
                 ]
         if not self.isdegenerate:
             mapping[-1][0] = top_inv
-        name = '{}⁻¹'.format(self.name)
+        name = '({})⁻¹'.format(self.name)
 
         return Diagram._new(
                 shape,
@@ -724,13 +760,13 @@ class Diagram:
 class SimplexDiagram(Diagram):
     def simplex_face(self, k):
         face_map = self.shape.simplex_face(k)
-        name = 'd[{}]{}'.format(
+        name = 'd[{}]({})'.format(
                 str(k), str(self.name))
         return self.pullback(face_map, name)
 
     def simplex_degeneracy(self, k):
         degeneracy_map = self.shape.simplex_degeneracy(k)
-        name = 's[{}]{}'.format(
+        name = 's[{}]({})'.format(
                 str(k), str(self.name))
         return self.pullback(degeneracy_map, name)
 
@@ -739,20 +775,20 @@ class CubeDiagram(Diagram):
     def cube_face(self, k, sign):
         sign = utils.mksign(sign)
         face_map = self.shape.cube_face(k, sign)
-        name = 'δ[{},{}]{}'.format(
+        name = 'δ[{},{}]({})'.format(
                 str(k), sign, str(self.name))
         return self.pullback(face_map, name)
 
     def cube_degeneracy(self, k):
         degeneracy_map = self.shape.cube_degeneracy(k)
-        name = 'σ[{}]{}'.format(
+        name = 'σ[{}]({})'.format(
                 str(k), str(self.name))
         return self.pullback(degeneracy_map, name)
 
     def cube_connection(self, k, sign):
         sign = utils.mksign(sign)
         connection_map = self.shape.cube_connection(k, sign)
-        name = 'γ[{},{}]{}'.format(
+        name = 'γ[{},{}]({})'.format(
                 str(k), sign, str(self.name))
         return self.pullback(connection_map, name)
 
