@@ -81,7 +81,7 @@ class OgPoset:
 
     def __str__(self):
         return "{} with {} elements".format(
-                type(self).__name__, str(self.size))
+                type(self).__name__, len(self))
 
     def __getitem__(self, key):
         return self.all()[key]

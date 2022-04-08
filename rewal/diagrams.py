@@ -345,7 +345,7 @@ class Diagram:
 
     def __getitem__(self, element):
         if element in self.shape:
-            return self.ambient[self.mapping[element.dim][element.pos]]
+            return self.mapping[element.dim][element.pos]
         raise ValueError(utils.value_err(
             element, 'not an element of the shape'))
 
@@ -456,7 +456,7 @@ class Diagram:
 
     def to_output(self, pos, other,
                   cospan=False):
-        name = '([{} -> {}]{})'.format(
+        name = '({{{} -> {}}}{})'.format(
                 str(other.name), str(pos), str(self.name))
         return self.paste_along(
                 other,
@@ -468,7 +468,7 @@ class Diagram:
 
     def to_input(self, pos, other,
                  cospan=False):
-        name = '({}[{} <- {}])'.format(
+        name = '({}{{{} <- {}}})'.format(
                 str(self.name), str(pos), str(other.name))
         return other.paste_along(
                 self,
@@ -494,6 +494,8 @@ class Diagram:
                     for x in n_data
                 ]
                 for n_data in shapemap.mapping]
+        if name is None:
+            name = 'pullback_of_{}'.format(str(self.name))
         return Diagram._new(
                 shape,
                 self.ambient,
@@ -564,7 +566,7 @@ class Diagram:
         if invert:
             unitor_map = unitor_map.dual(self.dim + 1)
 
-        name = 'unitor on {}'.format(str(self.name))
+        name = 'unitor_on_{}'.format(str(self.name))
         return self.pullback(unitor_map, name)
 
     # Alternative constructors

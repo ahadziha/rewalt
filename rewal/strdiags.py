@@ -25,47 +25,57 @@ class StrDiag:
     Class for string diagrams.
     """
     def __init__(self, diagram, **params):
-        if isinstance(diagram, rewal.shapes.ShapeMap):
-            diagram = Diagram.yoneda(diagram)
+        if isinstance(diagram, Diagram):
+            shape = diagram.shape
+            generators = diagram.ambient.generators
+            self.name = diagram.name
+
+            def isdegenerate(x):
+                return generators[diagram[x]]['shape'].dim != x.dim
         else:
             if isinstance(diagram, rewal.shapes.Shape):
-                diagram = Diagram.yoneda(diagram.id())
+                diagram = diagram.id()
+            if isinstance(diagram, rewal.shapes.ShapeMap):
+                shape = diagram.source
+                generators = {x: {} for x in diagram.target}
+                self.name = str(diagram)
+
+                def isdegenerate(x):
+                    return diagram[x].dim != x.dim
             else:
-                utils.typecheck(diagram, {'type': Diagram})
+                raise TypeError(utils.type_err(
+                    Diagram, diagram))
 
-        dim = diagram.dim
-        generators = diagram.ambient.generators
-
-        self.name = diagram.name
+        dim = shape.dim
 
         self._nodes = {
                 x: {
-                    'label': diagram[x].name,
-                    'color': generators[diagram[x].name].get(
+                    'label': diagram[x],
+                    'color': generators[diagram[x]].get(
                         'color', None),
-                    'stroke': generators[diagram[x].name].get(
+                    'stroke': generators[diagram[x]].get(
                         'stroke',
-                        generators[diagram[x].name].get(
+                        generators[diagram[x]].get(
                             'color', None)),
-                    'draw_node': generators[diagram[x].name].get(
+                    'draw_node': generators[diagram[x]].get(
                         'draw_node', True),
-                    'draw_label': generators[diagram[x].name].get(
+                    'draw_label': generators[diagram[x]].get(
                         'draw_label', True),
-                    'isdegenerate': dim != diagram[x].dim
+                    'isdegenerate': isdegenerate(x)
                     }
-                for x in diagram.shape[dim]}
+                for x in shape[dim]}
         self._wires = {
                 x: {
-                    'label': diagram[x].name,
-                    'color': generators[diagram[x].name].get(
+                    'label': diagram[x],
+                    'color': generators[diagram[x]].get(
                         'stroke',
-                        generators[diagram[x].name].get(
+                        generators[diagram[x]].get(
                             'color', None)),
-                    'draw_label': generators[diagram[x].name].get(
+                    'draw_label': generators[diagram[x]].get(
                         'draw_label', True),
-                    'isdegenerate': dim-1 != diagram[x].dim
+                    'isdegenerate': isdegenerate(x)
                     }
-                for x in diagram.shape[dim-1]}
+                for x in shape[dim-1]}
 
         graph = nx.DiGraph()
         graph.add_nodes_from(self.nodes)
@@ -74,8 +84,8 @@ class StrDiag:
             out_1 = dict()
             in_1 = dict()
             for x in self.nodes:
-                out_1[x] = diagram.shape.faces(x, '+')
-                in_1[x] = diagram.shape.faces(x, '-')
+                out_1[x] = shape.faces(x, '+')
+                in_1[x] = shape.faces(x, '-')
                 for y in in_1[x]:
                     graph.add_edge(y, x)
                 for y in out_1[x]:
@@ -88,17 +98,17 @@ class StrDiag:
             out_2 = dict()
             in_2 = dict()
             for x in self.wires:
-                out_2[x] = diagram.shape.faces(x, '+')
-                in_2[x] = diagram.shape.faces(x, '-')
+                out_2[x] = shape.faces(x, '+')
+                in_2[x] = shape.faces(x, '-')
             for x in self.nodes:
                 out_2[x] = rewal.ogposets.GrSet(*[
                     z for w in out_1[x]
-                    for z in diagram.shape.faces(w, '+')
-                    if diagram.shape.cofaces(z, '-').isdisjoint(out_1[x])])
+                    for z in shape.faces(w, '+')
+                    if shape.cofaces(z, '-').isdisjoint(out_1[x])])
                 in_2[x] = rewal.ogposets.GrSet(*[
                     z for w in in_1[x]
-                    for z in diagram.shape.faces(w, '-')
-                    if diagram.shape.cofaces(z, '+').isdisjoint(in_1[x])])
+                    for z in shape.faces(w, '-')
+                    if shape.cofaces(z, '+').isdisjoint(in_1[x])])
             for x in widthgraph:
                 for y in widthgraph:
                     if not out_2[x].isdisjoint(in_2[y]):
@@ -112,12 +122,12 @@ class StrDiag:
             for x in depthgraph:
                 out_3[x] = rewal.ogposets.GrSet(*[
                     z for w in out_2[x]
-                    for z in diagram.shape.faces(w, '+')
-                    if diagram.shape.cofaces(z, '-').isdisjoint(out_2[x])])
+                    for z in shape.faces(w, '+')
+                    if shape.cofaces(z, '-').isdisjoint(out_2[x])])
                 in_3[x] = rewal.ogposets.GrSet(*[
                     z for w in in_2[x]
-                    for z in diagram.shape.faces(w, '-')
-                    if diagram.shape.cofaces(z, '+').isdisjoint(in_2[x])])
+                    for z in shape.faces(w, '-')
+                    if shape.cofaces(z, '+').isdisjoint(in_2[x])])
             for x in depthgraph:
                 for y in depthgraph:
                     if not out_3[x].isdisjoint(in_3[y]):
@@ -238,7 +248,9 @@ class StrDiag:
         labeloffset = params.get('labeloffset', (4, 4))
 
         positions = params.get('positions', False)
-        positionoffset = params.get('positionoffset', (4, -12))
+        wirepositions = params.get('wirepositions', positions)
+        nodepositions = params.get('nodepositions', positions)
+        positionoffset = params.get('positionoffset', (4, -16))
 
         orientation = params.get('orientation', 'bt')
 
@@ -275,7 +287,7 @@ class StrDiag:
                         color,
                         self.wires[wire]['isdegenerate'])
 
-            if positions:
+            if wirepositions:
                 backend.draw_label(
                         str(wire.pos),
                         coord[wire],
@@ -308,6 +320,13 @@ class StrDiag:
                     backend.draw_label(
                         self.nodes[node]['label'],
                         coord[node], labeloffset)
+
+            if nodepositions:
+                backend.draw_label(
+                        str(node.pos),
+                        coord[node],
+                        positionoffset,
+                        color=infocolor)
 
         if show:
             backend.show()
