@@ -71,46 +71,57 @@ class StrDiag:
         graph.add_nodes_from(self.nodes)
         graph.add_nodes_from(self.wires)
         if dim >= 1:
+            out_1 = dict()
+            in_1 = dict()
             for x in self.nodes:
-                for y in diagram.shape.faces(x, '-'):
+                out_1[x] = diagram.shape.faces(x, '+')
+                in_1[x] = diagram.shape.faces(x, '-')
+                for y in in_1[x]:
                     graph.add_edge(y, x)
-                for y in diagram.shape.faces(x, '+'):
+                for y in out_1[x]:
                     graph.add_edge(x, y)
 
         widthgraph = nx.DiGraph()
         widthgraph.add_nodes_from(self.nodes)
         widthgraph.add_nodes_from(self.wires)
         if dim >= 2:
+            out_2 = dict()
+            in_2 = dict()
+            for x in self.wires:
+                out_2[x] = diagram.shape.faces(x, '+')
+                in_2[x] = diagram.shape.faces(x, '-')
+            for x in self.nodes:
+                out_2[x] = rewal.ogposets.GrSet(*[
+                    z for w in out_1[x]
+                    for z in diagram.shape.faces(w, '+')
+                    if diagram.shape.cofaces(z, '-').isdisjoint(out_1[x])])
+                in_2[x] = rewal.ogposets.GrSet(*[
+                    z for w in in_1[x]
+                    for z in diagram.shape.faces(w, '-')
+                    if diagram.shape.cofaces(z, '+').isdisjoint(in_1[x])])
             for x in widthgraph:
                 for y in widthgraph:
-                    if y != x:
-                        out_x = rewal.ogposets.GrSubset(
-                            rewal.ogposets.GrSet(x), diagram.shape,
-                            wfcheck=False).closure().boundary_max(
-                                    '+', dim-2)
-                        in_y = rewal.ogposets.GrSubset(
-                            rewal.ogposets.GrSet(y), diagram.shape,
-                            wfcheck=False).closure().boundary_max(
-                                    '-', dim-2)
-                        if not out_x.isdisjoint(in_y):
-                            widthgraph.add_edge(x, y)
+                    if not out_2[x].isdisjoint(in_2[y]):
+                        widthgraph.add_edge(x, y)
 
         depthgraph = nx.DiGraph()
         depthgraph.add_nodes_from(self.wires)
         if dim >= 3:
+            out_3 = dict()
+            in_3 = dict()
+            for x in depthgraph:
+                out_3[x] = rewal.ogposets.GrSet(*[
+                    z for w in out_2[x]
+                    for z in diagram.shape.faces(w, '+')
+                    if diagram.shape.cofaces(z, '-').isdisjoint(out_2[x])])
+                in_3[x] = rewal.ogposets.GrSet(*[
+                    z for w in in_2[x]
+                    for z in diagram.shape.faces(w, '-')
+                    if diagram.shape.cofaces(z, '+').isdisjoint(in_2[x])])
             for x in depthgraph:
                 for y in depthgraph:
-                    if y != x:
-                        out_x = rewal.ogposets.GrSubset(
-                            rewal.ogposets.GrSet(x), diagram.shape,
-                            wfcheck=False).closure().boundary_max(
-                                    '+', dim-3)
-                        in_y = rewal.ogposets.GrSubset(
-                            rewal.ogposets.GrSet(y), diagram.shape,
-                            wfcheck=False).closure().boundary_max(
-                                    '-', dim-3)
-                        if not out_x.isdisjoint(in_y):
-                            depthgraph.add_edge(x, y)
+                    if not out_3[x].isdisjoint(in_3[y]):
+                        depthgraph.add_edge(x, y)
 
         def remove_cycles(graph):
             cycles = list(nx.simple_cycles(graph))
