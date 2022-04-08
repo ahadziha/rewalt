@@ -184,7 +184,12 @@ class OgPoset:
 
     def maximal(self):
         """ Returns the GrSubset of maximal elements. """
-        return self.all().maximal()
+        maximal = GrSet()
+        for x in self:
+            if self.cofaces(x) == GrSet():
+                maximal.add(x)
+        return GrSubset(maximal, self,
+                        wfcheck=False)
 
     def faces(self, element, sign=None):
         """

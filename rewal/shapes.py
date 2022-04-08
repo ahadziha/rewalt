@@ -3,7 +3,7 @@ Implements shapes of cells and diagrams.
 """
 
 from rewal import utils
-from rewal.ogposets import (El, OgPoset, GrSet, GrSubset, Closed,
+from rewal.ogposets import (El, OgPoset, GrSet, Closed,
                             OgMap, OgMapPair)
 
 
@@ -561,41 +561,53 @@ class Shape(OgPoset):
         from the shape with elements reordered in traversal order.
         """
         mapping = [[] for _ in range(shape.dim + 1)]
-        marked = shape.none()
+        marked = GrSet()
 
-        focus_stack = [shape.all()]  # traversal begins
+        focus_stack = [shape.maximal().support]  # traversal begins
         while len(focus_stack) > 0:
             focus = focus_stack[-1]
             if focus.issubset(marked):
                 del focus_stack[-1]
             else:
                 dim = focus.dim
+                top_dim = focus[dim]
                 if dim == 0:
-                    for x in focus[dim]:
+                    for x in top_dim:
                         mapping[dim].append(x)
-                        marked.support.add(x)
+                        marked.add(x)
                     del focus_stack[-1]
                 else:
-                    focus_input = focus.boundary('-')
+                    focus_in_faces = GrSet().union(
+                            *[shape.faces(x, '-') for x in top_dim])
+                    focus_input = focus[:dim]
+                    for y in focus_in_faces:
+                        if shape.cofaces(y, '+').isdisjoint(focus):
+                            focus_input.add(y)
                     if not focus_input.issubset(marked):
                         focus_stack.append(focus_input)
                     else:
-                        if len(focus.maximal()) == 1:
-                            for x in focus[dim]:
+                        if len(focus) == 1:
+                            for x in top_dim:
                                 mapping[dim].append(x)
-                                marked.support.add(x)
+                                marked.add(x)
                             del focus_stack[-1]
-                            focus_stack.append(focus.boundary('+'))
+                            focus_out_faces = GrSet().union(
+                                *[shape.faces(x, '+') for x in top_dim])
+                            focus_output = focus[:dim]
+                            for y in focus_out_faces:
+                                if shape.cofaces(y, '-').isdisjoint(focus):
+                                    focus_output.add(y)
+                            focus_stack.append(focus_output)
                         else:
                             def candidates(x):
                                 return [y for y in shape.cofaces(x, '-')
                                         if y in focus and y not in marked]
                             x = next(
                                     x for x in mapping[dim-1]
-                                    if x in focus and len(candidates(x)) > 0)
-                            focus_stack.append(GrSubset(
-                                GrSet(candidates(x)[0]),
-                                shape, wfcheck=False).closure())
+                                    if x in focus_in_faces
+                                    and len(candidates(x)) > 0)
+                            focus_stack.append(
+                                GrSet(candidates(x)[0]))
 
         def reordered_faces(x, sign):
             return {k for y in shape.faces(x, sign)
