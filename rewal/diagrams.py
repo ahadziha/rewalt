@@ -615,17 +615,28 @@ class Diagram:
             return pasted, paste_cospan
         return pasted
 
-    def to_output(self, pos, other,
-                  cospan=False):
-        name = '{{{} -> {}}}({})'.format(
-                str(other.name), str(pos), str(self.name))
-        return self.paste_along(
-                other,
-                self.shape.atom_inclusion(
-                    rewal.ogposets.El(self.dim-1, pos)),
-                other.shape.boundary('-'),
-                name,
-                cospan)
+    def to_outputs(self, positions, other, dim=None,
+                   cospan=False):
+        if dim is None:
+            dim = self.dim-1
+        paste_cospan = self.shape.to_outputs(
+                positions, other.shape, dim, cospan=True)
+
+        shape = paste_cospan.target
+        mapping = Diagram._paste_fill_mapping(
+                self, other, paste_cospan)
+        name = '{{{} ->{} {}}}({})'.format(
+                str(other.name), str(dim),
+                str(positions), str(self.name))
+
+        pasted = Diagram._new(
+                shape,
+                self.ambient,
+                mapping,
+                name)
+        if cospan:
+            return pasted, paste_cospan
+        return pasted
 
     def to_input(self, pos, other,
                  cospan=False):

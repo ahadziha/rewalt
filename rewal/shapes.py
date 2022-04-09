@@ -2,8 +2,10 @@
 Implements shapes of cells and diagrams.
 """
 
+import networkx as nx
+
 from rewal import utils
-from rewal.ogposets import (El, OgPoset, GrSet, Closed,
+from rewal.ogposets import (El, OgPoset, GrSet, GrSubset, Closed,
                             OgMap, OgMapPair)
 
 
@@ -180,7 +182,8 @@ class Shape(OgPoset):
     # Other constructors
     @staticmethod
     def paste_along(fst, snd,
-                    cospan=False):
+                    cospan=False,
+                    wfcheck=True):
         """
         Returns the pasting of two shapes along the entire input
         (output) k-boundary of one, and a subshape of the output
@@ -194,33 +197,36 @@ class Shape(OgPoset):
             }, {'type': ShapeMap})
 
         dim = span.source.dim
-        fst_image = fst.image()
-        snd_image = snd.image()
-        fst_output = fst.target.all().boundary('+', dim)
-        snd_input = snd.target.all().boundary('-', dim)
+        fst_image = fst.source.maximal().image(fst)
+        snd_image = snd.source.maximal().image(snd)
+        fst_output = fst.target.all().boundary_max('+', dim)
+        snd_input = snd.target.all().boundary_max('-', dim)
 
-        def condition():
-            t1 = fst_image.issubset(fst_output)
-            t2 = snd_image.issubset(snd_input)
-            t3 = fst_image == fst_output or snd_image == snd_input
-            return t1 and t2 and t3
+        if fst_image == fst_output and snd_image == snd_input:
+            return Shape.paste(fst.target, snd.target, dim,
+                               cospan=cospan)
 
-        if not condition():
-            raise ValueError(utils.value_err(
-                span, 'not a well-formed span for pasting'))
-        if fst_image == fst_output:
-            if snd_image == snd_input:
-                if cospan:
-                    return Shape.paste(
-                            fst.target, snd.target, dim, cospan=True)
-                return Shape.paste(fst.target, snd.target, dim)
-            if not Shape._issubmol(snd_image, snd_input):
+        if wfcheck:
+            def condition():
+                t1 = fst_image.issubset(fst_output)
+                t2 = snd_image.issubset(snd_input)
+                t3 = fst_image == fst_output or snd_image == snd_input
+                return t1 and t2 and t3
+
+            if not condition():
                 raise ValueError(utils.value_err(
-                    snd, 'cannot paste along this map'))
-        else:
-            if not Shape._issubmol(fst_image, fst_output):
-                raise ValueError(utils.value_err(
-                    fst, 'cannot paste along this map'))
+                    span, 'not a well-formed span for pasting'))
+
+            if fst_image == fst_output:
+                if not snd.target._ispastable(
+                        snd_image.support, snd_input.support):
+                    raise ValueError(utils.value_err(
+                        snd, 'cannot paste along this map'))
+            else:
+                if not fst.target._ispastable(
+                        fst_image.support, fst_output.support):
+                    raise ValueError(utils.value_err(
+                        fst, 'cannot paste along this map'))
 
         pushout = span.pushout(wfcheck=False)
 
@@ -248,6 +254,37 @@ class Shape(OgPoset):
             self.atom_inclusion(El(self.dim-1, pos)),
             other.boundary('-'),
             cospan)
+
+    def to_outputs(self, positions, other, dim=None,
+                   cospan=False):
+        """
+        Paste along the inclusion of several outputs.
+        """
+        if isinstance(positions, int):
+            positions = [positions]
+        if dim is None:
+            dim = self.dim-1
+
+        fst = GrSet(*[El(dim, pos) for pos in positions])
+        snd = self.all().boundary_max('+', dim).support
+        if not self._ispastable(fst, snd):
+            raise ValueError(utils.value_err(
+                positions, 'cannot paste to these outputs'))
+
+        oginclusion = GrSubset(fst, self).closure().as_map
+        inclusion = ShapeMap(Shape._reorder(
+                oginclusion.source).then(oginclusion),
+                wfcheck=False)
+
+        other_boundary = other.boundary('-')
+        if inclusion.source != other_boundary.source:
+            raise ValueError(utils.value_err(
+                positions, 'does not match input boundary of {}'.format(
+                    repr(other))))
+        return Shape.paste_along(
+            inclusion,
+            other_boundary,
+            cospan=cospan)
 
     def to_input(self, pos, other,
                  cospan=False):
@@ -646,20 +683,52 @@ class Shape(OgPoset):
         return OgMap(reordered, shape, mapping,
                      wfcheck=False)
 
-    @staticmethod
-    def _issubmol(fst, snd):
-        """
-        Given two molecules in a shape (as closed subsets), returns
-        whether the first one is a round submolecule of the second.
-        """
-        if not fst.isround:
-            return False
-        if fst == snd:
+    def _flowgraph(self, grset):
+        flowgraph = nx.DiGraph()
+        flowgraph.add_nodes_from(grset)
+        if grset.dim > 0:
+            for x in grset:
+                for y in grset:
+                    if not self.faces(x, '+').isdisjoint(
+                            self.faces(y, '-')):
+                        flowgraph.add_edge(x, y)
+        return flowgraph
+
+    def _ispastable(self, fst, snd,
+                    wfcheck=True):
+        if wfcheck:
+            if not fst.issubset(snd):
+                return False
+            if not fst.dim == snd.dim:
+                return False
+        if len(fst) == 1:
             return True
-        if len(fst.maximal()) == 1:
+        if wfcheck:
+            fst_closed = GrSubset(fst, self).closure()
+            if not fst_closed.isround:
+                return False
+        dim = fst.dim
+        fst_flow = self._flowgraph(fst)
+        snd_flow = self._flowgraph(snd[dim])
+        mapping = {
+            x: x for x in fst}
+        remaining = set(fst_flow.nodes)
+        for e in fst_flow.edges:
+            src = mapping[e[0]]
+            tgt = mapping[e[1]]
+            snd_flow = nx.contracted_edge(
+                    snd_flow, (src, tgt), self_loops=False)
+            mapping[tgt] = src
+            remaining.remove(tgt)
+
+        if len(remaining) > 1:  # fst_flow not connected
+            return False
+        if not nx.is_directed_acyclic_graph(snd_flow):  # fst_flow not convex
+            return False
+        if fst.dim < 3:  # nothing else needs to be checked in dim <= 2
             return True
         raise NotImplementedError(
-            'Can only paste along atoms or the entire boundary for now.')
+            'Can only paste along atoms in dim > 2.')
 
     @classmethod
     def _upgrade(cls, ogp):
