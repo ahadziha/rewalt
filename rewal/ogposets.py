@@ -715,6 +715,15 @@ class GrSet:
                 *[x.as_set for x in others])
         return GrSet(*intersection_as_set)
 
+    def difference(self, other):
+        """
+        Returns the difference of the graded set with another graded set.
+        """
+        utils.typecheck(other, {'type': GrSet})
+
+        difference_as_set = self.as_set.difference(other.as_set)
+        return GrSet(*difference_as_set)
+
     def issubset(self, other):
         """ Returns whether the graded set is a subset of another. """
         utils.typecheck(other, {'type': GrSet})
@@ -840,6 +849,19 @@ class GrSubset:
             return self.__class__(intersection, self.ambient,
                                   wfcheck=False)
         return GrSubset(intersection, self.ambient,
+                        wfcheck=False)
+
+    def difference(self, other):
+        """
+        Returns the difference with another subset of the same OgPoset.
+        """
+        utils.typecheck(other, {
+            'type': GrSubset,
+            'st': lambda x: x.ambient == self.ambient,
+            'why': 'not a subset of the same OgPoset'
+            })
+        difference = self.support.difference(other.support)
+        return GrSubset(difference, self.ambient,
                         wfcheck=False)
 
     def issubset(self, other):

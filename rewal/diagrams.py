@@ -594,7 +594,7 @@ class Diagram:
                 self, other, paste_cospan)
         name = '{{{} ->{} {}}}({})'.format(
                 str(other.name), str(dim),
-                str(positions), str(self.name))
+                str(sorted(positions)), str(self.name))
 
         pasted = Diagram._new(
                 shape,
@@ -616,7 +616,7 @@ class Diagram:
         mapping = Diagram._paste_fill_mapping(
                 other, self, paste_cospan)
         name = '({}){{{} {}<- {}}}'.format(
-                str(self.name), str(positions),
+                str(self.name), str(sorted(positions)),
                 str(dim), str(other.name))
 
         pasted = Diagram._new(
@@ -679,43 +679,87 @@ class Diagram:
         name = '1({})'.format(str(self.name))
         return self.pullback(self.shape.inflate(), name)
 
-    def lunitor(self, sign='-'):
+    def lunitor(self, sign='-', positions=None):
         """
         Left unitor or inverse unitor.
         """
         sign = utils.mksign(sign)
+        dim = self.dim - 1
+
+        all = self.shape.all()
+        output = all.boundary('+')
+
+        collapsed = output
+        if positions is not None:
+            if isinstance(positions, int):
+                positions = [positions]
+            input = all.boundary('-')
+            notcollapsed = rewal.ogposets.GrSubset(
+                    rewal.ogposets.GrSet(
+                        *[rewal.ogposets.El(dim, k) for k in positions]),
+                    self.shape)
+            if not notcollapsed.issubset(input):
+                raise ValueError(utils.value_err(
+                    positions, 'not in the input boundary'))
+
+            notcollapsed = notcollapsed.closure()
+            collapsed = collapsed.union(
+                    input.difference(notcollapsed).closure())
+
         unitor_map = self.shape.inflate(
-                self.shape.all().boundary('+'))
-        name = 'λ({})'.format(str(self.name))
+                collapsed)
+        if positions is None:
+            name = 'λ({})'.format(str(self.name))
+        else:
+            name = 'λ{}({})'.format(
+                    str(sorted(positions)),
+                    str(self.name))
+
         if sign == '-':
             unitor_map = unitor_map.dual(self.dim + 1)
         else:
-            name = '({})⁻¹'.format(name)
+            name = '{}⁻¹'.format(name)
         return self.pullback(unitor_map, name)
 
-    def runitor(self, sign='-'):
+    def runitor(self, sign='-', positions=None):
         """
         Right unitor or inverse unitor.
         """
         sign = utils.mksign(sign)
-        unitor_map = self.shape.inflate(
-                self.shape.all().boundary('-'))
-        name = 'ρ({})'.format(str(self.name))
-        if sign == '+':
-            unitor_map = unitor_map.dual(self.dim + 1)
-            name = '({})⁻¹'.format(name)
-        return self.pullback(unitor_map, name)
+        dim = self.dim - 1
 
-    def unitor(self, collapsed, invert=False):
-        """
-        Generic unitor.
-        """
+        all = self.shape.all()
+        input = all.boundary('-')
+
+        collapsed = input
+        if positions is not None:
+            if isinstance(positions, int):
+                positions = [positions]
+            output = all.boundary('+')
+            notcollapsed = rewal.ogposets.GrSubset(
+                    rewal.ogposets.GrSet(
+                        *[rewal.ogposets.El(dim, k) for k in positions]),
+                    self.shape)
+            if not notcollapsed.issubset(output):
+                raise ValueError(utils.value_err(
+                    positions, 'not in the output boundary'))
+
+            notcollapsed = notcollapsed.closure()
+            collapsed = collapsed.union(
+                    output.difference(notcollapsed).closure())
+
         unitor_map = self.shape.inflate(
                 collapsed)
-        if invert:
-            unitor_map = unitor_map.dual(self.dim + 1)
+        if positions is None:
+            name = 'ρ({})'.format(str(self.name))
+        else:
+            name = 'ρ{}({})'.format(
+                    str(sorted(positions)),
+                    str(self.name))
 
-        name = 'unitor on {}'.format(str(self.name))
+        if sign == '+':
+            unitor_map = unitor_map.dual(self.dim + 1)
+            name = '{}⁻¹'.format(name)
         return self.pullback(unitor_map, name)
 
     @property
