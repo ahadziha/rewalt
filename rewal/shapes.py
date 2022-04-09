@@ -245,16 +245,6 @@ class Shape(OgPoset):
         paste = Shape._reorder(pushout.target).source
         return inheritance()._upgrade(paste)
 
-    def to_output(self, pos, other,
-                  cospan=False):
-        """
-        Paste along the inclusion of one of the outputs.
-        """
-        return Shape.paste_along(
-            self.atom_inclusion(El(self.dim-1, pos)),
-            other.boundary('-'),
-            cospan)
-
     def to_outputs(self, positions, other, dim=None,
                    cospan=False):
         """
@@ -284,17 +274,38 @@ class Shape(OgPoset):
         return Shape.paste_along(
             inclusion,
             other_boundary,
-            cospan=cospan)
+            cospan=cospan, wfcheck=False)
 
-    def to_input(self, pos, other,
-                 cospan=False):
+    def to_inputs(self, positions, other, dim=None,
+                  cospan=False):
         """
-        Paste along the inclusion of one of the inputs.
+        Paste along the inclusion of several outputs.
         """
+        if isinstance(positions, int):
+            positions = [positions]
+        if dim is None:
+            dim = self.dim-1
+
+        fst = GrSet(*[El(dim, pos) for pos in positions])
+        snd = self.all().boundary_max('-', dim).support
+        if not self._ispastable(fst, snd):
+            raise ValueError(utils.value_err(
+                positions, 'cannot paste to these inputs'))
+
+        oginclusion = GrSubset(fst, self).closure().as_map
+        inclusion = ShapeMap(Shape._reorder(
+                oginclusion.source).then(oginclusion),
+                wfcheck=False)
+
+        other_boundary = other.boundary('+')
+        if inclusion.source != other_boundary.source:
+            raise ValueError(utils.value_err(
+                positions, 'does not match output boundary of {}'.format(
+                    repr(other))))
         return Shape.paste_along(
-            other.boundary('+'),
-            self.atom_inclusion(El(self.dim-1, pos)),
-            cospan)
+            other_boundary,
+            inclusion,
+            cospan=cospan, wfcheck=False)
 
     @staticmethod
     def suspend(shape, n=1):

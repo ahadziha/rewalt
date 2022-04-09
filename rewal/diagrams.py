@@ -582,39 +582,6 @@ class Diagram:
             return pasted, paste_cospan
         return pasted
 
-    def paste_along(self, other, fst, snd, name=None,
-                    cospan=False):
-        utils.typecheck(other, {
-                'type': Diagram,
-                'st': lambda x: x.ambient == self.ambient,
-                'why': 'not the same ambient DiagSet'})
-        assoc = ((fst, self), (snd, other))
-        for x in assoc:
-            utils.typecheck(x[0], {
-                'type': ShapeMap,
-                'st': lambda f: f.target == x[1].shape,
-                'why': 'expecting a map with target {}'.format(
-                    repr(x[1].shape))}
-                )
-        paste_cospan = Shape.paste_along(
-                fst, snd, cospan=True)
-
-        shape = paste_cospan.target
-        mapping = Diagram._paste_fill_mapping(
-                self, other, paste_cospan)
-        if name is None:
-            name = '({}) ## ({})'.format(
-                    str(self.name), str(other.name))
-
-        pasted = Diagram._new(
-                shape,
-                self.ambient,
-                mapping,
-                name)
-        if cospan:
-            return pasted, paste_cospan
-        return pasted
-
     def to_outputs(self, positions, other, dim=None,
                    cospan=False):
         if dim is None:
@@ -638,17 +605,28 @@ class Diagram:
             return pasted, paste_cospan
         return pasted
 
-    def to_input(self, pos, other,
-                 cospan=False):
-        name = '({}){{{} <- {}}}'.format(
-                str(self.name), str(pos), str(other.name))
-        return other.paste_along(
-                self,
-                other.shape.boundary('+'),
-                self.shape.atom_inclusion(
-                    rewal.ogposets.El(self.dim-1, pos)),
-                name,
-                cospan)
+    def to_inputs(self, positions, other, dim=None,
+                  cospan=False):
+        if dim is None:
+            dim = self.dim-1
+        paste_cospan = self.shape.to_inputs(
+                positions, other.shape, dim, cospan=True)
+
+        shape = paste_cospan.target
+        mapping = Diagram._paste_fill_mapping(
+                other, self, paste_cospan)
+        name = '({}){{{} {}<- {}}}'.format(
+                str(self.name), str(positions),
+                str(dim), str(other.name))
+
+        pasted = Diagram._new(
+                shape,
+                self.ambient,
+                mapping,
+                name)
+        if cospan:
+            return pasted, paste_cospan
+        return pasted
 
     def pullback(self, shapemap, name=None):
         """

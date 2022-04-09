@@ -331,6 +331,14 @@ class StrDiag:
         if show:
             backend.show()
 
+    @staticmethod
+    def draw_boundaries(diagram, **params):
+        """
+        Draws the input and the output boundaries of a diagram.
+        """
+        StrDiag(diagram.input).draw(**params)
+        StrDiag(diagram.output).draw(**params)
+
 
 class DrawBackend(ABC):
     def __init__(self, **params):
