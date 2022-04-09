@@ -834,6 +834,44 @@ class Diagram:
                 name)
 
     @property
+    def linvertor(self):
+        """
+        Returns the left invertor for an invertible cell.
+        """
+        if not self.isinvertiblecell:
+            raise ValueError(utils.value_err(
+                self, 'not an invertible cell'))
+
+        top = self.mapping[-1][0]
+        if not self.isdegenerate:
+            top_linvertor = self.ambient.generators[top]['linvertor']
+
+            if self.shape == self.ambient.generators[top]['shape']:
+                return self.ambient[top_linvertor]
+
+        inverse = self.inverse
+        lpaste, lpaste_cospan = inverse.paste(self, cospan=True)
+        unit = self.output.unit()
+
+        atom_cospan = lpaste.shape.atom(unit.shape, cospan=True)
+        shape = atom_cospan.target
+        mapping = Diagram._paste_fill_mapping(
+                lpaste, unit, atom_cospan)
+
+        if not self.isdegenerate:
+            mapping[-1][0] = top_linvertor
+        else:
+            mapping[-1][0] = top
+
+        name = 'inv({}, {})'.format(inverse.name, self.name)
+
+        return Diagram._new(
+                shape,
+                self.ambient,
+                mapping,
+                name)
+
+    @property
     def composite(self):
         """
         Returns the composite of the diagram, if it exists.
