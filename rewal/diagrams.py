@@ -570,7 +570,7 @@ class Diagram:
         shape = paste_cospan.target
         mapping = Diagram._paste_fill_mapping(
                 self, other, paste_cospan)
-        name = '({} #{} {})'.format(
+        name = '({}) #{} ({})'.format(
                 str(self.name), str(dim), str(other.name))
 
         pasted = Diagram._new(
@@ -584,6 +584,8 @@ class Diagram:
 
     def to_outputs(self, positions, other, dim=None,
                    cospan=False):
+        if isinstance(positions, int):
+            positions = [positions]
         if dim is None:
             dim = self.dim-1
         paste_cospan = self.shape.to_outputs(
@@ -592,7 +594,7 @@ class Diagram:
         shape = paste_cospan.target
         mapping = Diagram._paste_fill_mapping(
                 self, other, paste_cospan)
-        name = '({{{} ->{} {}}}{})'.format(
+        name = '{{{} -> {}{}}}({})'.format(
                 str(other.name), str(dim),
                 str(sorted(positions)), str(self.name))
 
@@ -607,6 +609,8 @@ class Diagram:
 
     def to_inputs(self, positions, other, dim=None,
                   cospan=False):
+        if isinstance(positions, int):
+            positions = [positions]
         if dim is None:
             dim = self.dim-1
         paste_cospan = self.shape.to_inputs(
@@ -615,7 +619,7 @@ class Diagram:
         shape = paste_cospan.target
         mapping = Diagram._paste_fill_mapping(
                 other, self, paste_cospan)
-        name = '({}{{{} {}<- {}}})'.format(
+        name = '({}){{{}{} <- {}}}'.format(
                 str(self.name), str(sorted(positions)),
                 str(dim), str(other.name))
 
@@ -627,6 +631,9 @@ class Diagram:
         if cospan:
             return pasted, paste_cospan
         return pasted
+
+    def rewrite(self, positions, diagram):
+        return self.to_outputs(positions, diagram, self.dim)
 
     def pullback(self, shapemap, name=None):
         """
@@ -659,7 +666,7 @@ class Diagram:
         if dim is None:
             dim = self.dim - 1
         sign = utils.mksign(sign)
-        name = '(∂[{},{}]{})'.format(
+        name = '∂[{},{}]({})'.format(
                 sign, str(dim), str(self.name))
         return self.pullback(self.shape.boundary(
             sign, dim), name)
@@ -676,7 +683,7 @@ class Diagram:
         """
         Unit on the diagram.
         """
-        name = '(1{})'.format(str(self.name))
+        name = '1({})'.format(str(self.name))
         return self.pullback(self.shape.inflate(), name)
 
     def lunitor(self, sign='-', positions=None):
@@ -709,16 +716,16 @@ class Diagram:
         unitor_map = self.shape.inflate(
                 collapsed)
         if positions is None:
-            name = '(λ{})'.format(str(self.name))
+            name = 'λ({})'.format(str(self.name))
         else:
-            name = '(λ{}{})'.format(
+            name = 'λ{}({})'.format(
                     str(sorted(positions)),
                     str(self.name))
 
         if sign == '-':
             unitor_map = unitor_map.dual(self.dim + 1)
         else:
-            name = '{}⁻¹'.format(name)
+            name = '({})⁻¹'.format(name)
         return self.pullback(unitor_map, name)
 
     def runitor(self, sign='-', positions=None):
@@ -751,15 +758,15 @@ class Diagram:
         unitor_map = self.shape.inflate(
                 collapsed)
         if positions is None:
-            name = '(ρ{})'.format(str(self.name))
+            name = 'ρ({})'.format(str(self.name))
         else:
-            name = '(ρ{}{})'.format(
+            name = 'ρ{}({})'.format(
                     str(sorted(positions)),
                     str(self.name))
 
         if sign == '+':
             unitor_map = unitor_map.dual(self.dim + 1)
-            name = '{}⁻¹'.format(name)
+            name = '({})⁻¹'.format(name)
         return self.pullback(unitor_map, name)
 
     @property
@@ -787,7 +794,7 @@ class Diagram:
                 ]
         if not self.isdegenerate:
             mapping[-1][0] = top_inv
-        name = '{}⁻¹'.format(self.name)
+        name = '({})⁻¹'.format(self.name)
 
         return Diagram._new(
                 shape,
