@@ -34,8 +34,7 @@ class DiagSet:
 
     def __eq__(self, other):
         return isinstance(other, DiagSet) and \
-                self.generators == other.generators and \
-                self.compositors == other.compositors
+                self.generators == other.generators
 
     def __getitem__(self, key):
         if key in self.generators:
@@ -45,6 +44,9 @@ class DiagSet:
                     self.generators[key]['mapping'],
                     key)
         raise KeyError(str(key))
+
+    def __contains__(self, item):
+        return item in self.generators.keys()
 
     def __len__(self):
         return len(self.generators)
@@ -487,6 +489,9 @@ class Diagram:
         raise ValueError(utils.value_err(
             element, 'not an element of the shape'))
 
+    def __contains__(self, item):
+        return item in self.shape
+
     def __iter__(self):
         return iter(self.shape)
 
@@ -518,6 +523,14 @@ class Diagram:
             if self.ambient[x].dim == self.dim:
                 return False
         return True
+
+    @property
+    def isround(self):
+        """
+        Return whether the diagram has a round shape (hence can appear
+        as the boundary of another diagram).
+        """
+        return self.shape.isround
 
     @property
     def iscell(self):

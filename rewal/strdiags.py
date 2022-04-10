@@ -241,6 +241,7 @@ class StrDiag:
         wirecolor = params.get('wirecolor', fgcolor)
         nodecolor = params.get('nodecolor', fgcolor)
         nodestroke = params.get('nodestroke', nodecolor)
+        degenalpha = params.get('degenalpha', 0.1)
 
         labels = params.get('labels', True)
         wirelabels = params.get('wirelabels', labels)
@@ -259,6 +260,7 @@ class StrDiag:
                 bgcolor=bgcolor,
                 fgcolor=fgcolor,
                 orientation=orientation,
+                degenalpha=degenalpha,
                 name=self.name)
 
         wiresort = list(nx.topological_sort(self.depthgraph))
@@ -331,20 +333,13 @@ class StrDiag:
         if show:
             backend.show()
 
-    @staticmethod
-    def draw_boundaries(diagram, **params):
-        """
-        Draws the input and the output boundaries of a diagram.
-        """
-        StrDiag(diagram.input).draw(**params)
-        StrDiag(diagram.output).draw(**params)
-
 
 class DrawBackend(ABC):
     def __init__(self, **params):
         self.bgcolor = params.get('bgcolor')
         self.fgcolor = params.get('fgcolor')
         self.orientation = params.get('orientation')
+        self.degenalpha = params.get('degenalpha')
         self.name = params.get('name')
 
     def rotate(self, xy):
@@ -419,7 +414,7 @@ class MatBackend(DrawBackend):
                 wire,
                 facecolor='none',
                 edgecolor=color,
-                alpha=0.1 if isdegenerate else 1,
+                alpha=self.degenalpha if isdegenerate else 1,
                 lw=1)
         self.axes.add_patch(p_contour)
         self.axes.add_patch(p_wire)
@@ -454,3 +449,16 @@ class MatBackend(DrawBackend):
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         self.fig.canvas.manager.set_window_title(self.name)
         self.fig.show()
+
+
+def draw(*diagrams, **params):
+    for diagram in diagrams:
+        StrDiag(diagram).draw(**params)
+
+
+def draw_boundaries(diagram, **params):
+    """
+    Draws the input and the output boundaries of a diagram.
+    """
+    StrDiag(diagram.input).draw(**params)
+    StrDiag(diagram.output).draw(**params)
