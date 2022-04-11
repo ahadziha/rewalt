@@ -707,6 +707,10 @@ class Shape(OgPoset):
 
     def _ispastable(self, fst, snd,
                     wfcheck=True):
+        """
+        Returns whether fst is a 'pastable', round region of snd
+        (both given just as GrSets of maximal elements)
+        """
         if wfcheck:
             if not fst.issubset(snd):
                 return False
@@ -738,8 +742,52 @@ class Shape(OgPoset):
             return False
         if fst.dim < 3:  # nothing else needs to be checked in dim <= 2
             return True
-        raise NotImplementedError(
-            'Can only paste along atoms in dim > 2.')
+
+        fst_sort = None
+        for sort in nx.all_topological_sorts(fst_flow):
+            if self._islayering(list(sort), fst):
+                fst_sort = list(sort)
+                break
+        if fst_sort is None:
+            return False
+
+        for x in remaining:
+            fst_el = x
+        for sort in nx.all_topological_sorts(snd_flow):
+            snd_sort = list(sort)
+            fst_index = snd_sort.index(fst_el)
+            amended = [
+                    *[snd_sort[:fst_index]],
+                    *[fst_sort],
+                    *[snd_sort[fst_index+1:]]
+                    ]
+            if self._islayering(amended, snd):
+                return True
+        return False
+
+    def _islayering(self, ellist, grset):
+        """
+        Returns whether a list of top-dimensional elements is a valid
+        layering of a molecule (given as its set of maximal elements)
+        """
+        dim = grset.dim
+        top_dim = grset[dim]
+
+        focus = grset[:dim]  # initialise to input boundary
+        in_faces = GrSet().union(
+            *[self.faces(x, '-') for x in top_dim])
+        for y in in_faces:
+            if self.cofaces(y, '+').isdisjoint(grset):
+                focus.add(y)
+
+        for x in ellist:
+            in_x = self.faces(x, '-')
+            if not self._ispastable(
+                    in_x, focus):
+                return False
+            out_x = self.faces(x, '+')
+            focus = focus.difference(in_x).union(out_x)
+        return True
 
     @classmethod
     def _upgrade(cls, ogp):
