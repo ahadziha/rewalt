@@ -607,6 +607,32 @@ class Shape(OgPoset):
 
         return inheritance()._upgrademapsrc(proj)
 
+    def get_layering(self):
+        """
+        Returns a layering of an n-dimensional shape as a pasting
+        of shapes with a single n-dimensional element.
+        """
+        dim = self.dim
+        maximal = self.all().maximal().support
+        topdim = maximal[dim]
+        flow = self._flowgraph(topdim)
+
+        for sort in nx.all_topological_sorts(flow):
+            ok, layers = self._islayering(
+                    list(sort), maximal,
+                    layerlist=True)
+            if ok:
+                break
+        layering = []
+        for layer in layers:
+            oginclusion = GrSubset(
+                    layer, self, wfcheck=False).closure().as_map
+            inclusion = Shape._reorder(oginclusion.source).then(
+                    oginclusion)
+            layering.append(ShapeMap(inclusion, wfcheck=False))
+
+        return layering
+
     # Private methods
     @staticmethod
     def _reorder(shape):
@@ -748,7 +774,7 @@ class Shape(OgPoset):
             if self._islayering(list(sort), fst):
                 fst_sort = list(sort)
                 break
-        if fst_sort is None:
+        if fst_sort is None:  # cannot layer fst
             return False
 
         for x in remaining:
@@ -757,15 +783,16 @@ class Shape(OgPoset):
             snd_sort = list(sort)
             fst_index = snd_sort.index(fst_el)
             amended = [
-                    *[snd_sort[:fst_index]],
-                    *[fst_sort],
-                    *[snd_sort[fst_index+1:]]
+                    *snd_sort[:fst_index],
+                    *fst_sort,
+                    *snd_sort[fst_index+1:]
                     ]
             if self._islayering(amended, snd):
                 return True
         return False
 
-    def _islayering(self, ellist, grset):
+    def _islayering(self, ellist, grset,
+                    layerlist=False):
         """
         Returns whether a list of top-dimensional elements is a valid
         layering of a molecule (given as its set of maximal elements)
@@ -780,13 +807,23 @@ class Shape(OgPoset):
             if self.cofaces(y, '+').isdisjoint(grset):
                 focus.add(y)
 
+        if layerlist:
+            layers = []
         for x in ellist:
             in_x = self.faces(x, '-')
             if not self._ispastable(
                     in_x, focus):
+                if layerlist:
+                    return False, []
                 return False
+
+            if layerlist:
+                layers.append(
+                    focus.difference(in_x).union(GrSet(x)))
             out_x = self.faces(x, '+')
             focus = focus.difference(in_x).union(out_x)
+        if layerlist:
+            return True, layers
         return True
 
     @classmethod

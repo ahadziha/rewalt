@@ -929,6 +929,21 @@ class Diagram:
                 shapemap.mapping,
                 name)
 
+    def layered(self):
+        """
+        Returns a layering of the diagram.
+        """
+        layers = self.shape.get_layering()
+
+        layered = Diagram.__new__(LayeredDiagram)
+        layered._shape = self.shape
+        layered._ambient = self.ambient
+        layered._mapping = self.mapping
+        layered._name = self.name
+        layered._layers = layers
+
+        return layered
+
     @staticmethod
     def with_layers(fst, *layers):
         """ Alternative constructor for LayeredDiagram. """
