@@ -211,21 +211,34 @@ class StrDiag:
             [longest_height[x][0] for x in longest_height]) + 2)
 
         coordinates = dict()
+        sources, sinks = [], []
         for x in self.graph:
             coordinates[x] = (
                     (longest_width[x][0] + 1) / (sum(longest_width[x]) + 2),
                     (longest_height[x][0] + 1) / (sum(longest_height[x]) + 2)
                     )
+            if self.graph.in_degree(x) == 0:
+                sources.append(x)
+            if self.graph.out_degree(x) == 0:
+                sinks.append(x)
 
-        for coord in set(coordinates.values()):  # Solve clashes
-            keys = [x for x in coordinates if coordinates[x] == coord]
-            if len(keys) > 1:
-                n = len(keys)
-                for k, x in enumerate(keys):
-                    coordinates[x] = (
-                        coordinates[x][0] + (xstep/3)*cos(.4 + (2*pi*k)/n),
-                        coordinates[x][1] + (ystep/3)*sin(.4 + (2*pi*k)/n)
-                        )
+        def solve_clashes(coord_dict):
+            for coord in set(coord_dict.values()):  # Solve clashes
+                keys = [x for x in coord_dict if coord_dict[x] == coord]
+                if len(keys) > 1:
+                    n = len(keys)
+                    for k, x in enumerate(keys):
+                        coordinates[x] = (
+                            coordinates[x][0] + (xstep/3)*cos(.4 + (2*pi*k)/n),
+                            coordinates[x][1] + (ystep/3)*sin(.4 + (2*pi*k)/n)
+                            )
+        solve_clashes(coordinates)  # xy clashes in initial placement
+
+        sources_x = {x: coordinates[x][0] for x in sources}
+        sinks_x = {x: coordinates[x][0] for x in sinks}
+        solve_clashes(sources_x)  # x clashes in input boundary
+        solve_clashes(sinks_x)  # x clashes in output boundary
+
         return coordinates
 
     def draw(self, **params):
