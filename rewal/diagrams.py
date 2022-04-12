@@ -497,6 +497,7 @@ class Diagram:
         self._ambient = ambient
         self._mapping = []
         self._name = ''
+        self._layering = None
 
     def __str__(self):
         return str(self.name)
@@ -537,6 +538,26 @@ class Diagram:
     @property
     def mapping(self):
         return self._mapping
+
+    @property
+    def layers(self):
+        if self._layering is None:
+            return [self]
+        return [
+                self.pullback(f, 'layer {} of {}'.format(
+                    str(n), self.name))
+                for n, f in enumerate(self._layering)]
+
+    @property
+    def rewrite_steps(self):
+        rewrite_steps = [
+                *[layer.input for layer in self.layers],
+                self.layers[-1].output
+                ]
+        for n, step in enumerate(rewrite_steps):
+            step.rename('step {} of {}'.format(
+                    str(n), self.name))
+        return rewrite_steps
 
     @property
     def dim(self):
@@ -614,11 +635,23 @@ class Diagram:
         name = '({}) #{} ({})'.format(
                 str(self.name), str(dim), str(other.name))
 
+        if dim == min(self.dim, other.dim) - 1:
+            layering_fst = self._layering if self._layering is not None \
+                else [self.shape.id()]
+            layering_snd = other._layering if other._layering is not None \
+                else [other.shape.id()]
+            layering = [
+                *[f.then(paste_cospan.fst) for f in layering_fst],
+                *[f.then(paste_cospan.snd) for f in layering_snd]]
+        else:
+            layering = None
+
         pasted = Diagram._new(
                 shape,
                 self.ambient,
                 mapping,
-                name)
+                name,
+                layering)
         if cospan:
             return pasted, paste_cospan
         return pasted
@@ -948,38 +981,58 @@ class Diagram:
         compositorname = self._find_compositor()
         return self.ambient[compositorname]
 
+    def generate_layering(self):
+        """
+        Iterates through layerings of the diagram.
+        """
+        if not hasattr(self, '_layering_gen'):
+            self._layering_gen = self.shape.all_layerings()
+        try:
+            self._layering = next(self._layering_gen)
+        except StopIteration:
+            self._layering_gen = self.shape.all_layerings()
+            self._layering = next(self._layering_gen)
+
     # Alternative constructors
     @staticmethod
     def yoneda(shapemap, name=None):
+        utils.typecheck(shapemap, {
+            'type': ShapeMap})
         return Diagram._new(
                 shapemap.source,
                 DiagSet.yoneda(shapemap.target),
                 shapemap.mapping,
                 name)
 
-    def layered(self):
-        """
-        Returns a layering of the diagram.
-        """
-        layers = self.shape.get_layering()
-
-        layered = Diagram.__new__(LayeredDiagram)
-        layered._shape = self.shape
-        layered._ambient = self.ambient
-        layered._mapping = self.mapping
-        layered._name = self.name
-        layered._layers = layers
-
-        return layered
-
     @staticmethod
     def with_layers(fst, *layers):
-        """ Alternative constructor for LayeredDiagram. """
-        return LayeredDiagram(fst, *layers)
+        utils.typecheck(fst, {'type': Diagram})
+        dim = fst.dim
+
+        diagram = fst
+        layering = [fst.shape.id()]
+        for x in layers:
+            utils.typecheck(x, {
+                'type': Diagram,
+                'st': lambda x: x.dim == dim,
+                'why': 'expecting diagram of dimension {}'.format(
+                    str(dim))})
+            diagram, cospan = diagram.paste(x, cospan=True)
+            layering = [
+                    *[f.then(cospan.fst) for f in layering],
+                    cospan.snd]
+
+        return Diagram._new(
+                diagram.shape,
+                diagram.ambient,
+                diagram.mapping,
+                diagram.name,
+                layering)
 
     # Internal methods
     @staticmethod
-    def _new(shape, ambient, mapping, name=None):
+    def _new(shape, ambient, mapping, name=None,
+             layering=None):
         def diagramclass():
             if isinstance(shape, rewal.shapes.Point):
                 return PointDiagram
@@ -996,6 +1049,7 @@ class Diagram:
         new._ambient = ambient
         new._mapping = mapping
         new._name = name
+        new._layering = layering
         return new
 
     def _find_compositor(self):
@@ -1075,73 +1129,3 @@ class PointDiagram(SimplexDiagram, CubeDiagram):
         utils.typecheck(shape, {'type': rewal.shapes.Shape})
         return self.pullback(
                 shape.terminal(), self.name)
-
-
-class LayeredDiagram(Diagram):
-    """
-    A diagram that remembers a layering in the top dimension.
-    """
-    def __init__(self, fst, *others):
-        utils.typecheck(fst, {'type': Diagram})
-        dim = fst.dim
-
-        diagram = fst
-        layers = [fst.shape.id()]
-        for x in others:
-            utils.typecheck(x, {
-                'type': Diagram,
-                'st': lambda x: x.dim == dim,
-                'why': 'expecting diagram of dimension {}'.format(
-                    str(dim))})
-            diagram, cospan = diagram.paste(x, cospan=True)
-            layers = [
-                    *[f.then(cospan.fst) for f in layers],
-                    cospan.snd]
-
-        self._shape = diagram.shape
-        self._ambient = diagram.ambient
-        self._mapping = diagram.mapping
-        self._name = diagram.name
-
-        self._layers = layers
-
-    @property
-    def layers(self):
-        return [
-                self.pullback(f, 'layer {} of {}'.format(
-                    str(n), self.name))
-                for n, f in enumerate(self._layers)]
-
-    @property
-    def rewrite_steps(self):
-        rewrite_steps = [
-                *[layer.input for layer in self.layers],
-                self.layers[-1].output
-                ]
-        for n, step in enumerate(rewrite_steps):
-            step.rename('step {} of {}'.format(
-                    str(n), self.name))
-        return rewrite_steps
-
-    def concatenate(self, *others):
-        for x in others:
-            utils.typecheck(x, {'type': LayeredDiagram})
-
-        if len(others) == 0:
-            return self
-        if len(others) > 1:
-            return self.concatenate(
-                    others[0]).concatenate(others[1:])
-        other = others[0]
-        diagram, cospan = self.paste(other, cospan=True)
-
-        concat = Diagram.__new__(LayeredDiagram)
-        concat._shape = diagram.shape
-        concat._mapping = diagram.mapping
-        concat._ambient = diagram.ambient
-        concat._name = diagram.name
-
-        concat._layers = [
-            *[f.then(cospan.fst) for f in self._layers],
-            *[f.then(cospan.snd) for f in other._layers]]
-        return concat

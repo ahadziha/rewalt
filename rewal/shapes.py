@@ -635,7 +635,7 @@ class Shape(OgPoset):
                 for sort in all_sorts if test(sort)[0]
                 )
 
-    def get_layering(self):
+    def layering(self):
         """
         Returns one layering of an n-dimensional shape as a pasting
         of shapes with a single n-dimensional element.
@@ -730,6 +730,9 @@ class Shape(OgPoset):
                      wfcheck=False)
 
     def _flowgraph(self, grset):
+        """
+        The 'flow graph' of the set in the shape.
+        """
         flowgraph = nx.DiGraph()
         flowgraph.add_nodes_from(grset)
         if grset.dim > 0:
