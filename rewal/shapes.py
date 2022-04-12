@@ -779,11 +779,12 @@ class Shape(OgPoset):
         if fst.dim < 3:  # nothing else needs to be checked in dim <= 2
             return True
 
-        fst_sort = None
-        for sort in nx.all_topological_sorts(fst_flow):
-            if self._islayering(list(sort), fst):
-                fst_sort = list(sort)
-                break
+        fst_sort = next(
+                (
+                    list(sort)
+                    for sort in nx.all_topological_sorts(fst_flow)
+                    if self._islayering(list(sort), fst)
+                ), None)
         if fst_sort is None:  # cannot layer fst
             return False
 
