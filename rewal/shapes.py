@@ -611,7 +611,7 @@ class Shape(OgPoset):
         Returns an iterator on all layerings of a shape.
         """
         dim = self.dim
-        maximal = self.all().maximal().support
+        maximal = self.maximal().support
         topdim = maximal[dim]
         flow = self._flowgraph(topdim)
         all_sorts = nx.all_topological_sorts(flow)
@@ -767,10 +767,13 @@ class Shape(OgPoset):
         for e in fst_flow.edges:
             src = mapping[e[0]]
             tgt = mapping[e[1]]
-            snd_flow = nx.contracted_edge(
-                    snd_flow, (src, tgt), self_loops=False)
-            mapping[tgt] = src
-            remaining.remove(tgt)
+            if src != tgt:
+                snd_flow = nx.contracted_edge(
+                        snd_flow, (src, tgt), self_loops=False)
+                for x in mapping:
+                    if mapping[x] == tgt:
+                        mapping[x] = src
+                remaining.remove(tgt)
 
         if len(remaining) > 1:  # fst_flow not connected
             return False
