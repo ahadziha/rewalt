@@ -606,31 +606,41 @@ class Shape(OgPoset):
 
         return inheritance()._upgrademapsrc(proj)
 
-    def get_layering(self):
+    def all_layerings(self):
         """
-        Returns a layering of an n-dimensional shape as a pasting
-        of shapes with a single n-dimensional element.
+        Returns an iterator on all layerings of a shape.
         """
         dim = self.dim
         maximal = self.all().maximal().support
         topdim = maximal[dim]
         flow = self._flowgraph(topdim)
+        all_sorts = nx.all_topological_sorts(flow)
 
-        for sort in nx.all_topological_sorts(flow):
-            ok, layers = self._islayering(
-                    list(sort), maximal,
-                    layerlist=True)
-            if ok:
-                break
-        layering = []
-        for layer in layers:
-            oginclusion = GrSubset(
-                    layer, self, wfcheck=False).closure().as_map
-            inclusion = Shape._reorder(oginclusion.source).then(
-                    oginclusion)
-            layering.append(ShapeMap(inclusion, wfcheck=False))
+        def test(sort):
+            return self._islayering(
+                    list(sort), maximal, layerlist=True)
 
-        return layering
+        def layering(layers):
+            layering = []
+            for layer in layers:
+                oginclusion = GrSubset(
+                        layer, self, wfcheck=False).closure().as_map
+                inclusion = Shape._reorder(oginclusion.source).then(
+                        oginclusion)
+                layering.append(ShapeMap(inclusion, wfcheck=False))
+            return layering
+
+        return (
+                layering(test(sort)[1])
+                for sort in all_sorts if test(sort)[0]
+                )
+
+    def get_layering(self):
+        """
+        Returns one layering of an n-dimensional shape as a pasting
+        of shapes with a single n-dimensional element.
+        """
+        return next(self.all_layerings())
 
     # Private methods
     @staticmethod
