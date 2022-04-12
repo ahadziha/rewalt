@@ -595,8 +595,9 @@ class Diagram:
         self._name = name
 
     # Methods for creating new diagrams
-    def paste(self, other, dim=None,
-              cospan=False):
+    def paste(self, other, dim=None, **params):
+        cospan = params.get('cospan', False)
+
         utils.typecheck(other, {
                 'type': Diagram,
                 'st': lambda x: x.ambient == self.ambient,
@@ -622,8 +623,8 @@ class Diagram:
             return pasted, paste_cospan
         return pasted
 
-    def to_outputs(self, positions, other, dim=None,
-                   cospan=False):
+    def to_outputs(self, positions, other, dim=None, **params):
+        cospan = params.get('cospan', False)
         if isinstance(positions, int):
             positions = [positions]
         if dim is None:
@@ -647,8 +648,8 @@ class Diagram:
             return pasted, paste_cospan
         return pasted
 
-    def to_inputs(self, positions, other, dim=None,
-                  cospan=False):
+    def to_inputs(self, positions, other, dim=None, **params):
+        cospan = params.get('cospan', False)
         if isinstance(positions, int):
             positions = [positions]
         if dim is None:

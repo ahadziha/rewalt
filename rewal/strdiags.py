@@ -456,9 +456,9 @@ def draw(*diagrams, **params):
         StrDiag(diagram).draw(**params)
 
 
-def draw_boundaries(diagram, **params):
+def draw_boundaries(diagram, dim=None, **params):
     """
     Draws the input and the output boundaries of a diagram.
     """
-    StrDiag(diagram.input).draw(**params)
-    StrDiag(diagram.output).draw(**params)
+    StrDiag(diagram.boundary('-', dim)).draw(**params)
+    StrDiag(diagram.boundary('+', dim)).draw(**params)

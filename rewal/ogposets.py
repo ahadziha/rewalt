@@ -56,8 +56,9 @@ class OgPoset:
     Class for oriented graded posets.
     """
 
-    def __init__(self, face_data, coface_data,
-                 wfcheck=True, matchcheck=True):
+    def __init__(self, face_data, coface_data, **params):
+        wfcheck = params.get('wfcheck', True)
+        matchcheck = params.get('matchcheck', True)
         if wfcheck:
             OgPoset._wfcheck(face_data)
 
@@ -81,7 +82,7 @@ class OgPoset:
 
     def __str__(self):
         return "{} with {} elements".format(
-                type(self).__name__, len(self))
+                type(self).__name__, str(self.size))
 
     def __getitem__(self, key):
         return self.all()[key]
@@ -745,8 +746,8 @@ class GrSubset:
     is seen as a subset of the ambient.
     """
 
-    def __init__(self, support, ambient,
-                 wfcheck=True):
+    def __init__(self, support, ambient, **params):
+        wfcheck = params.get('wfcheck', True)
         if wfcheck:
             GrSubset._wfcheck(support, ambient)
 
@@ -931,9 +932,9 @@ class Closed(GrSubset):
     """
     Subclass of GrSubset for closed subsets of oriented graded posets.
     """
-    def __init__(self, support, ambient,
-                 wfcheck=True):
-        super().__init__(support, ambient, wfcheck)
+    def __init__(self, support, ambient, **params):
+        wfcheck = params.get('wfcheck', True)
+        super().__init__(support, ambient, **params)
 
         if wfcheck:
             if not self.isclosed:
@@ -1057,8 +1058,8 @@ class OgMap:
     Class for (partial) maps of oriented graded posets.
     """
 
-    def __init__(self, source, target, mapping=None,
-                 wfcheck=True):
+    def __init__(self, source, target, mapping=None, **params):
+        wfcheck = params.get('wfcheck', True)
         if wfcheck:
             OgMap._wfcheck(source, target, mapping)
 

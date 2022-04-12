@@ -32,13 +32,14 @@ class Shape(OgPoset):
 
     # Main constructors
     @staticmethod
-    def atom(fst, snd,
-             cospan=False):
+    def atom(fst, snd, **params):
         """
         Given two shapes with identical round boundaries, returns a new
         atomic shape whose input boundary is the first one and output
         boundary the second one.
         """
+        cospan = params.get('cospan', False)
+
         for u in fst, snd:
             utils.typecheck(u, {
                 'type': Shape,
@@ -119,17 +120,17 @@ class Shape(OgPoset):
         atom = Shape._reorder(ogatom).source
         return inheritance()._upgrade(atom)
 
-    def _atom(self, other,
-              cospan=False):
-        return Shape.atom(self, other, cospan)
+    def _atom(self, other, **params):
+        return Shape.atom(self, other, **params)
 
     @staticmethod
-    def paste(fst, snd, dim=None,
-              cospan=False):
+    def paste(fst, snd, dim=None, **params):
         """
         Returns the pasting of two shapes along the output k-boundary
         of the first and the input k-boundary of the second.
         """
+        cospan = params.get('cospan', False)
+
         for u in fst, snd:
             utils.typecheck(u, {'type': Shape})
         if dim is None:  # default is principal composition
@@ -175,20 +176,20 @@ class Shape(OgPoset):
         paste = Shape._reorder(pushout.target).source
         return inheritance()._upgrade(paste)
 
-    def _paste(self, other, dim=None,
-               cospan=False):
-        return Shape.paste(self, other, dim, cospan)
+    def _paste(self, other, dim=None, **params):
+        return Shape.paste(self, other, dim, **params)
 
     # Other constructors
     @staticmethod
-    def paste_along(fst, snd,
-                    cospan=False,
-                    wfcheck=True):
+    def paste_along(fst, snd, **params):
         """
         Returns the pasting of two shapes along the entire input
         (output) k-boundary of one, and a subshape of the output
         (input) k-boundary of the other.
         """
+        wfcheck = params.get('wfcheck', True)
+        cospan = params.get('cospan', False)
+
         span = OgMapPair(fst, snd)
         utils.typecheck(span, {
             'type': OgMapPair,
@@ -245,8 +246,7 @@ class Shape(OgPoset):
         paste = Shape._reorder(pushout.target).source
         return inheritance()._upgrade(paste)
 
-    def to_outputs(self, positions, other, dim=None,
-                   cospan=False):
+    def to_outputs(self, positions, other, dim=None, **params):
         """
         Paste along the inclusion of several outputs.
         """
@@ -273,11 +273,9 @@ class Shape(OgPoset):
                     repr(other))))
         return Shape.paste_along(
             inclusion,
-            other_boundary,
-            cospan=cospan, wfcheck=False)
+            other_boundary, wfcheck=False, **params)
 
-    def to_inputs(self, positions, other, dim=None,
-                  cospan=False):
+    def to_inputs(self, positions, other, dim=None, **params):
         """
         Paste along the inclusion of several outputs.
         """
@@ -305,7 +303,7 @@ class Shape(OgPoset):
         return Shape.paste_along(
             other_boundary,
             inclusion,
-            cospan=cospan, wfcheck=False)
+            wfcheck=False, **params)
 
     @staticmethod
     def suspend(shape, n=1):
@@ -381,8 +379,9 @@ class Shape(OgPoset):
         return inheritance(shapes)._upgrade(join)
 
     @staticmethod
-    def dual(shape, *dims,
-             reordering=False):
+    def dual(shape, *dims, **params):
+        reordering = params.get('reordering', False)
+
         reordermap = Shape._reorder(OgPoset.dual(shape, *dims))
         dual = reordermap.source
         if shape == dual:
@@ -731,12 +730,13 @@ class Shape(OgPoset):
                         flowgraph.add_edge(x, y)
         return flowgraph
 
-    def _ispastable(self, fst, snd,
-                    wfcheck=True):
+    def _ispastable(self, fst, snd, **params):
         """
         Returns whether fst is a 'pastable', round region of snd
         (both given just as GrSets of maximal elements)
         """
+        wfcheck = params.get('wfcheck', True)
+
         if wfcheck:
             if not fst.issubset(snd):
                 return False
@@ -791,12 +791,13 @@ class Shape(OgPoset):
                 return True
         return False
 
-    def _islayering(self, ellist, grset,
-                    layerlist=False):
+    def _islayering(self, ellist, grset, **params):
         """
         Returns whether a list of top-dimensional elements is a valid
         layering of a molecule (given as its set of maximal elements)
         """
+        layerlist = params.get('layerlist', False)
+
         dim = grset.dim
         top_dim = grset[dim]
 
@@ -1067,7 +1068,8 @@ class ShapeMap(OgMap):
     An OgMap overlay for total maps between Shape objects.
     """
 
-    def __init__(self, ogmap, wfcheck=True):
+    def __init__(self, ogmap, **params):
+        wfcheck = params.get('wfcheck', True)
         if wfcheck:
             utils.typecheck(ogmap, {
                 'type': OgMap,
