@@ -30,6 +30,14 @@ class Shape(OgPoset):
         """
         return self.all().isround
 
+    @property
+    def layers(self):
+        return self.id().layers
+
+    @property
+    def rewrite_steps(self):
+        return self.id().rewrite_steps
+
     # Main constructors
     @staticmethod
     def atom(fst, snd, **params):
@@ -156,6 +164,7 @@ class Shape(OgPoset):
             return OgMapPair(fst.id(), span.fst) if cospan else fst
 
         pushout = span.pushout(wfcheck=False)
+        paste_cospan = pushout.then(Shape._reorder(pushout.target).inv())
 
         def inheritance():
             if isinstance(fst, Theta) and isinstance(snd, Theta):
@@ -169,12 +178,27 @@ class Shape(OgPoset):
                 return OpetopeTree
             return Shape
 
-        if cospan:
-            paste_cospan = pushout.then(Shape._reorder(pushout.target).inv())
-            return inheritance()._upgrademaptgt(paste_cospan)
+        paste_cospan = inheritance()._upgrademaptgt(paste_cospan)
 
-        paste = Shape._reorder(pushout.target).source
-        return inheritance()._upgrade(paste)
+        if fst.dim == snd.dim == dim + 1:  # add layering
+            if hasattr(fst, '_layering') and len(fst[fst.dim]) > 1:
+                layering_fst = fst._layering
+            else:
+                layering_fst = [fst.id()]
+
+            if hasattr(snd, '_layering') and len(snd[snd.dim]) > 1:
+                layering_snd = snd._layering
+            else:
+                layering_snd = [snd.id()]
+
+            layering = [
+                *[f.then(paste_cospan.fst) for f in layering_fst],
+                *[f.then(paste_cospan.snd) for f in layering_snd]]
+            paste_cospan.target._layering = layering
+
+        if cospan:
+            return paste_cospan
+        return paste_cospan.target
 
     def _paste(self, other, dim=None, **params):
         return Shape.paste(self, other, dim, **params)
@@ -635,12 +659,19 @@ class Shape(OgPoset):
                 for sort in all_sorts if test(sort)[0]
                 )
 
-    def layering(self):
+    def generate_layering(self):
         """
-        Returns one layering of an n-dimensional shape as a pasting
-        of shapes with a single n-dimensional element.
+        Iterates through layerings.
         """
-        return next(self.all_layerings())
+        if not hasattr(self, '_layering_gen'):
+            self._layering_gen = self.all_layerings()
+        try:
+            self._layering = next(self._layering_gen)
+        except StopIteration:
+            self._layering_gen = self.all_layerings()
+            self._layering = next(self._layering_gen)
+
+        return self.layers
 
     # Private methods
     @staticmethod
@@ -1106,6 +1137,23 @@ class ShapeMap(OgMap):
                 super().then(other, *others),
                 wfcheck=False)
 
+    @property
+    def layers(self):
+        if not hasattr(self.source, '_layering'):
+            return [self]
+        return [
+                f.then(self)
+                for f in self.source._layering
+            ]
+
+    @property
+    def rewrite_steps(self):
+        rewrite_steps = [
+                *[layer.input for layer in self.layers],
+                self.layers[-1].output
+                ]
+        return rewrite_steps
+
     @staticmethod
     def gray(*maps):
         for f in maps:
@@ -1184,3 +1232,6 @@ class ShapeMap(OgMap):
         return inheritance(shapemap.source, dual.source)._upgrademapsrc(
                 inheritance(shapemap.target, dual.target)._upgrademaptgt(
                     dual))
+
+    def generate_layering(self):
+        self.source.generate_layering()

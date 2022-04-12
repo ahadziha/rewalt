@@ -497,7 +497,6 @@ class Diagram:
         self._ambient = ambient
         self._mapping = []
         self._name = ''
-        self._layering = None
 
     def __str__(self):
         return str(self.name)
@@ -541,12 +540,12 @@ class Diagram:
 
     @property
     def layers(self):
-        if self._layering is None:
+        if not hasattr(self.shape, '_layering'):
             return [self]
         return [
                 self.pullback(f, 'layer {} of {}'.format(
                     str(n), self.name))
-                for n, f in enumerate(self._layering)]
+                for n, f in enumerate(self.shape._layering)]
 
     @property
     def rewrite_steps(self):
@@ -635,23 +634,11 @@ class Diagram:
         name = '({}) #{} ({})'.format(
                 str(self.name), str(dim), str(other.name))
 
-        if dim == min(self.dim, other.dim) - 1:
-            layering_fst = self._layering if self._layering is not None \
-                else [self.shape.id()]
-            layering_snd = other._layering if other._layering is not None \
-                else [other.shape.id()]
-            layering = [
-                *[f.then(paste_cospan.fst) for f in layering_fst],
-                *[f.then(paste_cospan.snd) for f in layering_snd]]
-        else:
-            layering = None
-
         pasted = Diagram._new(
                 shape,
                 self.ambient,
                 mapping,
-                name,
-                layering)
+                name)
         if cospan:
             return pasted, paste_cospan
         return pasted
@@ -985,13 +972,8 @@ class Diagram:
         """
         Iterates through layerings of the diagram.
         """
-        if not hasattr(self, '_layering_gen'):
-            self._layering_gen = self.shape.all_layerings()
-        try:
-            self._layering = next(self._layering_gen)
-        except StopIteration:
-            self._layering_gen = self.shape.all_layerings()
-            self._layering = next(self._layering_gen)
+        self.shape.generate_layering()
+        return self.layers
 
     # Alternative constructors
     @staticmethod
@@ -1010,7 +992,6 @@ class Diagram:
         dim = fst.dim
 
         diagram = fst
-        layering = [fst.shape.id()]
         for x in layers:
             utils.typecheck(x, {
                 'type': Diagram,
@@ -1018,21 +999,16 @@ class Diagram:
                 'why': 'expecting diagram of dimension {}'.format(
                     str(dim))})
             diagram, cospan = diagram.paste(x, cospan=True)
-            layering = [
-                    *[f.then(cospan.fst) for f in layering],
-                    cospan.snd]
 
         return Diagram._new(
                 diagram.shape,
                 diagram.ambient,
                 diagram.mapping,
-                diagram.name,
-                layering)
+                diagram.name)
 
     # Internal methods
     @staticmethod
-    def _new(shape, ambient, mapping, name=None,
-             layering=None):
+    def _new(shape, ambient, mapping, name=None):
         def diagramclass():
             if isinstance(shape, rewal.shapes.Point):
                 return PointDiagram
@@ -1049,7 +1025,6 @@ class Diagram:
         new._ambient = ambient
         new._mapping = mapping
         new._name = name
-        new._layering = layering
         return new
 
     def _find_compositor(self):
