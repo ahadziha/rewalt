@@ -19,6 +19,7 @@ class DiagSet:
             'inverse',
             'linvertor',
             'rinvertor',
+            'inverts',
             'compositor',
             'composite')
 
@@ -215,6 +216,8 @@ class DiagSet:
         """
         Adds an inverse and 'invertors' for a generator.
         """
+        if isinstance(name, Diagram):
+            name = name.name
         generator = self[name]
         if generator.dim == 0:
             raise ValueError(utils.value_err(
@@ -258,6 +261,10 @@ class DiagSet:
             'inverse': name,
             'rinvertor': linvertorname,
             'linvertor': rinvertorname})
+        self._generators[rinvertorname].update({
+            'inverts': (name, inversename)})
+        self._generators[linvertorname].update({
+            'inverts': (inversename, name)})
 
         return inverse, rinvertor, linvertor
 
@@ -267,6 +274,9 @@ class DiagSet:
         """
         Makes two pre-existing cells each other's inverse.
         """
+        for x in (name1, name2):
+            if isinstance(x, Diagram):
+                x = x.name
         generator1 = self[name1]
         generator2 = self[name2]
 
@@ -311,11 +321,15 @@ class DiagSet:
             'inverse': name2,
             'rinvertor': rinvertorname,
             'linvertor': linvertorname})
+        self._generators[rinvertorname].update({
+            'inverts': (name1, name2)})
         if not selfinverse:
             self._generators[name2].update({
                 'inverse': name1,
                 'rinvertor': linvertorname,
                 'linvertor': rinvertorname})
+            self._generators[linvertorname].update({
+                'inverts': (name2, name1)})
 
         return rinvertor, linvertor
 
@@ -371,6 +385,8 @@ class DiagSet:
         """
         Removes a generator.
         """
+        if isinstance(name, Diagram):
+            name = name.name
         to_remove = [*self.generators[name]['cofaces']]
         for x in to_remove:
             self.remove(x)
@@ -385,6 +401,15 @@ class DiagSet:
             self.generators[inverse].pop('inverse', None)
             self.generators[inverse].pop('linvertor', None)
             self.generators[inverse].pop('rinvertor', None)
+
+        if 'inverts' in self.generators[name]:
+            fst, snd = self.generators[name]['inverts']
+            linvertor = self.generators[fst]['linvertor']
+            for x in (fst, snd):
+                self.generators[x].pop('inverse', None)
+                self.generators[x].pop('linvertor', None)
+                self.generators[x].pop('rinvertor', None)
+            self.generators[linvertor].pop('inverts', None)
 
         if 'composite' in self.generators[name]:
             # This does not remove the composite!
@@ -401,6 +426,8 @@ class DiagSet:
         """
         Updates the optional arguments of a generator.
         """
+        if isinstance(name, Diagram):
+            name = name.name
         for key in self._PRIVATE:
             if key in kwargs:
                 raise AttributeError(key, 'private attribute')
