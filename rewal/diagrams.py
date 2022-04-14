@@ -208,7 +208,7 @@ class DiagSet:
 
         return self[name]
 
-    def invert(self, name,
+    def invert(self, generatorname,
                inversename=None,
                rinvertorname=None,
                linvertorname=None,
@@ -216,28 +216,28 @@ class DiagSet:
         """
         Adds an inverse and 'invertors' for a generator.
         """
-        if isinstance(name, Diagram):
-            name = name.name
-        generator = self[name]
+        if isinstance(generatorname, Diagram):
+            generatorname = generatorname.name
+        generator = self[generatorname]
         if generator.dim == 0:
             raise ValueError(utils.value_err(
-                name, 'cannot invert 0-cell'))
+                generatorname, 'cannot invert 0-cell'))
         if generator.isinvertiblecell:
             raise ValueError(utils.value_err(
-                name, 'already inverted'))
+                generatorname, 'already inverted'))
 
         if inversename is None:
-            inversename = '{}⁻¹'.format(str(name))
+            inversename = '{}⁻¹'.format(str(generatorname))
         if rinvertorname is None:
             rinvertorname = 'inv({}, {})'.format(
-                    str(name), str(inversename))
+                    str(generatorname), str(inversename))
         if linvertorname is None:
             linvertorname = 'inv({}, {})'.format(
-                    str(inversename), str(name))
+                    str(inversename), str(generatorname))
         for x in (inversename, rinvertorname, linvertorname):
             if x in self.generators:
                 raise ValueError(utils.value_err(
-                    name, 'name already in use'))
+                    generatorname, 'name already in use'))
 
         inverse = self.add(
                 inversename,
@@ -253,34 +253,34 @@ class DiagSet:
                 inverse.paste(generator),
                 generator.output.unit())
 
-        self._generators[name].update({
+        self._generators[generatorname].update({
             'inverse': inversename,
             'rinvertor': rinvertorname,
             'linvertor': linvertorname})
         self._generators[inversename].update({
-            'inverse': name,
+            'inverse': generatorname,
             'rinvertor': linvertorname,
             'linvertor': rinvertorname})
         self._generators[rinvertorname].update({
-            'inverts': (name, inversename)})
+            'inverts': (generatorname, inversename)})
         self._generators[linvertorname].update({
-            'inverts': (inversename, name)})
+            'inverts': (inversename, generatorname)})
 
         return inverse, rinvertor, linvertor
 
-    def make_inverses(self, name1, name2,
+    def make_inverses(self, generatorname1, generatorname2,
                       rinvertorname=None,
                       linvertorname=None):
         """
         Makes two pre-existing cells each other's inverse.
         """
-        for x in (name1, name2):
+        for x in (generatorname1, generatorname2):
             if isinstance(x, Diagram):
                 x = x.name
-        generator1 = self[name1]
-        generator2 = self[name2]
+        generator1 = self[generatorname1]
+        generator2 = self[generatorname2]
 
-        selfinverse = name1 == name2
+        selfinverse = generatorname1 == generatorname2
         for x in (generator1, generator2):
             if x.isinvertiblecell:
                 raise ValueError(utils.value_err(
@@ -289,7 +289,7 @@ class DiagSet:
         rpaste = generator1.paste(generator2)
         if rinvertorname is None:
             rinvertorname = 'inv({}, {})'.format(
-                    str(name1), str(name2))
+                    str(generatorname1), str(generatorname2))
 
         if selfinverse:
             lpaste = rpaste
@@ -298,7 +298,7 @@ class DiagSet:
             lpaste = generator2.paste(generator1)
             if linvertorname is None:
                 linvertorname = 'inv({}, {})'.format(
-                        str(name2), str(name1))
+                        str(generatorname2), str(generatorname1))
 
         for x in (rinvertorname, linvertorname):
             if x in self.generators:
@@ -317,19 +317,19 @@ class DiagSet:
                     lpaste,
                     generator2.input.unit())
 
-        self._generators[name1].update({
-            'inverse': name2,
+        self._generators[generatorname1].update({
+            'inverse': generatorname2,
             'rinvertor': rinvertorname,
             'linvertor': linvertorname})
         self._generators[rinvertorname].update({
-            'inverts': (name1, name2)})
+            'inverts': (generatorname1, generatorname2)})
         if not selfinverse:
-            self._generators[name2].update({
-                'inverse': name1,
+            self._generators[generatorname2].update({
+                'inverse': generatorname1,
                 'rinvertor': linvertorname,
                 'linvertor': rinvertorname})
             self._generators[linvertorname].update({
-                'inverts': (name2, name1)})
+                'inverts': (generatorname2, generatorname1)})
 
         return rinvertor, linvertor
 
@@ -363,7 +363,6 @@ class DiagSet:
                 diagram.input,
                 diagram.output,
                 **kwargs)
-
         compositor = self.add(
                 compositorname,
                 diagram,
@@ -381,29 +380,69 @@ class DiagSet:
 
         return composite, compositor
 
-    def remove(self, name):
+    def make_composite(self, diagram, generatorname,
+                       compositorname=None):
+        """
+        Makes a pre-existing generator the composite of a diagram.
+        """
+        if isinstance(generatorname, Diagram):
+            generatorname = generatorname.name
+        utils.typecheck(diagram, {
+            'type': Diagram,
+            'st': lambda x: x.shape.isround,
+            'why': 'composable diagrams must have round shape'})
+
+        if diagram.hascomposite:
+            raise ValueError(utils.value_err(
+                diagram, 'already has a composite'))
+
+        if compositorname is None:
+            compositorname = 'comp({})'.format(str(diagram.name))
+        if compositorname in self.generators:
+            raise ValueError(utils.value_err(
+                compositorname, 'name already in use'))
+
+        generator = self[generatorname]
+        compositor = self.add(
+                compositorname,
+                diagram,
+                generator)
+
+        self._generators[generatorname].update({
+            'compositor': compositorname})
+        self._generators[compositorname].update({
+            'composite': generatorname})
+        self._compositors.update({
+            compositorname: {
+                'shape': diagram.shape,
+                'mapping': diagram.mapping}
+            })
+
+        return compositor
+
+    def remove(self, generatorname):
         """
         Removes a generator.
         """
-        if isinstance(name, Diagram):
-            name = name.name
-        to_remove = [*self.generators[name]['cofaces']]
+        if isinstance(generatorname, Diagram):
+            generatorname = generatorname.name
+        to_remove = [*self.generators[generatorname]['cofaces']]
         for x in to_remove:
             self.remove(x)
 
-        dim = self[name].dim
-        self._by_dim[dim].remove(name)
+        dim = self[generatorname].dim
+        self._by_dim[dim].remove(generatorname)
         if len(self._by_dim[dim]) == 0:
             self._by_dim.pop(dim, None)
 
-        if 'inverse' in self.generators[name]:
-            inverse = self.generators[name]['inverse']
+        if 'inverse' in self.generators[generatorname]:
+            inverse = self.generators[generatorname]['inverse']
             self.generators[inverse].pop('inverse', None)
             self.generators[inverse].pop('linvertor', None)
             self.generators[inverse].pop('rinvertor', None)
 
-        if 'inverts' in self.generators[name]:
-            fst, snd = self.generators[name]['inverts']
+        if 'inverts' in self.generators[generatorname]:
+            fst, snd = self.generators[generatorname]['inverts']
             linvertor = self.generators[fst]['linvertor']
             for x in (fst, snd):
                 self.generators[x].pop('inverse', None)
@@ -411,27 +450,27 @@ class DiagSet:
                 self.generators[x].pop('rinvertor', None)
             self.generators[linvertor].pop('inverts', None)
 
-        if 'composite' in self.generators[name]:
+        if 'composite' in self.generators[generatorname]:
             # This does not remove the composite!
-            composite = self.generators[name]['composite']
+            composite = self.generators[generatorname]['composite']
             self.generators[composite].pop('compositor', None)
-            self.compositors.pop(name, None)
+            self.compositors.pop(generatorname, None)
 
-        for x in self.generators[name]['faces']:
-            self.generators[x]['cofaces'].remove(name)
+        for x in self.generators[generatorname]['faces']:
+            self.generators[x]['cofaces'].remove(generatorname)
 
-        self.generators.pop(name, None)
+        self.generators.pop(generatorname, None)
 
-    def update(self, name, **kwargs):
+    def update(self, generatorname, **kwargs):
         """
         Updates the optional arguments of a generator.
         """
-        if isinstance(name, Diagram):
-            name = name.name
+        if isinstance(generatorname, Diagram):
+            generatorname = generatorname.name
         for key in self._PRIVATE:
             if key in kwargs:
                 raise AttributeError(key, 'private attribute')
-        self.generators[name].update(kwargs)
+        self.generators[generatorname].update(kwargs)
 
     def copy(self):
         new = DiagSet()
