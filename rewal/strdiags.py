@@ -386,34 +386,34 @@ class TikZBackend(DrawBackend):
         Draws a wire from a wire vertex to a node vertex.
         """
         width = .02
-        # TODO: make it change with orientation
-        in_angle = 90 if node_xy[1] > wire_xy[1] else -90
-        out_angle = 0 if node_xy[0] < wire_xy[0] else 180 if \
-            node_xy[0] > wire_xy[0] else -in_angle
 
-        contour = '\\path[fill, color={}] {} to [out={}, in={}] {} to '\
-            '{} [out={}, in={}] {};\n'.format(
+        def to_cubic(p0, p1, p2):
+            control1 = (p0[0]/3 + 2*p1[0]/3, p0[1]/3 + 2*p1[1]/3)
+            control2 = (2*p1[0]/3 + p2[0]/3, 2*p1[1]/3 + p2[1]/3)
+            return p0, control1, control2, p2
+
+        contour = '\\path[fill, color={}] {} .. controls {} and {} .. {} '\
+            'to {} .. controls {} and {} .. {};\n'.format(
                     self.bgcolor,
-                    self.rotate(node_xy),
-                    out_angle,
-                    in_angle,
-                    self.rotate(
-                        (wire_xy[0] - (width/2), wire_xy[1])),
-                    self.rotate(
-                        (wire_xy[0] + (width/2), wire_xy[1])),
-                    in_angle,
-                    out_angle,
-                    self.rotate(node_xy)
-                    )
-        wire = '\\draw[color={}, opacity={}] {} '\
-            'to [out={}, in={}] {};\n'.format(
+                    *[self.rotate(p) for p in to_cubic(
+                        node_xy,
+                        (wire_xy[0] - (width/2), node_xy[1]),
+                        (wire_xy[0] - (width/2), wire_xy[1])
+                        )],
+                    *[self.rotate(p) for p in to_cubic(
+                        (wire_xy[0] + (width/2), wire_xy[1]),
+                        (wire_xy[0] + (width/2), node_xy[1]),
+                        node_xy)]
+                   )
+        wire = '\\draw[color={}, opacity={}] {} .. controls {} and {} .. '\
+            '{};\n'.format(
                     color,
                     self.degenalpha if isdegenerate else 1,
-                    self.rotate(node_xy),
-                    out_angle,
-                    in_angle,
-                    self.rotate(wire_xy)
-                    )
+                    *[self.rotate(p) for p in to_cubic(
+                        node_xy,
+                        (wire_xy[0], node_xy[1]),
+                        wire_xy)]
+                   )
         self.wirelayer.append(contour)
         self.wirelayer.append(wire)
 
@@ -478,21 +478,19 @@ class MatBackend(DrawBackend):
         """
         Draws a wire from a wire vertex to a node vertex.
         """
-        y_offset = 0
-        # y_offset = .2*(wire_xy[1] - node_xy[1])
         width = .02
 
         contour = Path(
                 [
                     self.rotate(node_xy),
                     self.rotate(
-                        (wire_xy[0] - (width/2), node_xy[1] + y_offset)),
+                        (wire_xy[0] - (width/2), node_xy[1])),
                     self.rotate(
                         (wire_xy[0] - (width/2), wire_xy[1])),
                     self.rotate(
                         (wire_xy[0] + (width/2), wire_xy[1])),
                     self.rotate(
-                        (wire_xy[0] + (width/2), node_xy[1] + y_offset)),
+                        (wire_xy[0] + (width/2), node_xy[1])),
                     self.rotate(node_xy)
                 ], [
                     Path.MOVETO,
@@ -506,7 +504,7 @@ class MatBackend(DrawBackend):
                 [
                     self.rotate(wire_xy),
                     self.rotate(
-                        (wire_xy[0], node_xy[1] + y_offset)),
+                        (wire_xy[0], node_xy[1])),
                     self.rotate(node_xy)
                 ], [
                     Path.MOVETO,
