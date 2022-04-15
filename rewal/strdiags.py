@@ -421,8 +421,8 @@ class TikZBackend(DrawBackend):
         color = params.get('color', self.fgcolor)
 
         xy = self.rotate(xy)
-        label = '\\node[text={}, xshift={}pt, '\
-            'yshift={}pt] at {} {{$\\scriptstyle {}$}};\n'.format(
+        label = '\\node[text={}, font={{\\scriptsize \\sffamily}}, '\
+            'xshift={}pt, yshift={}pt] at {} {{{}}};\n'.format(
                 color,
                 offset[0],
                 offset[1],
@@ -439,18 +439,12 @@ class TikZBackend(DrawBackend):
 
     def output(self, path=None, show=True):
         lines = [
-                '\\begin{tikzpicture}[scale=2]\n',
+                '\\begin{tikzpicture}[scale=3]\n',
                 '\\path[fill={}] (0, 0) rectangle (1, 1);\n'.format(
                     self.bgcolor),
-                # '\\begin{pgfonlayer}{wirelayer}\n',
                 *self.wirelayer,
-                # '\\end{pgfonlayer}\n',
-                # '\\begin{pgfonlayer}{nodelayer}\n',
                 *self.nodelayer,
-                # '\\end{pgfonlayer}\n',
-                # '\\begin{pgfonlayer}{labellayer}\n',
                 *self.labellayer,
-                # '\\end{pgfonlayer}\n',
                 '\\end{tikzpicture}']
         if path is not None:
             with open(path, 'w+') as file:
@@ -526,8 +520,6 @@ class MatBackend(DrawBackend):
 
     def draw_label(self, label, xy, offset, **params):
         color = params.get('color', self.fgcolor)
-        size = params.get('size', 'medium')
-        weight = params.get('weight', 'regular')
 
         xy = self.rotate(xy)
         xytext = (xy[0] + offset[0], xy[1] + offset[1])
@@ -536,9 +528,7 @@ class MatBackend(DrawBackend):
                 xy,
                 xytext=xytext,
                 textcoords='offset pixels',
-                color=color,
-                fontsize=size,
-                fontweight=weight)
+                color=color)
 
     def draw_node(self, xy, color, stroke):
         xy = self.rotate(xy)
