@@ -246,7 +246,9 @@ class StrDiag:
         Draws the string diagram with a backend.
         """
         # Parameters
+        tikz = params.get('tikz', False)
         show = params.get('show', True)
+        path = params.get('path', None)
 
         bgcolor = params.get('bgcolor', 'white')
         fgcolor = params.get('fgcolor', 'black')
@@ -269,7 +271,9 @@ class StrDiag:
         orientation = params.get('orientation', 'bt')
 
         coord = self.place_vertices()
-        backend = MatBackend(
+
+        backendclass = TikZBackend if tikz else MatBackend
+        backend = backendclass(
                 bgcolor=bgcolor,
                 fgcolor=fgcolor,
                 orientation=orientation,
@@ -343,8 +347,7 @@ class StrDiag:
                         positionoffset,
                         color=infocolor)
 
-        if show:
-            backend.show()
+        backend.output(path=path, show=show)
 
 
 class DrawBackend(ABC):
@@ -363,6 +366,97 @@ class DrawBackend(ABC):
         if self.orientation == 'rl':
             return (1-xy[1], 1-xy[0])
         return xy
+
+
+class TikZBackend(DrawBackend):
+    """
+    TikZ drawing backend.
+    """
+    def __init__(self, **params):
+        super().__init__(**params)
+        self.bg = '\\path[fill, color={}] (0, 0) rectangle (1, 1)'.format(
+                self.bgcolor)
+        self.wirelayer = []
+        self.nodelayer = []
+        self.labellayer = []
+
+    def draw_wire(self, wire_xy, node_xy,
+                  color, isdegenerate):
+        """
+        Draws a wire from a wire vertex to a node vertex.
+        """
+        width = .02
+        # TODO: make it change with orientation
+        in_angle = 90 if node_xy[1] > wire_xy[1] else -90
+        out_angle = 0 if node_xy[0] < wire_xy[0] else 180 if \
+            node_xy[0] > wire_xy[0] else -in_angle
+
+        contour = '\\path[fill, color={}] {} to [out={}, in={}] {} to '\
+            '{} [out={}, in={}] {};\n'.format(
+                    self.bgcolor,
+                    self.rotate(node_xy),
+                    out_angle,
+                    in_angle,
+                    self.rotate(
+                        (wire_xy[0] - (width/2), wire_xy[1])),
+                    self.rotate(
+                        (wire_xy[0] + (width/2), wire_xy[1])),
+                    in_angle,
+                    out_angle,
+                    self.rotate(node_xy)
+                    )
+        wire = '\\draw[color={}, opacity={}] {} '\
+            'to [out={}, in={}] {};\n'.format(
+                    color,
+                    self.degenalpha if isdegenerate else 1,
+                    self.rotate(node_xy),
+                    out_angle,
+                    in_angle,
+                    self.rotate(wire_xy)
+                    )
+        self.wirelayer.append(contour)
+        self.wirelayer.append(wire)
+
+    def draw_label(self, label, xy, offset, **params):
+        color = params.get('color', self.fgcolor)
+
+        xy = self.rotate(xy)
+        label = '\\node[text={}, xshift={}pt, '\
+            'yshift={}pt] at {} {{$\\scriptstyle {}$}};\n'.format(
+                color,
+                offset[0],
+                offset[1],
+                xy,
+                label)
+        self.labellayer.append(label)
+
+    def draw_node(self, xy, color, stroke):
+        xy = self.rotate(xy)
+        node = '\\node[circle, fill={}, draw={}, inner sep=1pt] '\
+            'at {} {{}};\n'.format(
+                    color, stroke, xy)
+        self.nodelayer.append(node)
+
+    def output(self, path=None, show=True):
+        lines = [
+                '\\begin{tikzpicture}[scale=2]\n',
+                '\\path[fill={}] (0, 0) rectangle (1, 1);\n'.format(
+                    self.bgcolor),
+                # '\\begin{pgfonlayer}{wirelayer}\n',
+                *self.wirelayer,
+                # '\\end{pgfonlayer}\n',
+                # '\\begin{pgfonlayer}{nodelayer}\n',
+                *self.nodelayer,
+                # '\\end{pgfonlayer}\n',
+                # '\\begin{pgfonlayer}{labellayer}\n',
+                *self.labellayer,
+                # '\\end{pgfonlayer}\n',
+                '\\end{tikzpicture}']
+        if path is not None:
+            with open(path, 'w+') as file:
+                file.writelines(lines)
+        if show:
+            print(''.join(lines))
 
 
 class MatBackend(DrawBackend):
@@ -457,11 +551,12 @@ class MatBackend(DrawBackend):
                 c=color,
                 edgecolors=stroke)
 
-    def show(self):
+    def output(self, path=None, show=True):
         self.fig.subplots_adjust(
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         self.fig.canvas.manager.set_window_title(self.name)
-        self.fig.show()
+        if show:
+            self.fig.show()
 
 
 def draw(*diagrams, **params):
