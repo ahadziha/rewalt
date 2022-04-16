@@ -2,9 +2,13 @@
 Implements string diagram visualisations.
 """
 
+import os
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+
 from abc import ABC
 
 import networkx as nx
+from PIL import Image
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -446,11 +450,11 @@ class TikZBackend(DrawBackend):
                 *self.nodelayer,
                 *self.labellayer,
                 '\\end{tikzpicture}']
+        if show:
+            print(''.join(lines))
         if path is not None:
             with open(path, 'w+') as file:
                 file.writelines(lines)
-        if show:
-            print(''.join(lines))
 
 
 class MatBackend(DrawBackend):
@@ -545,6 +549,9 @@ class MatBackend(DrawBackend):
         self.fig.canvas.manager.set_window_title(self.name)
         if show:
             self.fig.show()
+        if path is not None:
+            self.fig.savefig(path)
+            plt.close(self.fig)
 
 
 def draw(*diagrams, **params):
@@ -558,3 +565,28 @@ def draw_boundaries(diagram, dim=None, **params):
     """
     StrDiag(diagram.boundary('-', dim)).draw(**params)
     StrDiag(diagram.boundary('+', dim)).draw(**params)
+
+
+def to_gif(diagram, *diagrams, **params):
+    path = params.pop('path', None)
+    params.pop('show', False)
+    timestep = params.get('timestep', 500)
+    loop = params.get('loop', False)
+    frames = []
+
+    path = path or os.path.basename(NamedTemporaryFile(
+        suffix='.gif', prefix='tmp_', dir='.').name)
+    with TemporaryDirectory() as directory:
+        for k, step in enumerate((diagram, *diagrams)):
+            tmp_path = os.path.join(directory, '{}.png'.format(k))
+            draw(step, path=tmp_path, show=False, **params)
+            frames.append(Image.open(tmp_path))
+        if loop:
+            frames = frames + frames[::-1]
+        frames[0].save(
+                path,
+                format='GIF',
+                append_images=frames[1:],
+                save_all=True,
+                duration=timestep,
+                **{'loop': 0} if loop else {})
