@@ -450,7 +450,7 @@ class TikZBackend(DrawBackend):
                 *self.nodelayer,
                 *self.labellayer,
                 '\\end{tikzpicture}']
-        if show:
+        if path is None and show:
             print(''.join(lines))
         if path is not None:
             with open(path, 'w+') as file:
@@ -547,10 +547,11 @@ class MatBackend(DrawBackend):
         self.fig.subplots_adjust(
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         self.fig.canvas.manager.set_window_title(self.name)
+        if path is None and show:
+            self.fig.show()
         if path is not None:
             self.fig.savefig(path)
-        if show:
-            self.fig.show()
+            plt.close(self.fig)
 
 
 def draw(*diagrams, **params):
