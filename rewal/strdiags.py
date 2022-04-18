@@ -2,13 +2,7 @@
 Implements string diagram visualisations.
 """
 
-import os
-from tempfile import NamedTemporaryFile, TemporaryDirectory
-
 import networkx as nx
-from PIL import Image
-
-from math import (sin, cos, pi)
 
 from rewal import utils, ogposets, shapes, diagrams
 from rewal.drawing import MatBackend, TikZBackend
@@ -231,6 +225,8 @@ class StrDiag:
                 sinks.append(x)
 
         def solve_clashes(coord_dict):
+            from math import (sin, cos, pi)
+
             for coord in set(coord_dict.values()):  # Solve clashes
                 keys = [x for x in coord_dict if coord_dict[x] == coord]
                 if len(keys) > 1:
@@ -381,6 +377,10 @@ def draw_boundaries(diagram, dim=None, **params):
 
 
 def to_gif(diagram, *diagrams, **params):
+    import os
+    from tempfile import NamedTemporaryFile, TemporaryDirectory
+    from PIL import Image
+
     path = params.pop('path', None)
     params.pop('show', False)
     timestep = params.get('timestep', 500)
