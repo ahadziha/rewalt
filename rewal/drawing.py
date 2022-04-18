@@ -139,9 +139,13 @@ class TikZBackend(DrawBackend):
         path = params.get('path', None)
         show = params.get('show', True)
         scale = params.get('scale', 1)
+        xscale = params.get('xscale', scale)
+        yscale = params.get('yscale', scale)
 
         lines = [
-                '\\begin{{tikzpicture}}[scale={}]\n'.format(scale),
+                '\\begin{{tikzpicture}}[xscale={}, yscale={}]\n'.format(
+                    xscale,
+                    yscale),
                 '\\path[fill={}] (0, 0) rectangle (1, 1);\n'.format(
                     self.bgcolor),
                 *self.wirelayer,

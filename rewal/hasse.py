@@ -9,7 +9,6 @@ from rewal import utils, ogposets, diagrams, drawing
 
 DEFAULT = {
         'tikz': False,
-        'scale': 6,
         'show': True,
         'bgcolor': 'white',
         'fgcolor': 'black',
@@ -79,7 +78,15 @@ class Hasse:
         show = params.get('show', DEFAULT['show'])
         path = params.get('path', None)
 
-        scale = params.get('scale', DEFAULT['scale'])
+        xscale = params.get(
+                'xscale',
+                max(
+                    (len(self.nodes[n]) for n in range(self.nodes.dim+1))
+                    ))
+        yscale = params.get(
+                'yscale',
+                2*self.nodes.dim)
+
         bgcolor = params.get(
                 'bgcolor', DEFAULT['bgcolor'])
         fgcolor = params.get(
@@ -126,7 +133,7 @@ class Hasse:
                 color=color,
                 shorten=0.8)
 
-        backend.output(path=path, show=show, scale=scale)
+        backend.output(path=path, show=show, xscale=xscale, yscale=yscale)
 
 
 def draw(*ogps, **params):
