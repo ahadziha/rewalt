@@ -2,8 +2,8 @@
 Implements diagrammatic sets and diagrams.
 """
 
-import rewal
-from rewal import utils
+from rewal import utils, shapes
+from rewal.ogposets import (El, GrSet, GrSubset)
 from rewal.shapes import (Shape, ShapeMap)
 
 
@@ -489,7 +489,7 @@ class DiagSet:
         for n, n_size in enumerate(shape.size):
             yoneda._by_dim.update({
                 n: {
-                    rewal.ogposets.El(n, k) for k in range(n_size)
+                    El(n, k) for k in range(n_size)
                     }
                 })
         return yoneda
@@ -794,9 +794,9 @@ class Diagram:
             if isinstance(positions, int):
                 positions = [positions]
             input = all.boundary('-')
-            notcollapsed = rewal.ogposets.GrSubset(
-                    rewal.ogposets.GrSet(
-                        *[rewal.ogposets.El(dim, k) for k in positions]),
+            notcollapsed = GrSubset(
+                    GrSet(
+                        *[El(dim, k) for k in positions]),
                     self.shape)
             if not notcollapsed.issubset(input):
                 raise ValueError(utils.value_err(
@@ -836,9 +836,9 @@ class Diagram:
             if isinstance(positions, int):
                 positions = [positions]
             output = all.boundary('+')
-            notcollapsed = rewal.ogposets.GrSubset(
-                    rewal.ogposets.GrSet(
-                        *[rewal.ogposets.El(dim, k) for k in positions]),
+            notcollapsed = GrSubset(
+                    GrSet(
+                        *[El(dim, k) for k in positions]),
                     self.shape)
             if not notcollapsed.issubset(output):
                 raise ValueError(utils.value_err(
@@ -1008,10 +1008,12 @@ class Diagram:
         return self.layers
 
     def hasse(self, **params):
-        return rewal.hasse.draw(self, **params)
+        from rewal.hasse import draw
+        return draw(self, **params)
 
     def draw(self, **params):
-        return rewal.strdiags.draw(self, **params)
+        from rewal.strdiags import draw
+        return draw(self, **params)
 
     # Alternative constructors
     @staticmethod
@@ -1048,13 +1050,13 @@ class Diagram:
     @staticmethod
     def _new(shape, ambient, mapping, name=None):
         def diagramclass():
-            if isinstance(shape, rewal.shapes.Point):
+            if isinstance(shape, shapes.Point):
                 return PointDiagram
-            if isinstance(shape, rewal.shapes.Arrow):
+            if isinstance(shape, shapes.Arrow):
                 return ArrowDiagram
-            if isinstance(shape, rewal.shapes.Cube):
+            if isinstance(shape, shapes.Cube):
                 return CubeDiagram
-            if isinstance(shape, rewal.shapes.Simplex):
+            if isinstance(shape, shapes.Simplex):
                 return SimplexDiagram
             return Diagram
 
@@ -1139,6 +1141,6 @@ class ArrowDiagram(SimplexDiagram, CubeDiagram):
 
 class PointDiagram(SimplexDiagram, CubeDiagram):
     def degeneracy(self, shape):
-        utils.typecheck(shape, {'type': rewal.shapes.Shape})
+        utils.typecheck(shape, {'type': Shape})
         return self.pullback(
                 shape.terminal(), self.name)

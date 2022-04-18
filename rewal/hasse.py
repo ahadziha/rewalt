@@ -4,8 +4,7 @@ Implements oriented Hasse diagram visualisation.
 
 import networkx as nx
 
-import rewal
-from rewal import utils
+from rewal import utils, ogposets, diagrams
 from rewal.drawing import MatBackend
 
 
@@ -23,17 +22,17 @@ class Hasse:
     Class for oriented Hasse diagrams.
     """
     def __init__(self, ogp):
-        if isinstance(ogp, rewal.ogposets.OgPoset):
+        if isinstance(ogp, ogposets.OgPoset):
             self._labels = ogp.id().mapping
-        elif isinstance(ogp, rewal.diagrams.Diagram):
+        elif isinstance(ogp, diagrams.Diagram):
             self._labels = ogp.mapping
             ogp = ogp.shape
-        elif isinstance(ogp, rewal.ogposets.OgMap):
+        elif isinstance(ogp, ogposets.OgMap):
             self._labels = ogp.mapping
             ogp = ogp.source
         else:
             raise TypeError(utils.type_err(
-                rewal.ogposets.OgPoset, ogp))
+                ogposets.OgPoset, ogp))
 
         self._nodes = ogp.all().support
 

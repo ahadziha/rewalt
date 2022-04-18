@@ -4,7 +4,6 @@ Implements shapes of cells and diagrams.
 
 import networkx as nx
 
-import rewal
 from rewal import utils
 from rewal.ogposets import (El, OgPoset, GrSet, GrSubset, Closed,
                             OgMap, OgMapPair)
@@ -675,7 +674,8 @@ class Shape(OgPoset):
         return self.layers
 
     def draw(self, **params):
-        return rewal.strdiags.draw(self, **params)
+        from rewal import draw
+        return draw(self, **params)
 
     # Private methods
     @staticmethod

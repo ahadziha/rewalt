@@ -10,9 +10,7 @@ from PIL import Image
 
 from math import (sin, cos, pi)
 
-import rewal
-from rewal import utils
-from rewal.diagrams import Diagram
+from rewal import utils, ogposets, shapes, diagrams
 from rewal.drawing import MatBackend, TikZBackend
 
 
@@ -35,7 +33,7 @@ class StrDiag:
     Class for string diagrams.
     """
     def __init__(self, diagram):
-        if isinstance(diagram, Diagram):
+        if isinstance(diagram, diagrams.Diagram):
             shape = diagram.shape
             generators = diagram.ambient.generators
             self.name = diagram.name
@@ -43,9 +41,9 @@ class StrDiag:
             def isdegenerate(x):
                 return generators[diagram[x]]['shape'].dim != x.dim
         else:
-            if isinstance(diagram, rewal.shapes.Shape):
+            if isinstance(diagram, shapes.Shape):
                 diagram = diagram.id()
-            if isinstance(diagram, rewal.shapes.ShapeMap):
+            if isinstance(diagram, shapes.ShapeMap):
                 shape = diagram.source
                 generators = {x: {} for x in diagram.target}
                 self.name = str(diagram)
@@ -54,7 +52,7 @@ class StrDiag:
                     return diagram[x].dim != x.dim
             else:
                 raise TypeError(utils.type_err(
-                    Diagram, diagram))
+                    diagrams.Diagram, diagram))
 
         dim = shape.dim
 
@@ -111,11 +109,11 @@ class StrDiag:
                 out_2[x] = shape.faces(x, '+')
                 in_2[x] = shape.faces(x, '-')
             for x in self.nodes:
-                out_2[x] = rewal.ogposets.GrSet(*[
+                out_2[x] = ogposets.GrSet(*[
                     z for w in out_1[x]
                     for z in shape.faces(w, '+')
                     if shape.cofaces(z, '-').isdisjoint(out_1[x])])
-                in_2[x] = rewal.ogposets.GrSet(*[
+                in_2[x] = ogposets.GrSet(*[
                     z for w in in_1[x]
                     for z in shape.faces(w, '-')
                     if shape.cofaces(z, '+').isdisjoint(in_1[x])])
@@ -130,11 +128,11 @@ class StrDiag:
             out_3 = dict()
             in_3 = dict()
             for x in depthgraph:
-                out_3[x] = rewal.ogposets.GrSet(*[
+                out_3[x] = ogposets.GrSet(*[
                     z for w in out_2[x]
                     for z in shape.faces(w, '+')
                     if shape.cofaces(z, '-').isdisjoint(out_2[x])])
-                in_3[x] = rewal.ogposets.GrSet(*[
+                in_3[x] = ogposets.GrSet(*[
                     z for w in in_2[x]
                     for z in shape.faces(w, '-')
                     if shape.cofaces(z, '+').isdisjoint(in_2[x])])

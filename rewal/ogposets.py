@@ -4,7 +4,6 @@ Implements oriented graded posets, their elements, subsets, and maps.
 
 import numpy as np
 
-import rewal
 from rewal import utils
 
 
@@ -545,7 +544,8 @@ class OgPoset:
         return self.dual(*evens)
 
     def hasse(self, **params):
-        return rewal.hasse.draw(self, **params)
+        from rewal.hasse import draw
+        return draw(self, **params)
 
     # Private methods
     @staticmethod
