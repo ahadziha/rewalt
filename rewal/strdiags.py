@@ -252,6 +252,9 @@ class StrDiag:
         # Parameters
         tikz = params.get('tikz', DEFAULT['tikz'])
         scale = params.get('scale', DEFAULT['scale'])
+        xscale = params.get('xscale', scale)
+        yscale = params.get('yscale', scale)
+
         show = params.get('show', DEFAULT['show'])
         path = params.get('path', None)
 
@@ -361,7 +364,11 @@ class StrDiag:
                         positionoffset,
                         color=infocolor)
 
-        backend.output(path=path, show=show, scale=scale)
+        backend.output(
+                path=path,
+                show=show,
+                xscale=xscale,
+                yscale=yscale)
 
 
 def draw(*diagrams, **params):
