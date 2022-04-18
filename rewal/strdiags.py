@@ -16,6 +16,20 @@ from rewal.diagrams import Diagram
 from rewal.drawing import MatBackend, TikZBackend
 
 
+DEFAULT = {
+        'tikz': False,
+        'show': True,
+        'bgcolor': 'white',
+        'fgcolor': 'black',
+        'infocolor': 'magenta',
+        'degenalpha': 0.1,
+        'labels': True,
+        'labeloffset': (4, 4),
+        'positions': False,
+        'positionoffset': (4, -16),
+        'orientation': 'bt'}
+
+
 class StrDiag:
     """
     Class for string diagrams.
@@ -242,29 +256,38 @@ class StrDiag:
         Draws the string diagram with a backend.
         """
         # Parameters
-        tikz = params.get('tikz', False)
-        show = params.get('show', True)
+        tikz = params.get('tikz', DEFAULT['tikz'])
+        show = params.get('show', DEFAULT['show'])
         path = params.get('path', None)
 
-        bgcolor = params.get('bgcolor', 'white')
-        fgcolor = params.get('fgcolor', 'black')
-        infocolor = params.get('infocolor', 'red')
+        bgcolor = params.get(
+                'bgcolor', DEFAULT['bgcolor'])
+        fgcolor = params.get(
+                'fgcolor', DEFAULT['fgcolor'])
+        infocolor = params.get(
+                'infocolor', DEFAULT['infocolor'])
         wirecolor = params.get('wirecolor', fgcolor)
         nodecolor = params.get('nodecolor', fgcolor)
         nodestroke = params.get('nodestroke', nodecolor)
-        degenalpha = params.get('degenalpha', 0.1)
+        degenalpha = params.get(
+                'degenalpha', DEFAULT['degenalpha'])
 
-        labels = params.get('labels', True)
+        labels = params.get(
+                'labels', DEFAULT['labels'])
         wirelabels = params.get('wirelabels', labels)
         nodelabels = params.get('nodelabels', labels)
-        labeloffset = params.get('labeloffset', (4, 4))
+        labeloffset = params.get(
+                'labeloffset', DEFAULT['labeloffset'])
 
-        positions = params.get('positions', False)
+        positions = params.get(
+                'positions', DEFAULT['positions'])
         wirepositions = params.get('wirepositions', positions)
         nodepositions = params.get('nodepositions', positions)
-        positionoffset = params.get('positionoffset', (4, -16))
+        positionoffset = params.get(
+                'positionoffset', DEFAULT['positionoffset'])
 
-        orientation = params.get('orientation', 'bt')
+        orientation = params.get(
+                'orientation', DEFAULT['orientation'])
 
         coord = self.place_vertices()
 
@@ -273,13 +296,13 @@ class StrDiag:
                 bgcolor=bgcolor,
                 fgcolor=fgcolor,
                 orientation=orientation,
-                degenalpha=degenalpha,
                 name=self.name)
 
         wiresort = list(nx.topological_sort(self.depthgraph))
         for wire in reversed(wiresort):
             color = wirecolor if self.wires[wire]['color'] is None \
                 else self.wires[wire]['color']
+            alpha = degenalpha if self.wires[wire]['isdegenerate'] else 1
 
             for node in [
                     *self.graph.predecessors(wire),
@@ -287,20 +310,20 @@ class StrDiag:
                     ]:
                 backend.draw_wire(
                         coord[wire], coord[node],
-                        color,
-                        self.wires[wire]['isdegenerate'])
+                        color=color,
+                        alpha=alpha)
 
             if self.graph.in_degree(wire) == 0:
                 backend.draw_wire(
                         coord[wire], (coord[wire][0], 0),
-                        color,
-                        self.wires[wire]['isdegenerate'])
+                        color=color,
+                        alpha=alpha)
 
             if self.graph.out_degree(wire) == 0:
                 backend.draw_wire(
                         coord[wire], (coord[wire][0], 1),
-                        color,
-                        self.wires[wire]['isdegenerate'])
+                        color=color,
+                        alpha=alpha)
 
             if wirepositions:
                 backend.draw_label(

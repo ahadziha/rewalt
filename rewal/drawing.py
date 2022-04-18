@@ -12,12 +12,21 @@ from matplotlib.patches import PathPatch
 matplotlib.use('TkCairo')
 
 
+DEFAULT = {
+            'bgcolor': 'white',
+            'fgcolor': 'black',
+            'orientation': 'bt',
+            }
+
+
 class DrawBackend(ABC):
     def __init__(self, **params):
-        self.bgcolor = params.get('bgcolor', 'white')
-        self.fgcolor = params.get('fgcolor', 'black')
-        self.orientation = params.get('orientation', 'bt')
-        self.degenalpha = params.get('degenalpha', 0.1)
+        self.bgcolor = params.get(
+                'bgcolor', DEFAULT['bgcolor'])
+        self.fgcolor = params.get(
+                'fgcolor', DEFAULT['fgcolor'])
+        self.orientation = params.get(
+                'orientation', DEFAULT['orientation'])
         self.name = params.get('name', None)
 
     def rotate(self, xy):
@@ -42,11 +51,13 @@ class TikZBackend(DrawBackend):
         self.nodelayer = []
         self.labellayer = []
 
-    def draw_wire(self, wire_xy, node_xy,
-                  color, isdegenerate):
+    def draw_wire(self, wire_xy, node_xy, **params):
         """
         Draws a wire from a wire vertex to a node vertex.
         """
+        color = params.get('color', self.fgcolor)
+        alpha = params.get('alpha', 1)
+
         width = .02
 
         def to_cubic(p0, p1, p2):
@@ -70,7 +81,7 @@ class TikZBackend(DrawBackend):
         wire = '\\draw[color={}, opacity={}] {} .. controls {} and {} .. '\
             '{};\n'.format(
                     color,
-                    self.degenalpha if isdegenerate else 1,
+                    alpha,
                     *[self.rotate(p) for p in to_cubic(
                         node_xy,
                         (wire_xy[0], node_xy[1]),
@@ -92,7 +103,10 @@ class TikZBackend(DrawBackend):
                 label)
         self.labellayer.append(label)
 
-    def draw_node(self, xy, color, stroke):
+    def draw_node(self, xy, **params):
+        color = params.get('color', self.fgcolor)
+        stroke = params.get('stroke', color)
+
         xy = self.rotate(xy)
         node = '\\node[circle, fill={}, draw={}, inner sep=1pt] '\
             'at {} {{}};\n'.format(
@@ -129,13 +143,14 @@ class MatBackend(DrawBackend):
         for side in ('top', 'right', 'bottom', 'left'):
             self.axes.spines[side].set_visible(False)
 
-    def draw_wire(self, wire_xy, node_xy,
-                  color, isdegenerate):
+    def draw_wire(self, wire_xy, node_xy, **params):
         """
         Draws a wire from a wire vertex to a node vertex.
         """
-        width = .02
+        color = params.get('color', self.fgcolor)
+        alpha = params.get('alpha', 1)
 
+        width = .02
         contour = Path(
                 [
                     self.rotate(node_xy),
@@ -175,12 +190,16 @@ class MatBackend(DrawBackend):
                 wire,
                 facecolor='none',
                 edgecolor=color,
-                alpha=self.degenalpha if isdegenerate else 1,
+                alpha=alpha,
                 lw=1)
         self.axes.add_patch(p_contour)
         self.axes.add_patch(p_wire)
 
     def draw_label(self, label, xy, offset, **params):
+        color = params.get('color', self.fgcolor)
+        ha = params.get('ha', 'left')
+        va = params.get('va', 'baseline')
+
         xy = self.rotate(xy)
         xytext = (xy[0] + offset[0], xy[1] + offset[1])
         self.axes.annotate(
@@ -188,9 +207,14 @@ class MatBackend(DrawBackend):
                 xy,
                 xytext=xytext,
                 textcoords='offset pixels',
-                **params)
+                color=color,
+                ha=ha,
+                va=va)
 
-    def draw_node(self, xy, color, stroke):
+    def draw_node(self, xy, **params):
+        color = params.get('color', self.fgcolor)
+        stroke = params.get('stroke', color)
+
         xy = self.rotate(xy)
         self.axes.scatter(
                 xy[0],
@@ -201,19 +225,22 @@ class MatBackend(DrawBackend):
 
     def draw_arrow(self, xy0, xy1, **params):
         color = params.get('color', self.fgcolor)
+        shorten = params.get('shorten', 1)
 
         xy0 = self.rotate(xy0)
         xy1 = self.rotate(xy1)
         dxy = (xy1[0] - xy0[0], xy1[1] - xy0[1])
         self.axes.arrow(
-                xy0[0] + 0.08*dxy[0], xy0[1] + 0.08*dxy[1],
-                dxy[0]*0.84, dxy[1]*0.84,
+                xy0[0] + ((1 - shorten)/2)*dxy[0],
+                xy0[1] + ((1 - shorten)/2)*dxy[1],
+                dxy[0]*shorten,
+                dxy[1]*shorten,
                 fc=color,
                 ec=color,
                 overhang=0.8,
                 lw=0.5,
                 head_width=0.01,
-                head_length=0.02,
+                head_length=0.01,
                 length_includes_head=True)
 
     def output(self, path=None, show=True):

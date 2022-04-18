@@ -20,7 +20,6 @@ class DiagSet:
             'linvertor',
             'rinvertor',
             'inverts',
-            'compositor',
             'composite')
 
     def __init__(self):
@@ -368,8 +367,6 @@ class DiagSet:
                 diagram,
                 composite)
 
-        self._generators[name].update({
-            'compositor': compositorname})
         self._generators[compositorname].update({
             'composite': name})
         self._compositors.update({
@@ -408,8 +405,6 @@ class DiagSet:
                 diagram,
                 generator)
 
-        self._generators[generatorname].update({
-            'compositor': compositorname})
         self._generators[compositorname].update({
             'composite': generatorname})
         self._compositors.update({
@@ -452,8 +447,6 @@ class DiagSet:
 
         if 'composite' in self.generators[generatorname]:
             # This does not remove the composite!
-            composite = self.generators[generatorname]['composite']
-            self.generators[composite].pop('compositor', None)
             self.compositors.pop(generatorname, None)
 
         for x in self.generators[generatorname]['faces']:
@@ -1013,6 +1006,12 @@ class Diagram:
         """
         self.shape.generate_layering()
         return self.layers
+
+    def hasse(self, **params):
+        return rewal.hasse.draw(self, **params)
+
+    def draw(self, **params):
+        return rewal.strdiags.draw(self, **params)
 
     # Alternative constructors
     @staticmethod
