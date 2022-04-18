@@ -352,8 +352,8 @@ class StrDiag:
             if is_drawn(node):
                 backend.draw_node(
                     coord[node],
-                    color,
-                    stroke)
+                    color=color,
+                    stroke=stroke)
                 if nodelabels and self.nodes[node]['draw_label']:
                     backend.draw_label(
                         self.nodes[node]['label'],
