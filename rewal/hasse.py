@@ -4,11 +4,13 @@ Implements oriented Hasse diagram visualisation.
 
 import networkx as nx
 
-from rewal import utils, ogposets, diagrams
-from rewal.drawing import MatBackend
+from rewal import utils, ogposets, diagrams, drawing
 
 
 DEFAULT = {
+        'tikz': False,
+        'scale': 6,
+        'show': True,
         'bgcolor': 'white',
         'fgcolor': 'black',
         'labels': True,
@@ -73,6 +75,11 @@ class Hasse:
 
     def draw(self, **params):
         # Parameters
+        tikz = params.get('tikz', DEFAULT['tikz'])
+        show = params.get('show', DEFAULT['show'])
+        path = params.get('path', None)
+
+        scale = params.get('scale', DEFAULT['scale'])
         bgcolor = params.get(
                 'bgcolor', DEFAULT['bgcolor'])
         fgcolor = params.get(
@@ -91,7 +98,8 @@ class Hasse:
 
         coord = self.place_nodes()
 
-        backend = MatBackend(
+        backendclass = drawing.TikZBackend if tikz else drawing.MatBackend
+        backend = backendclass(
                 bgcolor=bgcolor,
                 fgcolor=fgcolor,
                 orientation=orientation)
@@ -118,7 +126,7 @@ class Hasse:
                 color=color,
                 shorten=0.8)
 
-        backend.output()
+        backend.output(path=path, show=show, scale=scale)
 
 
 def draw(*ogps, **params):

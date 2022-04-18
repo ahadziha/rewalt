@@ -4,12 +4,12 @@ Implements string diagram visualisations.
 
 import networkx as nx
 
-from rewal import utils, ogposets, shapes, diagrams
-from rewal.drawing import MatBackend, TikZBackend
+from rewal import (utils, ogposets, shapes, diagrams, drawing)
 
 
 DEFAULT = {
         'tikz': False,
+        'scale': 3,
         'show': True,
         'bgcolor': 'white',
         'fgcolor': 'black',
@@ -251,6 +251,7 @@ class StrDiag:
         """
         # Parameters
         tikz = params.get('tikz', DEFAULT['tikz'])
+        scale = params.get('scale', DEFAULT['scale'])
         show = params.get('show', DEFAULT['show'])
         path = params.get('path', None)
 
@@ -285,7 +286,7 @@ class StrDiag:
 
         coord = self.place_vertices()
 
-        backendclass = TikZBackend if tikz else MatBackend
+        backendclass = drawing.TikZBackend if tikz else drawing.MatBackend
         backend = backendclass(
                 bgcolor=bgcolor,
                 fgcolor=fgcolor,
@@ -360,7 +361,7 @@ class StrDiag:
                         positionoffset,
                         color=infocolor)
 
-        backend.output(path=path, show=show)
+        backend.output(path=path, show=show, scale=scale)
 
 
 def draw(*diagrams, **params):

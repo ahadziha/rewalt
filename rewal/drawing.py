@@ -49,6 +49,7 @@ class TikZBackend(DrawBackend):
                 self.bgcolor)
         self.wirelayer = []
         self.nodelayer = []
+        self.arrowlayer = []
         self.labellayer = []
 
     def draw_wire(self, wire_xy, node_xy, **params):
@@ -113,13 +114,39 @@ class TikZBackend(DrawBackend):
                     color, stroke, xy)
         self.nodelayer.append(node)
 
-    def output(self, path=None, show=True):
+    def draw_arrow(self, xy0, xy1, **params):
+        color = params.get('color', self.fgcolor)
+        shorten = params.get('shorten', 1)
+
+        xy0 = self.rotate(xy0)
+        xy1 = self.rotate(xy1)
+        dxy = (xy1[0] - xy0[0], xy1[1] - xy0[1])
+
+        xy0_off = (
+                xy0[0] + 0.5*(1 - shorten)*dxy[0],
+                xy0[1] + 0.5*(1 - shorten)*dxy[1])
+        xy1_off = (
+                xy1[0] - 0.5*(1 - shorten)*dxy[0],
+                xy1[1] - 0.5*(1 - shorten)*dxy[1])
+
+        arrow = '\\draw[->, draw={}] {} -- {};\n'.format(
+                    color,
+                    xy0_off,
+                    xy1_off)
+        self.arrowlayer.append(arrow)
+
+    def output(self, **params):
+        path = params.get('path', None)
+        show = params.get('show', True)
+        scale = params.get('scale', 1)
+
         lines = [
-                '\\begin{tikzpicture}[scale=3]\n',
+                '\\begin{{tikzpicture}}[scale={}]\n'.format(scale),
                 '\\path[fill={}] (0, 0) rectangle (1, 1);\n'.format(
                     self.bgcolor),
                 *self.wirelayer,
                 *self.nodelayer,
+                *self.arrowlayer,
                 *self.labellayer,
                 '\\end{tikzpicture}']
         if path is None and show:
@@ -155,13 +182,13 @@ class MatBackend(DrawBackend):
                 [
                     self.rotate(node_xy),
                     self.rotate(
-                        (wire_xy[0] - (width/2), node_xy[1])),
+                        (wire_xy[0] - 0.5*width, node_xy[1])),
                     self.rotate(
-                        (wire_xy[0] - (width/2), wire_xy[1])),
+                        (wire_xy[0] - 0.5*width, wire_xy[1])),
                     self.rotate(
-                        (wire_xy[0] + (width/2), wire_xy[1])),
+                        (wire_xy[0] + 0.5*width, wire_xy[1])),
                     self.rotate(
-                        (wire_xy[0] + (width/2), node_xy[1])),
+                        (wire_xy[0] + 0.5*width, node_xy[1])),
                     self.rotate(node_xy)
                 ], [
                     Path.MOVETO,
@@ -231,8 +258,8 @@ class MatBackend(DrawBackend):
         xy1 = self.rotate(xy1)
         dxy = (xy1[0] - xy0[0], xy1[1] - xy0[1])
         self.axes.arrow(
-                xy0[0] + ((1 - shorten)/2)*dxy[0],
-                xy0[1] + ((1 - shorten)/2)*dxy[1],
+                xy0[0] + 0.5*(1 - shorten)*dxy[0],
+                xy0[1] + 0.5*(1 - shorten)*dxy[1],
                 dxy[0]*shorten,
                 dxy[1]*shorten,
                 fc=color,
@@ -243,7 +270,10 @@ class MatBackend(DrawBackend):
                 head_length=0.01,
                 length_includes_head=True)
 
-    def output(self, path=None, show=True):
+    def output(self, **params):
+        path = params.get('path', None)
+        show = params.get('show', True)
+
         self.fig.subplots_adjust(
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         self.fig.canvas.manager.set_window_title(self.name)
