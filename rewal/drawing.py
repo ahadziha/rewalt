@@ -58,16 +58,17 @@ class TikZBackend(DrawBackend):
         """
         color = params.get('color', self.fgcolor)
         alpha = params.get('alpha', 1)
-
-        width = .02
+        depth = params.get('depth', True)
 
         def to_cubic(p0, p1, p2):
             control1 = (p0[0]/3 + 2*p1[0]/3, p0[1]/3 + 2*p1[1]/3)
             control2 = (2*p1[0]/3 + p2[0]/3, 2*p1[1]/3 + p2[1]/3)
             return p0, control1, control2, p2
 
-        contour = '\\path[fill, color={}] {} .. controls {} and {} .. {} '\
-            'to {} .. controls {} and {} .. {};\n'.format(
+        if depth:
+            width = .02
+            contour = '\\path[fill, color={}] {} .. controls {} '\
+                'and {} .. {} to {} .. controls {} and {} .. {};\n'.format(
                     self.bgcolor,
                     *[self.rotate(p) for p in to_cubic(
                         node_xy,
@@ -79,6 +80,8 @@ class TikZBackend(DrawBackend):
                         (wire_xy[0] + (width/2), node_xy[1]),
                         node_xy)]
                    )
+            self.wirelayer.append(contour)
+
         wire = '\\draw[color={}, opacity={}] {} .. controls {} and {} .. '\
             '{};\n'.format(
                     color,
@@ -88,7 +91,6 @@ class TikZBackend(DrawBackend):
                         (wire_xy[0], node_xy[1]),
                         wire_xy)]
                    )
-        self.wirelayer.append(contour)
         self.wirelayer.append(wire)
 
     def draw_label(self, label, xy, offset, **params):
@@ -179,10 +181,12 @@ class MatBackend(DrawBackend):
         Draws a wire from a wire vertex to a node vertex.
         """
         color = params.get('color', self.fgcolor)
+        depth = params.get('depth', True)
         alpha = params.get('alpha', 1)
 
-        width = .02
-        contour = Path(
+        if depth:
+            width = .02
+            contour = Path(
                 [
                     self.rotate(node_xy),
                     self.rotate(
@@ -202,6 +206,12 @@ class MatBackend(DrawBackend):
                     Path.CURVE3,
                     Path.CURVE3
                 ])
+            p_contour = PathPatch(
+                contour,
+                facecolor=self.bgcolor,
+                edgecolor='none')
+            self.axes.add_patch(p_contour)
+
         wire = Path(
                 [
                     self.rotate(wire_xy),
@@ -213,17 +223,12 @@ class MatBackend(DrawBackend):
                     Path.CURVE3,
                     Path.CURVE3
                 ])
-        p_contour = PathPatch(
-                contour,
-                facecolor=self.bgcolor,
-                edgecolor='none')
         p_wire = PathPatch(
                 wire,
                 facecolor='none',
                 edgecolor=color,
                 alpha=alpha,
                 lw=1)
-        self.axes.add_patch(p_contour)
         self.axes.add_patch(p_wire)
 
     def draw_label(self, label, xy, offset, **params):
