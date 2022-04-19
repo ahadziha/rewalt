@@ -1015,6 +1015,10 @@ class Diagram:
         from rewal.strdiags import draw
         return draw(self, **params)
 
+    def draw_boundaries(self, **params):
+        from rewal.strdiags import draw_boundaries
+        return draw_boundaries(self, **params)
+
     # Alternative constructors
     @staticmethod
     def yoneda(shapemap, name=None):

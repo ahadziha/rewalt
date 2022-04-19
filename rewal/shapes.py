@@ -674,8 +674,12 @@ class Shape(OgPoset):
         return self.layers
 
     def draw(self, **params):
-        from rewal import draw
+        from rewal.strdiags import draw
         return draw(self, **params)
+
+    def draw_boundaries(self, **params):
+        from rewal.strdiags import draw_boundaries
+        return draw_boundaries(self, **params)
 
     # Private methods
     @staticmethod
@@ -1239,3 +1243,11 @@ class ShapeMap(OgMap):
 
     def generate_layering(self):
         self.source.generate_layering()
+
+    def draw(self, **params):
+        from rewal.strdiags import draw
+        return draw(self, **params)
+
+    def draw_boundaries(self, **params):
+        from rewal.strdiags import draw_boundaries
+        return draw_boundaries(self, **params)
