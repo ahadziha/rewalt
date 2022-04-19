@@ -261,18 +261,22 @@ class MatBackend(DrawBackend):
         xy0 = self.rotate(xy0)
         xy1 = self.rotate(xy1)
         dxy = (xy1[0] - xy0[0], xy1[1] - xy0[1])
-        self.axes.arrow(
+
+        xy0_off = (
                 xy0[0] + 0.5*(1 - shorten)*dxy[0],
-                xy0[1] + 0.5*(1 - shorten)*dxy[1],
-                dxy[0]*shorten,
-                dxy[1]*shorten,
-                fc=color,
-                ec=color,
-                overhang=0.8,
-                lw=0.5,
-                head_width=0.01,
-                head_length=0.01,
-                length_includes_head=True)
+                xy0[1] + 0.5*(1 - shorten)*dxy[1])
+        xy1_off = (
+                xy1[0] - 0.5*(1 - shorten)*dxy[0],
+                xy1[1] - 0.5*(1 - shorten)*dxy[1])
+        self.axes.annotate(
+                '',
+                xy=xy1_off,
+                xytext=xy0_off,
+                arrowprops=dict(
+                    arrowstyle='->',
+                    color=color,
+                    shrinkA=0,
+                    shrinkB=0))
 
     def output(self, **params):
         path = params.get('path', None)

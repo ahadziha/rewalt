@@ -113,7 +113,7 @@ class Hasse:
 
         for node in self.nodes:
             if labels:
-                label = '{}({})'.format(
+                label = '{},{}'.format(
                         node.pos,
                         self.labels[node.dim][node.pos])
             else:
