@@ -1336,6 +1336,10 @@ class OgMap:
         evens = [n for n in range(self.dim + 1) if n % 2 == 0]
         return self.dual(*evens)
 
+    def hasse(self, **params):
+        from rewal.hasse import draw
+        return draw(self, **params)
+
     # Private methods.
     def _extensioncheck(self, element, image):
         if image not in self.target:
