@@ -78,14 +78,21 @@ class Hasse:
         show = params.get('show', DEFAULT['show'])
         path = params.get('path', None)
 
-        xscale = params.get(
-                'xscale',
-                max(
-                    (len(self.nodes[n]) for n in range(self.nodes.dim+1))
-                    ))
-        yscale = params.get(
-                'yscale',
-                2*self.nodes.dim)
+        orientation = params.get(
+                'orientation', DEFAULT['orientation'])
+
+        xscale = params.get('xscale', None)
+        yscale = params.get('yscale', None)
+        SCALE = (
+                max((len(self.nodes[n]) for n in range(self.nodes.dim+1))),
+                2*self.nodes.dim
+                )
+        if orientation in ('bt', 'tb'):
+            xscale = SCALE[0] if xscale is None else xscale
+            yscale = SCALE[1] if yscale is None else yscale
+        if orientation in ('lr', 'rl'):
+            xscale = SCALE[1] if xscale is None else xscale
+            yscale = SCALE[0] if yscale is None else yscale
 
         bgcolor = params.get(
                 'bgcolor', DEFAULT['bgcolor'])
@@ -99,9 +106,6 @@ class Hasse:
                 'inputcolor', DEFAULT['inputcolor'])
         outputcolor = params.get(
                 'outputcolor', DEFAULT['outputcolor'])
-
-        orientation = params.get(
-                'orientation', DEFAULT['orientation'])
 
         coord = self.place_nodes()
 
