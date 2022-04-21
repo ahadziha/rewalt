@@ -5,4 +5,4 @@ from rewal.shapes import (Shape, ShapeMap)
 from rewal.diagrams import (DiagSet, Diagram)
 from rewal.strdiags import StrDiag
 
-__version__ = '0.1.1'
+__version__ = '0.1.0'
