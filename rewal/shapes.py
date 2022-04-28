@@ -725,7 +725,8 @@ class Shape(OgPoset):
                             for y in focus_out_faces:
                                 if shape.cofaces(y, '-').isdisjoint(focus):
                                     focus_output.add(y)
-                            focus_stack.append(focus_output)
+                            if not focus_output.issubset(marked):
+                                focus_stack.append(focus_output)
                         else:
                             def candidates(x):
                                 return [y for y in shape.cofaces(x, '-')

@@ -144,10 +144,13 @@ class TikZBackend(DrawBackend):
         xscale = params.get('xscale', scale)
         yscale = params.get('yscale', scale)
 
+        baseline = '{([yshift=-.5ex]current bounding box.center)}'
         lines = [
-                '\\begin{{tikzpicture}}[xscale={}, yscale={}]\n'.format(
+                '\\begin{{tikzpicture}}[xscale={}, yscale={}, '\
+                'baseline={}]\n'.format(
                     xscale,
-                    yscale),
+                    yscale,
+                    baseline),
                 '\\path[fill={}] (0, 0) rectangle (1, 1);\n'.format(
                     self.bgcolor),
                 *self.wirelayer,
