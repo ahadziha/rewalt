@@ -694,24 +694,38 @@ class Shape(OgPoset):
         focus_stack = [shape.maximal().support]  # traversal begins
         while len(focus_stack) > 0:
             focus = focus_stack[-1]
-            if focus.issubset(marked):
+            dim = focus.dim
+            top_dim = focus[dim]
+            top_unmarked = GrSet()
+            for x in top_dim:
+                if x not in marked:
+                    top_unmarked.add(x)
+            if len(top_unmarked) == 0:
                 del focus_stack[-1]
             else:
-                dim = focus.dim
-                top_dim = focus[dim]
                 if dim == 0:
                     for x in top_dim:
                         mapping[dim].append(x)
                         marked.add(x)
                     del focus_stack[-1]
                 else:
-                    focus_in_faces = GrSet().union(
-                            *[shape.faces(x, '-') for x in top_dim])
-                    focus_input = focus[:dim]
-                    for y in focus_in_faces:
-                        if shape.cofaces(y, '+').isdisjoint(focus):
-                            focus_input.add(y)
+                    focus_in_faces = GrSet()
+                    focus_out_faces = GrSet()
+                    candidates = {}
+                    for x in top_dim:
+                        isunmarked = x in top_unmarked
+                        for y in shape.faces(x, '-'):
+                            focus_in_faces.add(y)
+                            if isunmarked:
+                                candidates[y] = x
+                        for y in shape.faces(x, '+'):
+                            focus_out_faces.add(y)
+                    focus_input = focus_in_faces.difference(
+                            focus_out_faces)
                     if not focus_input.issubset(marked):
+                        if len(focus[:dim]) > 0:
+                            focus_input = focus_input.union(
+                                focus[:dim])
                         focus_stack.append(focus_input)
                     else:
                         if len(focus) == 1:
@@ -719,24 +733,19 @@ class Shape(OgPoset):
                                 mapping[dim].append(x)
                                 marked.add(x)
                             del focus_stack[-1]
-                            focus_out_faces = GrSet().union(
-                                *[shape.faces(x, '+') for x in top_dim])
-                            focus_output = focus[:dim]
-                            for y in focus_out_faces:
-                                if shape.cofaces(y, '-').isdisjoint(focus):
-                                    focus_output.add(y)
+                            focus_output = focus_out_faces.difference(
+                                    focus_in_faces)
                             if not focus_output.issubset(marked):
+                                if len(focus[:dim]) > 0:
+                                    focus_output = focus_output.union(
+                                            focus[:dim])
                                 focus_stack.append(focus_output)
                         else:
-                            def candidates(x):
-                                return [y for y in shape.cofaces(x, '-')
-                                        if y in focus and y not in marked]
                             x = next(
                                     x for x in mapping[dim-1]
-                                    if x in focus_in_faces
-                                    and len(candidates(x)) > 0)
+                                    if x in candidates.keys())
                             focus_stack.append(
-                                GrSet(candidates(x)[0]))
+                                GrSet(candidates[x]))
 
         def reordered_faces(x, sign):
             return {k for y in shape.faces(x, sign)
