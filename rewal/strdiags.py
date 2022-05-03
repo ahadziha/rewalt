@@ -11,6 +11,7 @@ DEFAULT = {
         'tikz': False,
         'scale': 3,
         'show': True,
+        'depth': True,
         'bgcolor': 'white',
         'fgcolor': 'black',
         'infocolor': 'magenta',
@@ -258,6 +259,7 @@ class StrDiag:
         show = params.get('show', DEFAULT['show'])
         path = params.get('path', None)
 
+        depth = params.get('depth', DEFAULT['depth'])
         bgcolor = params.get(
                 'bgcolor', DEFAULT['bgcolor'])
         fgcolor = params.get(
@@ -309,19 +311,22 @@ class StrDiag:
                 backend.draw_wire(
                         coord[wire], coord[node],
                         color=color,
-                        alpha=alpha)
+                        alpha=alpha,
+                        depth=depth)
 
             if self.graph.in_degree(wire) == 0:
                 backend.draw_wire(
                         coord[wire], (coord[wire][0], 0),
                         color=color,
-                        alpha=alpha)
+                        alpha=alpha,
+                        depth=depth)
 
             if self.graph.out_degree(wire) == 0:
                 backend.draw_wire(
                         coord[wire], (coord[wire][0], 1),
                         color=color,
-                        alpha=alpha)
+                        alpha=alpha,
+                        depth=depth)
 
             if wirepositions:
                 backend.draw_label(
