@@ -20,6 +20,7 @@ DEFAULT = {
         'labeloffset': (4, 4),
         'positions': False,
         'positionoffset': (4, -16),
+        'positionoffsettikz': (4, -6),
         'orientation': 'bt'}
 
 
@@ -283,8 +284,11 @@ class StrDiag:
                 'positions', DEFAULT['positions'])
         wirepositions = params.get('wirepositions', positions)
         nodepositions = params.get('nodepositions', positions)
+
+        podefault = DEFAULT['positionoffsettikz'] \
+            if tikz else DEFAULT['positionoffset']
         positionoffset = params.get(
-                'positionoffset', DEFAULT['positionoffset'])
+                'positionoffset', podefault)
 
         orientation = params.get(
                 'orientation', DEFAULT['orientation'])
