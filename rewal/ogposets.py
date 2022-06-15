@@ -9,7 +9,21 @@ from rewal import utils
 
 class El(tuple):
     """
-    Class for elements of an oriented graded poset.
+    Defines an element of an oriented graded poset, encoded as a pair
+    of non-negative integers: the dimension of the element, and its
+    position in a linear order of elements of the given dimension.
+
+    Arguments
+    ---------
+    dim : int
+        The dimension of the element.
+    pos : int
+        The position of the element.
+
+    Examples
+    --------
+    >>> x = El(2, 3)
+    >>> assert x.dim == 2 and x.pos == 3
     """
 
     def __new__(self, dim, pos):
@@ -36,13 +50,29 @@ class El(tuple):
 
     @property
     def dim(self):
+        """ Returns the dimension of the element. """
         return self[0]
 
     @property
     def pos(self):
+        """ Returns the position of the element. """
         return self[1]
 
     def shifted(self, k):
+        """
+        Returns the element of the same dimension, with position shifted
+        by a given integer.
+
+        Parameters
+        ----------
+        k : int
+            The shift in position.
+
+        Returns
+        -------
+        el : :class:`ogposets.El`
+            The shifted element.
+        """
         utils.typecheck(k, {
             'type': int,
             'st': lambda n: self.pos + n >= 0,
@@ -53,7 +83,43 @@ class El(tuple):
 
 class OgPoset:
     """
-    Class for oriented graded posets.
+    Defines an oriented graded poset, that is, a finite graded poset
+    with a {'-', '+'}-labelling of the edges of its Hasse diagram
+    (an orientation).
+
+    In this implementation, the elements of a given dimension (grade)
+    are linearly ordered, so that each element is identified by its
+    dimension and the position in the linear order.
+
+    Defining an `OgPoset` directly is not recommended; use
+    constructors of `shapes.Shape` instead.
+
+    Arguments
+    ---------
+    face_data : list of list of dict of set of int
+        Data encoding the oriented graded poset as follows:
+        j in face_data[n][k][o] if and only if
+        El(n, k) covers El(n-1, j) with orientation o,
+        where o == '-' or o == '+'.
+
+    coface_data: list of list of dict of set of int
+        Data encoding the oriented graded poset as follows:
+        j in coface_data[n][k][o] if and only if
+        El(n+1, j) covers El(n, k) with orientation o,
+        where o == '-' or o == '+'.
+
+    Keyword arguments
+    -----------------
+    wfcheck : bool
+        Check that the data is well-formed, default is True
+    matchcheck : bool
+        Check that `face_data` and `coface_data` match, default is True
+
+    Notes
+    -----
+    Each of `face_data`, `coface_data` determines the other uniquely.
+    There is an alternative constructor `from_face_data` that computes
+    `coface_data` from `face_data`.
     """
 
     def __init__(self, face_data, coface_data, **params):

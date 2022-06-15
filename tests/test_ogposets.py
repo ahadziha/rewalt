@@ -24,6 +24,11 @@ def test_El_init():
             -1, 'expecting non-negative integer')
 
 
+def test_El_dim():
+    assert El(2, 3).dim == 2
+    assert El(2, 3).pos == 3
+
+
 def test_El_shifted():
     assert El(2, 3).shifted(4) == El(2, 7)
 

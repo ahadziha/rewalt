@@ -38,8 +38,11 @@ release = get_version()
 # ones.
 extensions = [
         'sphinx.ext.autodoc',
+        'sphinx.ext.napoleon',
         'sphinx.ext.autosummary'
 ]
+
+autosummary_context = {"excluded": ["__init__"]}
 
 autosummary_generate = True
 
