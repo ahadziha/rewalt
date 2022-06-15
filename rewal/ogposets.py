@@ -84,12 +84,17 @@ class El(tuple):
 class OgPoset:
     """
     Defines an oriented graded poset, that is, a finite graded poset
-    with a {'-', '+'}-labelling of the edges of its Hasse diagram
-    (an orientation).
+    with an orientation, defined as a {'-', '+'}-labelling of the edges
+    of its Hasse diagram.
 
     In this implementation, the elements of a given dimension (grade)
     are linearly ordered, so that each element is identified by its
-    dimension and the position in the linear order.
+    dimension and the position in the linear order, encoded as an object
+    of class `El`.
+
+    If El(n, k) covers El(n-1, j) with orientation o, we say that
+    El(n-1, j) is an *input face* of El(n, k) if o == '-' and an
+    *output face* of El(n, k) if o == '+'.
 
     Defining an `OgPoset` directly is not recommended; use
     constructors of `shapes.Shape` instead.
@@ -120,6 +125,27 @@ class OgPoset:
     Each of `face_data`, `coface_data` determines the other uniquely.
     There is an alternative constructor `from_face_data` that computes
     `coface_data` from `face_data`.
+
+    Examples
+    --------
+    >>> face_data = [
+    ...    [
+    ...        {'-': set(), '+': set()},
+    ...        {'-': set(), '+': set()},
+    ...    ], [
+    ...        {'-': {0}, '+': {1}}
+    ...    ]]
+    >>> coface_data = [
+    ...    [
+    ...        {'-': {0}, '+': set()},
+    ...        {'-': set(), '+': {0}},
+    ...    ], [
+    ...        {'-': set(), '+': set()}
+    ...    ]]
+    >>> ogp = OgPoset(face_data, coface_data)
+    >>> assert ogp.faces(El(1, 0), '-') == GrSet(El(0, 0))
+    >>> assert ogp.cofaces(El(0, 1), '+') == GrSet(El(1, 0))
+    >>> assert El(0, 2) not in ogp
     """
 
     def __init__(self, face_data, coface_data, **params):
@@ -195,25 +221,34 @@ class OgPoset:
 
     @property
     def face_data(self):
-        """ Face data are read-only. """
+        """
+        Returns the defining face data.
+
+        This is meant to be immutable; create a new `OgPoset` instead.
+        """
         return self._face_data
 
     @property
     def coface_data(self):
-        """ Coface data are read-only. """
+        """
+        Returns the defining coface data.
+
+        This is meant to be immutable; create a new `OgPoset` instead.
+        """
         return self._coface_data
 
     @property
     def size(self):
         """
-        Returns the number of elements in each dimension as a list.
+        Returns the number of elements in each dimension, as a list.
         """
         return [len(_) for _ in self.face_data]
 
     @property
     def dim(self):
         """
-        Returns the dimension of the oriented graded poset.
+        Returns the dimension of the `OgPoset`, that is, the largest
+        dimension of any of its elements.
         """
         return len(self.face_data) - 1
 
