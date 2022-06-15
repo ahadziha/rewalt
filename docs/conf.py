@@ -42,9 +42,10 @@ extensions = [
         'sphinx.ext.autosummary'
 ]
 
+autosummary_generate = True
+
 autosummary_context = {"excluded": ["__init__"]}
 
-autosummary_generate = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

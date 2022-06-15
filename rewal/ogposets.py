@@ -224,7 +224,7 @@ class OgPoset:
         """
         Returns the defining face data.
 
-        This is meant to be immutable; create a new `OgPoset` instead.
+        This is meant to be immutable.
         """
         return self._face_data
 
@@ -233,7 +233,7 @@ class OgPoset:
         """
         Returns the defining coface data.
 
-        This is meant to be immutable; create a new `OgPoset` instead.
+        This is meant to be immutable.
         """
         return self._coface_data
 
@@ -247,14 +247,24 @@ class OgPoset:
     @property
     def dim(self):
         """
-        Returns the dimension of the `OgPoset`, that is, the largest
-        dimension of any of its elements.
+        Returns the dimension of the `OgPoset`.
         """
         return len(self.face_data) - 1
 
     @property
     def as_chain(self):
-        """ Returns chain complex representation. """
+        """ 
+        Returns a “chain complex” representation of the `OgPoset`.
+
+        Returns
+        -------
+        chain : list of :class:`numpy.array`
+            Encodes the face data as follows:
+            chain[n][i][j] == 1 if El(n+1, j) covers El(n, i) with
+            orientation +, 
+            -1 if El(n+1, j) covers El(n, i) with
+            orientation -, 0 otherwise.
+        """
         size, dim = self.size, self.dim
         chain = [
                 np.zeros((size[i], size[i+1]), dtype=int) for i in range(dim)
