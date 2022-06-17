@@ -5,6 +5,7 @@ strdiags
     :no-members:
 
 .. autosummary::
+   :template: class.rst
    :toctree: ../_autosummary
 
    rewal.strdiags.StrDiag

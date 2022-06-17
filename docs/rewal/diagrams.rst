@@ -2,9 +2,10 @@ diagrams
 ========
 
 .. automodule:: rewal.diagrams
-    :no-members:
+   :no-members:
 
 .. autosummary::
+   :template: class.rst
    :toctree: ../_autosummary
 
    rewal.diagrams.DiagSet

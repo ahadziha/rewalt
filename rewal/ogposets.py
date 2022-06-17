@@ -84,7 +84,7 @@ class El(tuple):
 class OgPoset:
     """
     Defines an oriented graded poset, that is, a finite graded poset
-    with an orientation, defined as a {'-', '+'}-labelling of the edges
+    with an orientation, that is a {'-', '+'}-labelling of the edges
     of its Hasse diagram.
 
     In this implementation, the elements of a given dimension (grade)
@@ -647,10 +647,16 @@ class OgPoset:
         return self.__class__.dual(self, *dims)
 
     def op(self):
+        """
+        Returns the dual in all odd dimensions.
+        """
         odds = [n for n in range(self.dim + 1) if n % 2 == 1]
         return self.dual(*odds)
 
     def co(self):
+        """
+        Returns the dual in all even dimensions.
+        """
         evens = [n for n in range(self.dim + 1) if n % 2 == 0]
         return self.dual(*evens)
 

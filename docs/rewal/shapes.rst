@@ -2,9 +2,10 @@ shapes
 ======
 
 .. automodule:: rewal.shapes
-    :no-members:
+   :no-members:
 
 .. autosummary::
+   :template: class.rst
    :toctree: ../_autosummary
 
    rewal.shapes.Shape

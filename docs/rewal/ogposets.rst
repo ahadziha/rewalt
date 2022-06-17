@@ -2,9 +2,10 @@ ogposets
 ========
 
 .. automodule:: rewal.ogposets
-    :no-members:
+   :no-members:
 
 .. autosummary::
+   :template: class.rst
    :toctree: ../_autosummary
 
    rewal.ogposets.OgPoset

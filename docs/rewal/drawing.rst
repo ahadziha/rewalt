@@ -2,9 +2,10 @@ drawing
 =======
 
 .. automodule:: rewal.drawing
-    :no-members:
+   :no-members:
 
 .. autosummary::
+   :template: class.rst
    :toctree: ../_autosummary
 
    rewal.drawing.DrawBackend
