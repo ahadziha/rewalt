@@ -15,15 +15,18 @@ class El(tuple):
 
     Arguments
     ---------
-    dim : int
+    dim : :class:`int`
         The dimension of the element.
-    pos : int
+    pos : :class:`int`
         The position of the element.
 
     Examples
     --------
     >>> x = El(2, 3)
-    >>> assert x.dim == 2 and x.pos == 3
+    >>> x.dim
+    2
+    >>> x.pos
+    3
     """
 
     def __new__(self, dim, pos):
@@ -55,7 +58,7 @@ class El(tuple):
 
         Returns
         -------
-        dim : int
+        dim : :class:`int`
             The dimension of the element.
         """
         return self[0]
@@ -67,7 +70,7 @@ class El(tuple):
 
         Returns
         -------
-        pos : int
+        pos : :class:`int`
             The position of the element
         """
         return self[1]
@@ -79,12 +82,12 @@ class El(tuple):
 
         Parameters
         ----------
-        k : int
+        k : :class:`int`
             The shift in position.
 
         Returns
         -------
-        el : :class:`El`
+        shifted : :class:`El`
             The shifted element.
         """
         utils.typecheck(k, {
@@ -116,13 +119,13 @@ class OgPoset:
 
     Arguments
     ---------
-    face_data : list of list of dict of set of int
+    face_data : :class:`list[list[dict[set[int]]]]`
         Data encoding the oriented graded poset as follows:
         :code:`j in face_data[n][k][o]` if and only if
         :code:`El(n, k)` covers :code:`El(n-1, j)` with orientation
         :code:`o`, where :code:`o == '-'` or :code:`o == '+'`.
 
-    coface_data: list of list of dict of set of int
+    coface_data: :class:`list[list[dict[set[int]]]]`
         Data encoding the oriented graded poset as follows:
         :code:`j in coface_data[n][k][o]` if and only if
         :code:`El(n+1, j)` covers :code:`El(n, k)` with orientation
@@ -130,9 +133,9 @@ class OgPoset:
 
     Keyword arguments
     -----------------
-    wfcheck : bool
+    wfcheck : :class:`bool`
         Check that the data is well-formed (default is :code:`True`)
-    matchcheck : bool
+    matchcheck : :class:`bool`
         Check that `face_data` and `coface_data` match
         (default is :code:`True`)
 
@@ -277,7 +280,7 @@ class OgPoset:
 
         Returns
         -------
-        face_data : list of list of dict of set of int
+        face_data : :class:`list[list[dict[set[int]]]]`
             The face data as given to the object constructor.
         """
         return self._face_data
@@ -292,7 +295,7 @@ class OgPoset:
 
         Returns
         -------
-        coface_data : list of list of dict of set of int
+        coface_data : :class:`list[list[dict[set[int]]]]`
             The coface data as given to the object constructor.
         """
         return self._coface_data
@@ -304,7 +307,7 @@ class OgPoset:
 
         Returns
         -------
-        size : list of int
+        size : :class:`list[int]`
             The :code:`k` th entry is the number of
             :code:`k` -dimensional elements.
         """
@@ -318,7 +321,7 @@ class OgPoset:
 
         Returns
         -------
-        dim : int
+        dim : :class:`int`
             The dimension of the object.
         """
         return len(self.face_data) - 1
@@ -330,7 +333,7 @@ class OgPoset:
 
         Returns
         -------
-        chain : list of :class:`numpy.array`
+        chain : :class:`list[numpy.array]`
             Encodes the face data as follows:
             :code:`chain[n][i][j] == 1` if
             :code:`El(n, i)` is an output face of :code:`El(n+1, j)`,
@@ -416,7 +419,7 @@ class OgPoset:
         ---------
         element : :class:`El`
             An element of the object.
-        sign : str or int, optional
+        sign : :class:`str`, optional
             Orientation: :code:`'-'` for input, :code:`'+'` for output,
             :code:`None` (default) for both.
 
@@ -448,7 +451,7 @@ class OgPoset:
         ---------
         element : :class:`El`
             An element of the object.
-        sign : str or int, optional
+        sign : :class:`str`, optional
             Orientation: :code:`'-'` for input, :code:`'+'` for output,
             :code:`None` (default) for both.
 
@@ -513,10 +516,10 @@ class OgPoset:
 
         Arguments
         ---------
-        sign : str or int
+        sign : :class:`str`, optional
             Orientation: :code:`'-'` for input, :code:`'+'` for output,
             :code:`None` (default) for both.
-        dim : int
+        dim : :class:`int`, optional
             Dimension of the boundary (default is :code:`self.dim - 1`).
 
         Returns
@@ -550,9 +553,9 @@ class OgPoset:
 
         Arguments
         ---------
-        face_data : list of list of dict of set of int
+        face_data : :class:`list[list[dict[set[int]]]]`
             As in the main constructor.
-        wfcheck : bool
+        wfcheck : :class:`bool`, optional
             Check that the data is well-formed (default is :code:`True`).
         """
         if wfcheck:
@@ -704,7 +707,7 @@ class OgPoset:
         ---------
         ogp : :class:`OgPoset`
             The object to suspend.
-        n : int
+        n : :class:`int`, optional
             The number of iterations of the suspension (default is 1).
 
         Returns
@@ -911,7 +914,7 @@ class OgPoset:
         ---------
         ogp : :class:`OgPoset`
             An oriented graded poset.
-        dims : int
+        dims : :class:`int`
             Any number of dimensions; if none, defaults to *all* dimensions.
 
         Returns
@@ -1029,6 +1032,56 @@ class GrSet:
     """
     Class for sets of elements of an oriented graded poset, graded
     by their dimension.
+
+    Objects of the class behave as sets; several methods of the set class
+    are supported. However the data is stored in a way that allows
+    fast access to elements of a given dimension.
+
+    Arguments
+    ---------
+    elements : :class:`El`
+        Any number of elements.
+
+    Examples
+    --------
+    We create an instance by listing elements; repetitions do not count.
+
+    >>> test = GrSet(El(0, 2), El(0, 2), El(0, 3), El(2, 0), El(3, 1))
+    >>> test
+    GrSet(El(0, 2), El(0, 3), El(2, 0), El(3, 1))
+    >>> len(test)
+    4
+
+    We can access the subsets of elements of given dimensions with indexer
+    operators. These support slice syntax.
+
+    >>> test[0]
+    GrSet(El(0, 2), El(0, 3))
+    >>> test[0:3]
+    GrSet(El(0, 2), El(0, 3), El(2, 0))
+
+    The iterator for graded sets goes through the elements in increasing
+    dimension and, for each dimension, in increasing position.
+
+    >>> for x in test:
+    ...     print(x)
+    ...
+    El(0, 2)
+    El(0, 3)
+    El(2, 0)
+    El(3, 1)
+
+    We can add and remove elements.
+
+    >>> test.remove(El(0, 3))
+    >>> test
+    GrSet(El(0, 2), El(2, 0), El(3, 1))
+    >>> test.add(El(1, 1))
+    >>> test
+    GrSet(El(0, 2), El(1, 1), El(2, 0), El(3, 1))
+
+    Set methods such as union, difference, and intersection are available
+    with the same syntax.
     """
 
     def __init__(self, *elements):
@@ -1078,6 +1131,11 @@ class GrSet:
     def grades(self):
         """
         Returns the list of dimensions in which the graded set is not empty.
+
+        Returns
+        -------
+        grades : :class:`list[int]`
+            The list of dimensions in which the graded set is not empty.
         """
         return sorted(self._elements.keys())
 
@@ -1086,22 +1144,49 @@ class GrSet:
         """
         Returns the maximal dimension in which the graded set is not empty,
         or -1 if it is empty.
+
+        Returns
+        -------
+        dim : :class:`int`
+            The maximal dimension in which the graded set is not empty.
         """
         return max(self.grades, default=-1)
 
     @property
     def as_set(self):
-        """ Returns a non-graded set containing the same elements. """
+        """
+        Returns a Python set containing the same elements.
+
+        Returns
+        -------
+        as_set : :class:`set[El]`
+            A Python set containing the same elements.
+        """
         return {El(n, k) for n in self._elements for k in self._elements[n]}
 
     @property
     def as_list(self):
-        """ Returns the list of elements in increasing order. """
+        """
+        Returns the list of elements in increasing dimension, and,
+        dimensionwise, in increasing position.
+
+        Returns
+        -------
+        as_list : :class:`list[El]`
+            A list containing the same elements.
+        """
         return [El(n, k) for n in sorted(self._elements)
                 for k in sorted(self._elements[n])]
 
     def add(self, element):
-        """ Adds an element. """
+        """
+        Adds a single element.
+
+        Arguments
+        ---------
+        element : :class:`El`
+            The element to add.
+        """
         utils.typecheck(element, {'type': El})
 
         if element.dim in self.grades:
@@ -1110,7 +1195,14 @@ class GrSet:
             self._elements[element.dim] = {element.pos}
 
     def remove(self, element):
-        """ Removes an element. """
+        """
+        Removes a single element.
+
+        Arguments
+        ---------
+        element : :class:`El`
+            The element to remove.
+        """
         if element not in self:
             raise ValueError(utils.value_err(
                 element, 'not in graded set'))
@@ -1122,6 +1214,16 @@ class GrSet:
     def union(self, *others):
         """
         Returns the union of the graded set with other graded sets.
+
+        Arguments
+        ---------
+        others : :class:`GrSet`
+            Any number of graded sets.
+
+        Returns
+        -------
+        union : :class:`GrSet`
+            The union of the graded set with all the given others.
         """
         for x in others:
             utils.typecheck(x, {'type': GrSet})
@@ -1132,6 +1234,16 @@ class GrSet:
     def intersection(self, *others):
         """
         Returns the intersection of the graded set with other graded sets.
+
+        Arguments
+        ---------
+        others : :class:`GrSet`
+            Any number of graded sets.
+
+        Returns
+        -------
+        intersection : :class:`GrSet`
+            The intersection of the graded set with all the given others.
         """
         for x in others:
             utils.typecheck(x, {'type': GrSet})
@@ -1143,6 +1255,16 @@ class GrSet:
     def difference(self, other):
         """
         Returns the difference of the graded set with another graded set.
+
+        Arguments
+        ---------
+        other : :class:`GrSet`
+            Another graded set.
+
+        Returns
+        -------
+        difference : :class:`GrSet`
+            The difference between the two graded sets.
         """
         utils.typecheck(other, {'type': GrSet})
 
@@ -1150,17 +1272,48 @@ class GrSet:
         return GrSet(*difference_as_set)
 
     def issubset(self, other):
-        """ Returns whether the graded set is a subset of another. """
+        """
+        Returns whether the graded set is a subset of another.
+
+        Arguments
+        ---------
+        other : :class:`GrSet`
+            Another graded set.
+
+        Returns
+        -------
+        issubset : :class:`bool`
+            :code:`True` if and only `self` is a subset of `other`.
+        """
         utils.typecheck(other, {'type': GrSet})
         return self.as_set.issubset(other.as_set)
 
     def isdisjoint(self, other):
-        """ Returns whether the graded set is disjoint from another. """
+        """
+        Returns whether the graded set is disjoint from another.
+
+        Arguments
+        ---------
+        other : :class:`GrSet`
+            Another graded set.
+
+        Returns
+        -------
+        isdisjoint : :class:`bool`
+            :code:`True` if and only `self` and `other` are disjoint.
+        """
         utils.typecheck(other, {'type': GrSet})
         return self.as_set.isdisjoint(other.as_set)
 
     def copy(self):
-        """ Returns a copy of the graded set. """
+        """
+        Returns a copy of the graded set.
+
+        Returns
+        -------
+        copy : :class:`GrSet`
+            A copy of the graded set.
+        """
         return GrSet(*self)
 
 
