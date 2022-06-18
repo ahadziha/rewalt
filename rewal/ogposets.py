@@ -50,12 +50,26 @@ class El(tuple):
 
     @property
     def dim(self):
-        """ Returns the dimension of the element. """
+        """
+        Returns the dimension of the element.
+
+        Returns
+        -------
+        dim : int
+            The dimension of the element.
+        """
         return self[0]
 
     @property
     def pos(self):
-        """ Returns the position of the element. """
+        """
+        Returns the position of the element.
+
+        Returns
+        -------
+        pos : int
+            The position of the element 
+        """
         return self[1]
 
     def shifted(self, k):
@@ -70,7 +84,7 @@ class El(tuple):
 
         Returns
         -------
-        el : :class:`ogposets.El`
+        el : :class:`El`
             The shifted element.
         """
         utils.typecheck(k, {
@@ -84,46 +98,48 @@ class El(tuple):
 class OgPoset:
     """
     Defines an oriented graded poset, that is, a finite graded poset
-    with an orientation, that is a {'-', '+'}-labelling of the edges
-    of its Hasse diagram.
+    with an orientation, that is a :code:`{'-', '+'}`-labelling of the 
+    edges of its Hasse diagram.
 
     In this implementation, the elements of a given dimension (grade)
     are linearly ordered, so that each element is identified by its
     dimension and the position in the linear order, encoded as an object
-    of class `El`.
+    of class :class:`El`.
 
-    If El(n, k) covers El(n-1, j) with orientation o, we say that
-    El(n-1, j) is an *input face* of El(n, k) if o == '-' and an
-    *output face* of El(n, k) if o == '+'.
+    If :code:`El(n, k)` covers :code:`El(n-1, j)` with orientation 
+    :code:`o`, we say that :code:`El(n-1, j)` is an *input face* of 
+    :code:`El(n, k)` if :code:`o == '-'` and an *output face* of 
+    :code:`El(n, k)` if :code:`o == '+'`.
 
-    Defining an `OgPoset` directly is not recommended; use
-    constructors of `shapes.Shape` instead.
+    Defining an :class:`OgPoset` directly is not recommended; use
+    constructors of :class:`shapes.Shape` instead.
 
     Arguments
     ---------
     face_data : list of list of dict of set of int
         Data encoding the oriented graded poset as follows:
-        j in face_data[n][k][o] if and only if
-        El(n, k) covers El(n-1, j) with orientation o,
-        where o == '-' or o == '+'.
+        :code:`j in face_data[n][k][o]` if and only if
+        :code:`El(n, k)` covers :code:`El(n-1, j)` with orientation 
+        :code:`o`, where :code:`o == '-'` or :code:`o == '+'`.
 
     coface_data: list of list of dict of set of int
         Data encoding the oriented graded poset as follows:
-        j in coface_data[n][k][o] if and only if
-        El(n+1, j) covers El(n, k) with orientation o,
-        where o == '-' or o == '+'.
+        :code:`j in coface_data[n][k][o]` if and only if
+        :code:`El(n+1, j)` covers :code:`El(n, k)` with orientation 
+        :code:`o`, where :code:`o == '-'` or :code:`o == '+'`.
 
     Keyword arguments
     -----------------
     wfcheck : bool
-        Check that the data is well-formed, default is True
+        Check that the data is well-formed (default is :code:`True`)
     matchcheck : bool
-        Check that `face_data` and `coface_data` match, default is True
+        Check that `face_data` and `coface_data` match
+        (default is :code:`True`)
 
     Notes
     -----
     Each of `face_data`, `coface_data` determines the other uniquely.
-    There is an alternative constructor `from_face_data` that computes
+    There is an alternative constructor :meth:`from_face_data` that computes
     `coface_data` from `face_data`.
 
     Examples
@@ -222,48 +238,71 @@ class OgPoset:
     @property
     def face_data(self):
         """
-        Returns the defining face data.
+        Returns the face data as given to the object constructor.
 
-        This is meant to be immutable.
+        An :class:`OgPoset` is meant to be immutable; create a new
+        object if you need to modify the face data.
+
+        Returns
+        -------
+        face_data : list of list of dict of set of int
+            The face data as given to the object constructor.
         """
         return self._face_data
 
     @property
     def coface_data(self):
         """
-        Returns the defining coface data.
+        Returns the coface data as given to the object constructor.
 
-        This is meant to be immutable.
+        An :class:`OgPoset` is meant to be immutable; create a new
+        object if you need to modify the coface data.
+
+        Returns
+        -------
+        coface_data : list of list of dict of set of int
+            The coface data as given to the object constructor.
         """
         return self._coface_data
 
     @property
     def size(self):
         """
-        Returns the number of elements in each dimension, as a list.
+        Returns the number of elements in each dimension as a list.
+
+        Returns
+        -------
+        size : list of int
+            The :code:`k` th entry is the number of
+            :code:`k` -dimensional elements.
         """
         return [len(_) for _ in self.face_data]
 
     @property
     def dim(self):
         """
-        Returns the dimension of the `OgPoset`.
+        Returns the dimension of the object, that is, the maximum of
+        the dimensions of its elements.
+
+        Returns
+        -------
+        dim : int
+            The dimension of the object.
         """
         return len(self.face_data) - 1
 
     @property
     def as_chain(self):
         """ 
-        Returns a “chain complex” representation of the `OgPoset`.
+        Returns a “chain complex” representation of the face data.
 
         Returns
         -------
         chain : list of :class:`numpy.array`
             Encodes the face data as follows:
-            chain[n][i][j] == 1 if El(n+1, j) covers El(n, i) with
-            orientation +, 
-            -1 if El(n+1, j) covers El(n, i) with
-            orientation -, 0 otherwise.
+            :code:`chain[n][i][j] == 1` if 
+            :code:`El(n, i)` is an output face of :code:`El(n+1, j)`,
+            :code:`-1` if it is an input face, :code:`0` otherwise.
         """
         size, dim = self.size, self.dim
         chain = [
@@ -278,7 +317,14 @@ class OgPoset:
         return chain
 
     def all(self):
-        """ Returns the Closed subset of all elements. """
+        """
+        Returns the closed subset of all elements.
+
+        Returns
+        -------
+        all : :class:`Closed`
+            The closed subset of all elements of the object.
+        """
         return Closed(
                 GrSet(*[El(n, k) for n, n_data in enumerate(self.face_data)
                         for k, x in enumerate(n_data)]),
@@ -286,16 +332,43 @@ class OgPoset:
                 wfcheck=False)
 
     def none(self):
-        """ Returns the empty Closed subset. """
+        """
+        Returns the empty closed subset.
+
+        Returns
+        -------
+        none : :class:`Closed`
+            The closed subset with no elements.
+        """
         return Closed(GrSet(), self,
                       wfcheck=False)
 
     def underset(self, *elements):
-        """ Returns the closure of a set of elements in the OgPoset. """
+        """
+        Returns the closure of a set of elements in the object.
+
+        Arguments
+        ---------
+        elements : :class:`El`
+            Any number of elements.
+
+        Returns
+        -------
+        underset : :class:`Closed`
+            The downwards closure of the given elements.
+        """
         return GrSubset(GrSet(*elements), self).closure()
 
     def maximal(self):
-        """ Returns the GrSubset of maximal elements. """
+        """
+        Returns the subset of maximal elements, that is, those
+        that are not covered by any elements.
+
+        Returns
+        -------
+        maximal : :class:`GrSubset`
+            The subset of maximal elements.
+        """
         maximal = GrSet()
         for x in self:
             if self.cofaces(x) == GrSet():
@@ -306,6 +379,19 @@ class OgPoset:
     def faces(self, element, sign=None):
         """
         Returns the faces of an element as a graded set.
+
+        Arguments
+        ---------
+        element : :class:`El`
+            An element of the object.
+        sign : str or int, optional
+            Orientation: :code:`'-'` for input, :code:`'+'` for output,
+            :code:`None` (default) for both.
+
+        Returns
+        -------
+        faces : :class:`GrSet`
+            The set of faces of the given element.
         """
         if sign is None:
             return self.faces(element, '-').union(
@@ -325,6 +411,19 @@ class OgPoset:
     def cofaces(self, element, sign=None):
         """
         Returns the cofaces of an element as a graded set.
+
+        Arguments
+        ---------
+        element : :class:`El`
+            An element of the object.
+        sign : str or int, optional
+            Orientation: :code:`'-'` for input, :code:`'+'` for output,
+            :code:`None` (default) for both.
+
+        Returns
+        -------
+        cofaces : :class:`GrSet`
+            The set of cofaces of the given element.
         """
         if sign is None:
             return self.cofaces(element, '-').union(
@@ -342,7 +441,14 @@ class OgPoset:
                 )
 
     def id(self):
-        """ Returns the identity map on the OgPoset. """
+        """
+        Returns the identity map on the object.
+
+        Returns
+        -------
+        id : :class:`OgMap`
+            The identity map on the object.
+        """
         mapping = [
                 [
                     El(n, k) for k, x in enumerate(n_data)
@@ -353,26 +459,70 @@ class OgPoset:
                      wfcheck=False)
 
     def image(self, ogmap):
-        """ Returns the image of the whole OgPoset through an OgMap. """
+        """
+        Returns the image of the object through a map.
+
+        Arguments
+        ---------
+        ogmap : :class:`OgMap`
+            A map from the object to another :class:`OgPoset`.
+
+        Returns
+        -------
+        image : :class:`Closed`
+            The image of the object through the given map.
+        """
         return self.all().image(ogmap)
 
     def boundary(self, sign=None, dim=None):
-        """ Returns the inclusion of the n-boundary into the OgPoset. """
+        """
+        Returns the inclusion of the boundary of a given orientation
+        and dimension into the object.
+
+        Arguments
+        ---------
+        sign : str or int
+            Orientation: :code:`'-'` for input, :code:`'+'` for output,
+            :code:`None` (default) for both.
+        dim : int
+            Dimension of the boundary (default is :code:`self.dim - 1`).
+
+        Returns
+        -------
+        boundary : :class:`OgMap`
+            The inclusion of the requested boundary into the object.
+        """
         if isinstance(dim, int) and dim >= self.dim:
             return self.id()
         return self.all().boundary(sign, dim).as_map
 
     @property
     def input(self):
+        """
+        Alias for :code:`boundary('-')`.
+        """
         return self.boundary('-')
 
     @property
     def output(self):
+        """
+        Alias for :code:`boundary('+')`.
+        """
         return self.boundary('+')
 
     @classmethod
     def from_face_data(cls, face_data,
                        wfcheck=True):
+        """
+        Alternative constructor computing `coface_data` from `face_data`.
+
+        Arguments
+        ---------
+        face_data : list of list of dict of set of int
+            As in the main constructor.
+        wfcheck : bool
+            Check that the data is well-formed (default is :code:`True`).
+        """
         if wfcheck:
             cls._wfcheck(face_data)
         coface_data = cls._coface_from_face(face_data)
@@ -382,13 +532,27 @@ class OgPoset:
 
     @staticmethod
     def empty():
-        """ The initial oriented graded poset. """
+        """
+        Returns the initial oriented graded poset, with no elements.
+
+        Returns
+        -------
+        empty : :class:`OgPoset`
+            The empty oriented graded poset.
+        """
         return OgPoset([], [],
                        wfcheck=False, matchcheck=False)
 
     @staticmethod
     def point():
-        """ The terminal oriented graded poset. """
+        """
+        Returns the terminal oriented graded poset, with a single element.
+
+        Returns
+        -------
+        point : :class:`OgPoset`
+            The oriented graded poset with a single element.
+        """
         return OgPoset(
             [[{'-': set(), '+': set()}]],
             [[{'-': set(), '+': set()}]],
@@ -396,7 +560,21 @@ class OgPoset:
 
     @staticmethod
     def coproduct(fst, snd):
-        """ Returns the coproduct cospan of two OgPosets. """
+        """
+        Returns the coproduct cospan of two oriented graded posets.
+
+        Arguments
+        ---------
+        fst : :class:`OgPoset`
+            The first factor of the coproduct.
+        snd : :class:`OgPoset`
+            The second factor of the coproduct.
+
+        Returns
+        -------
+        coproduct : :class:`OgMapPair`
+            The coproduct cospan.
+        """
         for x in fst, snd:
             utils.typecheck(x, {'type': OgPoset})
 
@@ -462,14 +640,46 @@ class OgPoset:
     @staticmethod
     def disjoint_union(fst, snd):
         """
-        Returns the disjoint union of two OgPosets (the target
-        of the coproduct cospan).
+        Returns the disjoint union of two oriented graded posets, that is,
+        the target of their coproduct cospan.
+
+        This method can be called with the math operator :code:`+`, that is,
+        :code:`fst + snd` is equivalent to :code:`disjoint_union(fst, snd)`.
+
+        Arguments
+        ---------
+        fst : :class:`OgPoset`
+            The first factor of the disjoint union.
+        snd : :class:`OgPoset`
+            The second factor of the disjoint union.
+
+        Returns
+        -------
+        disjoint_union : :class:`OgPoset`
+            The disjoint union of the two.
         """
         return OgPoset.coproduct(fst, snd).target
 
     @staticmethod
     def suspend(ogp, n=1):
-        """ Returns the OgPoset suspended n times. """
+        """
+        Returns the n-fold suspension of an oriented graded poset.
+
+        This static method can be also used as a bound method, that is,
+        :code:`self.suspend(n)` is equivalent to :code:`suspend(self, n)`.
+        
+        Arguments
+        ---------
+        ogp : :class:`OgPoset`
+            The object to suspend.
+        n : int
+            The number of iterations of the suspension (default is 1).
+
+        Returns
+        -------
+        suspension : :class:`OgPoset`
+            The suspended object.
+        """
         utils.typecheck(ogp, {'type': OgPoset})
         utils.typecheck(n, {
             'type': int,
@@ -502,7 +712,23 @@ class OgPoset:
     @staticmethod
     def gray(*ogps):
         """
-        Returns the Gray product of a number of oriented graded posets.
+        Returns the Gray product of any number of oriented graded posets.
+
+        This method can be called with the math operator :code:`*`, that is,
+        :code:`fst * snd` is equivalent to :code:`gray(fst, snd)`.
+
+        This static method can also be used as a bound method, that is,
+        :code:`fst.gray(*ogps)` is equivalent to :code:`gray(fst, *ogps)`.
+
+        Arguments
+        ---------
+        ogps : :class:`OgPoset`
+            Any number of oriented graded posets.
+
+        Returns
+        -------
+        gray : :class:`OgPoset`
+            The Gray product of the arguments.
         """
         if len(ogps) == 0:
             return OgPoset.point()
@@ -566,8 +792,13 @@ class OgPoset:
 
     def bot(self):
         """
-        Returns the OgPoset augmented with a bottom element,
-        covered with positive orientation.
+        Returns the object augmented with a bottom element, covered
+        with orientation :code:`'+'`.
+
+        Returns
+        -------
+        bot : :class:`OgPoset`
+            The object augmented with a bottom element.
         """
         if len(self) == 0:
             return OgPoset.point()
@@ -582,7 +813,27 @@ class OgPoset:
 
     @staticmethod
     def join(*ogps):
-        """ Returns the join of a number of oriented graded posets. """
+        """
+        Returns the join of any number of oriented graded posets.
+
+        This method can be called with the bitwise operators :code:`>>`
+        and :code:`<<`, that is, :code:`fst >> snd` is equivalent to 
+        :code:`join(fst, snd)` and :code:`fst << snd` is equivalent to 
+        :code:`join(snd, fst)`.
+
+        This static method can also be used as a bound method, that is,
+        :code:`fst.join(*ogps)` is equivalent to :code:`join(fst, *ogps)`.
+
+        Arguments
+        ---------
+        ogps : :class:`OgPoset`
+            Any number of oriented graded posets.
+
+        Returns
+        -------
+        gray : :class:`OgPoset`
+            The join of the arguments.
+        """
         if len(ogps) == 0:
             return OgPoset.empty()
         if len(ogps) == 1:
@@ -618,7 +869,23 @@ class OgPoset:
     @staticmethod
     def dual(ogp, *dims):
         """
-        Reverses the orientation in the specified dimensions.
+        Returns an oriented graded poset with orientations reversed
+        in given dimensions.
+
+        This static method can be also used as a bound method, that is,
+        :code:`self.dual(*dims)` is equivalent to :code:`dual(self, *dims)`.
+
+        Arguments
+        ---------
+        ogp : :class:`OgPoset`
+            An oriented graded poset.
+        dims : int
+            Any number of dimensions; if none, defaults to *all* dimensions.
+
+        Returns
+        -------
+        dual : :class:`OgPoset`
+            The oriented graded poset, dualised in the given dimensions.
         """
         utils.typecheck(ogp, {'type': OgPoset})
         for x in dims:
@@ -648,19 +915,22 @@ class OgPoset:
 
     def op(self):
         """
-        Returns the dual in all odd dimensions.
+        Returns the :meth:`dual` in all *odd* dimensions.
         """
         odds = [n for n in range(self.dim + 1) if n % 2 == 1]
         return self.dual(*odds)
 
     def co(self):
         """
-        Returns the dual in all even dimensions.
+        Returns the :meth:`dual` in all *even* dimensions.
         """
         evens = [n for n in range(self.dim + 1) if n % 2 == 0]
         return self.dual(*evens)
 
     def hasse(self, **params):
+        """
+        Alias for :code:`hasse.draw(self, **params)`.
+        """
         from rewal.hasse import draw
         return draw(self, **params)
 
