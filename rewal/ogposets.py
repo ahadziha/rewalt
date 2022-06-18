@@ -9,7 +9,7 @@ from rewal import utils
 
 class El(tuple):
     """
-    Defines an element of an oriented graded poset, encoded as a pair
+    Class for elements of an oriented graded poset, encoded as pairs
     of non-negative integers: the dimension of the element, and its
     position in a linear order of elements of the given dimension.
 
@@ -68,7 +68,7 @@ class El(tuple):
         Returns
         -------
         pos : int
-            The position of the element 
+            The position of the element
         """
         return self[1]
 
@@ -97,18 +97,18 @@ class El(tuple):
 
 class OgPoset:
     """
-    Defines an oriented graded poset, that is, a finite graded poset
-    with an orientation, that is a :code:`{'-', '+'}`-labelling of the 
-    edges of its Hasse diagram.
+    Class for oriented graded posets, that is, finite graded posets
+    with an orientation, defined as a :code:`{'-', '+'}`-labelling of the
+    edges of their Hasse diagram.
 
     In this implementation, the elements of a given dimension (grade)
     are linearly ordered, so that each element is identified by its
     dimension and the position in the linear order, encoded as an object
     of class :class:`El`.
 
-    If :code:`El(n, k)` covers :code:`El(n-1, j)` with orientation 
-    :code:`o`, we say that :code:`El(n-1, j)` is an *input face* of 
-    :code:`El(n, k)` if :code:`o == '-'` and an *output face* of 
+    If :code:`El(n, k)` covers :code:`El(n-1, j)` with orientation
+    :code:`o`, we say that :code:`El(n-1, j)` is an *input face* of
+    :code:`El(n, k)` if :code:`o == '-'` and an *output face* of
     :code:`El(n, k)` if :code:`o == '+'`.
 
     Defining an :class:`OgPoset` directly is not recommended; use
@@ -119,13 +119,13 @@ class OgPoset:
     face_data : list of list of dict of set of int
         Data encoding the oriented graded poset as follows:
         :code:`j in face_data[n][k][o]` if and only if
-        :code:`El(n, k)` covers :code:`El(n-1, j)` with orientation 
+        :code:`El(n, k)` covers :code:`El(n-1, j)` with orientation
         :code:`o`, where :code:`o == '-'` or :code:`o == '+'`.
 
     coface_data: list of list of dict of set of int
         Data encoding the oriented graded poset as follows:
         :code:`j in coface_data[n][k][o]` if and only if
-        :code:`El(n+1, j)` covers :code:`El(n, k)` with orientation 
+        :code:`El(n+1, j)` covers :code:`El(n, k)` with orientation
         :code:`o`, where :code:`o == '-'` or :code:`o == '+'`.
 
     Keyword arguments
@@ -144,6 +144,9 @@ class OgPoset:
 
     Examples
     --------
+    Let us construct explicitly the “oriented face poset” of an arrow, or
+    directed edge.
+
     >>> face_data = [
     ...    [
     ...        {'-': set(), '+': set()},
@@ -158,10 +161,39 @@ class OgPoset:
     ...    ], [
     ...        {'-': set(), '+': set()}
     ...    ]]
-    >>> ogp = OgPoset(face_data, coface_data)
-    >>> assert ogp.faces(El(1, 0), '-') == GrSet(El(0, 0))
-    >>> assert ogp.cofaces(El(0, 1), '+') == GrSet(El(1, 0))
-    >>> assert El(0, 2) not in ogp
+    >>> arrow = OgPoset(face_data, coface_data)
+
+    This has two 0-dimensional elements and one 1-dimensional element.
+
+    >>> arrow.size
+    [2, 1]
+
+    We can visualise its Hasse diagram, with orientation conveyed by colour
+    (magenta for input, blue for output) and direction of arrows.
+
+    >>> arrow.hasse(path='docs/_static/img/OgPoset_arrow.png')
+
+    .. image:: ../_static/img/OgPoset_arrow.png
+        :align: center
+
+    We can ask for the faces and cofaces of a specific element.
+
+    >>> arrow.faces(El(1, 0), '-')
+    GrSet(El(0, 0))
+    >>> arrow.cofaces(El(0, 1))
+    GrSet(El(1, 0))
+
+    We can construct other oriented graded posets using various operations,
+    such as suspensions, Gray products, joins, or duals.
+
+    >>> print(arrow.suspend())
+    OgPoset with [2, 2, 1] elements
+    >>> print(arrow * arrow)
+    OgPoset with [4, 4, 1] elements
+    >>> print(arrow >> arrow)
+    OgPoset with [4, 6, 4, 1] elements
+    >>> print(arrow.dual())
+    OgPoset with [2, 1] elements
     """
 
     def __init__(self, face_data, coface_data, **params):
@@ -293,14 +325,14 @@ class OgPoset:
 
     @property
     def as_chain(self):
-        """ 
+        """
         Returns a “chain complex” representation of the face data.
 
         Returns
         -------
         chain : list of :class:`numpy.array`
             Encodes the face data as follows:
-            :code:`chain[n][i][j] == 1` if 
+            :code:`chain[n][i][j] == 1` if
             :code:`El(n, i)` is an output face of :code:`El(n+1, j)`,
             :code:`-1` if it is an input face, :code:`0` otherwise.
         """
@@ -667,7 +699,7 @@ class OgPoset:
 
         This static method can be also used as a bound method, that is,
         :code:`self.suspend(n)` is equivalent to :code:`suspend(self, n)`.
-        
+
         Arguments
         ---------
         ogp : :class:`OgPoset`
@@ -817,8 +849,8 @@ class OgPoset:
         Returns the join of any number of oriented graded posets.
 
         This method can be called with the bitwise operators :code:`>>`
-        and :code:`<<`, that is, :code:`fst >> snd` is equivalent to 
-        :code:`join(fst, snd)` and :code:`fst << snd` is equivalent to 
+        and :code:`<<`, that is, :code:`fst >> snd` is equivalent to
+        :code:`join(fst, snd)` and :code:`fst << snd` is equivalent to
         :code:`join(snd, fst)`.
 
         This static method can also be used as a bound method, that is,
@@ -995,7 +1027,8 @@ class OgPoset:
 
 class GrSet:
     """
-    Class for graded sets of elements of an oriented graded poset.
+    Class for sets of elements of an oriented graded poset, graded
+    by their dimension.
     """
 
     def __init__(self, *elements):
