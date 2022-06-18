@@ -1319,8 +1319,11 @@ class GrSet:
 
 class GrSubset:
     """
-    Class for pairs of a GrSet and an "ambient" OgPoset, where the GrSet
-    is seen as a subset of the ambient.
+    Class for pairs of a :class:`GrSet` and an “ambient” :class:`OgPoset`,
+    where the first is seen as a subset of the second.
+
+    While objects of the class :class:`GrSet` are mutable, once they are
+    tied to an :class:`OgPoset` they are to be treated as immutable.
     """
 
     def __init__(self, support, ambient, **params):

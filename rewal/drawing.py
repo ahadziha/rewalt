@@ -29,6 +29,24 @@ class DrawBackend(ABC):
                 'orientation', DEFAULT['orientation'])
         self.name = params.get('name', None)
 
+    def draw_wire(self, wire_xy, node_xy, **params):
+        """
+        Draws a wire from a wire vertex to a node vertex.
+        """
+        pass
+
+    def draw_label(self, label, xy, offset, **params):
+        pass
+
+    def draw_node(self, xy, **params):
+        pass
+
+    def draw_arrow(self, xy0, xy1, **params):
+        pass
+
+    def output(self, **params):
+        pass
+
     def rotate(self, xy):
         if self.orientation == 'tb':
             return (xy[0], 1-xy[1])
@@ -53,9 +71,7 @@ class TikZBackend(DrawBackend):
         self.labellayer = []
 
     def draw_wire(self, wire_xy, node_xy, **params):
-        """
-        Draws a wire from a wire vertex to a node vertex.
-        """
+        super().draw_wire(wire_xy, node_xy, **params)
         color = params.get('color', self.fgcolor)
         alpha = params.get('alpha', 1)
         depth = params.get('depth', True)
@@ -94,6 +110,7 @@ class TikZBackend(DrawBackend):
         self.wirelayer.append(wire)
 
     def draw_label(self, label, xy, offset, **params):
+        super().draw_label(label, xy, offset, **params)
         color = params.get('color', self.fgcolor)
 
         xy = self.rotate(xy)
@@ -107,6 +124,7 @@ class TikZBackend(DrawBackend):
         self.labellayer.append(label)
 
     def draw_node(self, xy, **params):
+        super().draw_node(xy, **params)
         color = params.get('color', self.fgcolor)
         stroke = params.get('stroke', color)
 
@@ -117,6 +135,7 @@ class TikZBackend(DrawBackend):
         self.nodelayer.append(node)
 
     def draw_arrow(self, xy0, xy1, **params):
+        super().draw_arrow(xy0, xy1, **params)
         color = params.get('color', self.fgcolor)
         shorten = params.get('shorten', 1)
 
@@ -138,15 +157,17 @@ class TikZBackend(DrawBackend):
         self.arrowlayer.append(arrow)
 
     def output(self, **params):
+        super().output(**params)
         path = params.get('path', None)
         show = params.get('show', True)
+
         scale = params.get('scale', 1)
         xscale = params.get('xscale', scale)
         yscale = params.get('yscale', scale)
 
         baseline = '{([yshift=-.5ex]current bounding box.center)}'
         lines = [
-                '\\begin{{tikzpicture}}[xscale={}, yscale={}, '\
+                '\\begin{{tikzpicture}}[xscale={}, yscale={}, '
                 'baseline={}]\n'.format(
                     xscale,
                     yscale,
@@ -180,12 +201,10 @@ class MatBackend(DrawBackend):
             self.axes.spines[side].set_visible(False)
 
     def draw_wire(self, wire_xy, node_xy, **params):
-        """
-        Draws a wire from a wire vertex to a node vertex.
-        """
+        super().draw_wire(wire_xy, node_xy, **params)
         color = params.get('color', self.fgcolor)
-        depth = params.get('depth', True)
         alpha = params.get('alpha', 1)
+        depth = params.get('depth', True)
 
         if depth:
             width = .02
@@ -235,7 +254,9 @@ class MatBackend(DrawBackend):
         self.axes.add_patch(p_wire)
 
     def draw_label(self, label, xy, offset, **params):
+        super().draw_label(label, xy, offset, **params)
         color = params.get('color', self.fgcolor)
+
         ha = params.get('ha', 'left')
         va = params.get('va', 'baseline')
 
@@ -251,6 +272,7 @@ class MatBackend(DrawBackend):
                 va=va)
 
     def draw_node(self, xy, **params):
+        super().draw_node(xy, **params)
         color = params.get('color', self.fgcolor)
         stroke = params.get('stroke', color)
 
@@ -263,6 +285,7 @@ class MatBackend(DrawBackend):
                 edgecolors=stroke)
 
     def draw_arrow(self, xy0, xy1, **params):
+        super().draw_arrow(xy0, xy1, **params)
         color = params.get('color', self.fgcolor)
         shorten = params.get('shorten', 1)
 
@@ -287,6 +310,7 @@ class MatBackend(DrawBackend):
                     shrinkB=0))
 
     def output(self, **params):
+        super().output(**params)
         path = params.get('path', None)
         show = params.get('show', True)
 
