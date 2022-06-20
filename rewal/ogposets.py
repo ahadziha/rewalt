@@ -547,7 +547,7 @@ class OgPoset:
 
     @classmethod
     def from_face_data(cls, face_data,
-                       wfcheck=True):
+                       **params):
         """
         Alternative constructor computing `coface_data` from `face_data`.
 
@@ -555,9 +555,13 @@ class OgPoset:
         ---------
         face_data : :class:`list[list[dict[set[int]]]]`
             As in the main constructor.
-        wfcheck : :class:`bool`, optional
+
+        Keyword arguments
+        -----------------
+        wfcheck : :class:`bool`
             Check that the data is well-formed (default is :code:`True`).
         """
+        wfcheck = params.get('wfcheck', True)
         if wfcheck:
             cls._wfcheck(face_data)
         coface_data = cls._coface_from_face(face_data)
@@ -1669,7 +1673,50 @@ class GrSubset:
 
 class Closed(GrSubset):
     """
-    Subclass of GrSubset for closed subsets of oriented graded posets.
+    Subclass of :class:`GrSubset` for (downwards) closed subsets.
+
+    Implements a number of methods that do not make sense for
+    non-closed subsets, in particular those computing input and output
+    boundaries in each dimension.
+
+    Arguments
+    ---------
+    support : :class:`GrSet`
+        The underlying graded set.
+    ambient : :class:`OgPoset`
+        The ambient oriented graded poset.
+
+    Keyword arguments
+    -----------------
+    wfcheck : :class:`bool`
+        Check whether the support is a well-formed, closed subset of 
+        the ambient (default is :code:`True`).
+    
+    Notes
+    -----
+    There is an alternative constructor :meth:`subset` which takes
+    a :class:`GrSubset`, and “upgrades” it to a :class:`Closed` if it
+    is downwards closed.
+
+    Examples
+    --------
+    After creating an oriented graded poset, we can obtain the closed
+    subset of *all* its elements with :meth:`OgPoset.all`.
+
+    >>> point = OgPoset.point()
+    >>> triangle = point >> point >> point
+    >>> all = triangle.all()
+
+    We can compute its input and output boundary...
+
+    >>> all_in = all.input
+    >>> all_out = all.output
+
+    And since :code:`all` happens to be a *molecule*, we can check the
+    “globular” relations.
+
+    >>> assert all_in.input == all_out.input
+    >>> assert all_in.output == all_out.output
     """
     def __init__(self, support, ambient, **params):
         wfcheck = params.get('wfcheck', True)
@@ -1683,8 +1730,14 @@ class Closed(GrSubset):
     @property
     def as_map(self):
         """
-        Returns an injective OgMap representing the inclusion of
-        the closed subset in the ambient.
+        Returns an injective map representing the inclusion of the closed
+        subset in the ambient.
+
+        Returns
+        -------
+        as_map : :class:`OgMap`
+            A map of oriented graded posets representing the inclusion of
+            the closed subset.
         """
         mapping = [self.support[n].as_list
                    for n in range(self.dim + 1)]
@@ -1705,8 +1758,13 @@ class Closed(GrSubset):
     @property
     def ispure(self):
         """
-        Returns whether the maximal elements of the closed subset
-        all have the same dimension.
+        Returns whether the maximal elements of the closed subset all have
+        the same dimension.
+
+        Returns
+        -------
+        ispure : :class:`bool`
+            :code:`True` if and only if the subset is pure.
         """
         for x in self.maximal():
             if x.dim != self.dim:
@@ -1716,7 +1774,18 @@ class Closed(GrSubset):
     @property
     def isround(self):
         """
-        Returns whether the closed subset "has spherical boundary".
+        Returns whether the closed subset is round (“has spherical 
+        boundary”).
+
+        This means that, for all :code:`k` smaller than the dimension of
+        the subset, the intersection of its input :code:`k`-boundary
+        and of its output :code:`k`-boundary is equal to its :code:`(k-1)`-
+        boundary.
+
+        Returns
+        -------
+        isround : :class:`bool`
+            :code:`True` if and only if the subset is round.
         """
         if not self.ispure:
             return False
@@ -1733,8 +1802,13 @@ class Closed(GrSubset):
 
     def maximal(self):
         """
-        Returns the subset of elements that are not below any other
-        element in the graded set.
+        Returns the subset of maximal elements, that is, those that are not
+        covered by any other element in the closed subset.
+
+        Returns
+        -------
+        maximal : :class:`GrSubset`
+            The subset of maximal elements.
         """
         maximal = GrSet()
         for x in self:
@@ -1746,8 +1820,21 @@ class Closed(GrSubset):
 
     def boundary_max(self, sign=None, dim=None):
         """
-        Returns the set of maximal elements of the n-boundary of
-        the closed set.
+        Returns the subset of maximal elements of the boundary of a given
+        orientation and dimension.
+
+        Arguments
+        ---------
+        sign : :class:`str`, optional
+            Orientation: :code:`'-'` for input, :code:`'+'` for output,
+            :code:`None` (default) for both.
+        dim : :class:`int`, optional
+            Dimension of the boundary (default is :code:`self.dim - 1`).
+
+        Returns
+        -------
+        boundary_max : :class:`GrSubset`
+            The maximal elements of the requested boundary.
         """
         _sign = utils.flip(
                 utils.mksign(sign)) if sign is not None else '-'
@@ -1768,7 +1855,20 @@ class Closed(GrSubset):
 
     def boundary(self, sign=None, dim=None):
         """
-        Returns the n-boundary of the closed set.
+        Returns the boundary of a given orientation and dimension.
+
+        Arguments
+        ---------
+        sign : :class:`str`, optional
+            Orientation: :code:`'-'` for input, :code:`'+'` for output,
+            :code:`None` (default) for both.
+        dim : :class:`int`, optional
+            Dimension of the boundary (default is :code:`self.dim - 1`).
+
+        Returns
+        -------
+        boundary : :class:`Closed`
+            The requested boundary subset.
         """
         if isinstance(dim, int) and dim >= self.dim:
             return self
@@ -1776,15 +1876,37 @@ class Closed(GrSubset):
 
     @property
     def input(self):
+        """
+        Alias for :code:`boundary('-')`.
+        """
         return self.boundary('-')
 
     @property
     def output(self):
+        """
+        Alias for :code:`boundary('+')`.
+        """
         return self.boundary('+')
 
     @staticmethod
     def subset(grsubset,
                wfcheck=True):
+        """
+        Alternative constructor that promotes a :class:`GrSubset` to a
+        :class:`Closed`.
+
+        Arguments
+        ---------
+        grsubset : :class:`GrSubset`
+            The subset to promote.
+
+        Keyword arguments
+        -----------------
+        wfcheck : :class:`bool`
+            Check whether the subset is downwards closed
+            (default is :code:`True`).
+        """
+        wfcheck = params.get('wfcheck', True)
         if wfcheck:
             if not grsubset.isclosed:
                 raise ValueError(grsubset.support, 'not a closed subset')
