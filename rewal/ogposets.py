@@ -1319,11 +1319,56 @@ class GrSet:
 
 class GrSubset:
     """
-    Class for pairs of a :class:`GrSet` and an “ambient” :class:`OgPoset`,
-    where the first is seen as a subset of the second.
+    Class for graded subsets, that is, pairs of a :class:`GrSet` and an
+    “ambient” :class:`OgPoset`, where the first is seen as a subset of
+    the second.
 
     While objects of the class :class:`GrSet` are mutable, once they are
-    tied to an :class:`OgPoset` they are to be treated as immutable.
+    tied to an :class:`OgPoset` they should be treated as immutable.
+
+    Arguments
+    ---------
+    support : :class:`GrSet`
+        The underlying graded set.
+    ambient : :class:`OgPoset`
+        The ambient oriented graded poset.
+
+    Keyword arguments
+    -----------------
+    wfcheck : :class:`bool`
+        Check whether the support is a well-formed subset of the ambient,
+        that is, it has no elements out of range (default is :code:`True`).
+
+    Notes
+    -----
+    Two graded subsets are equal if and only if they have the same
+    elements, *and* they are subsets of the same :class:`OgPoset`.
+
+    Examples
+    --------
+    We create an oriented graded poset and a pair of graded sets.
+
+    >>> point = OgPoset.point()
+    >>> triangle = point >> point >> point
+    >>> set1 = GrSet(El(1, 1), El(0, 1))
+    >>> set2 = GrSet(El(0, 3))
+
+    We can attach :code:`set1` to :code:`triangle` as a subset.
+
+    >>> subset = GrSubset(set1, triangle)
+    >>> assert subset.support == set1
+
+    Trying to do the same with :code:`set2` returns a :class:`ValueError`
+    because :code:`El(0, 3)` is out of range.
+
+    We can compute the downwards closure of :code:`set1` in
+    :code:`triangle`.
+
+    >>> subset.closure().support
+    GrSet(El(0, 0), El(0, 1), El(0, 2), El(1, 1))
+
+    All the set-theoretic operations apply to graded subsets as long
+    as they have the same ambient :class:`OgPoset`.
     """
 
     def __init__(self, support, ambient, **params):
@@ -1361,22 +1406,44 @@ class GrSubset:
     @property
     def support(self):
         """
-        Returns the underlying GrSet (the 'support' of the subset).
+        Returns the underlying graded set (the “support” of the subset).
+
+        Returns
+        -------
+        support : :class:`GrSet`
+            The underlying graded set.
         """
         return self._support
 
     @property
     def ambient(self):
-        """ Returns the ambient OgPoset. """
+        """
+        Returns the ambient oriented graded poset.
+
+        Returns
+        -------
+        ambient : :class:`OgPoset`
+            The ambient oriented graded poset.
+        """
         return self._ambient
 
     @property
     def dim(self):
+        """
+        Shorthand for :code:`support.dim`.
+        """
         return self.support.dim
 
     @property
     def isclosed(self):
-        """ Returns whether the subset is closed. """
+        """
+        Returns whether the subset is (downwards) closed.
+        
+        Returns
+        -------
+        isclosed : :class:`bool`
+            :code:`True` if and only if the subset is downwards closed.
+        """
         for n in range(self.dim, 0, -1):
             for x in self[n]:
                 for face in self.ambient.faces(x):
@@ -1386,7 +1453,23 @@ class GrSubset:
 
     def union(self, *others):
         """
-        Returns the union with other subsets of the same OgPoset.
+        Returns the union with other graded subsets of the same oriented
+        graded poset.
+
+        Arguments
+        ---------
+        others : :class:`GrSubset`
+            Any number of graded subsets of the same oriented graded poset.
+
+        Returns
+        -------
+        union : :class:`GrSubset`
+            The union of the graded subset with all the given others.
+
+        Notes
+        -----
+        If all the arguments have type :class:`Closed`, the union also
+        has type :class:`Closed`.
         """
         others_support = []
         same_type = True
@@ -1410,7 +1493,23 @@ class GrSubset:
 
     def intersection(self, *others):
         """
-        Returns the intersection with other subsets of the same OgPoset.
+        Returns the intersection with other graded subsets of the same
+        oriented graded poset.
+
+        Arguments
+        ---------
+        others : :class:`GrSubset`
+            Any number of graded subsets of the same oriented graded poset.
+
+        Returns
+        -------
+        intersection : :class:`GrSubset`
+            The intersection of the graded subset with all the given others.
+
+        Notes
+        -----
+        If all the arguments have type :class:`Closed`, the intersection also
+        has type :class:`Closed`.
         """
         others_support = []
         same_type = True
@@ -1434,7 +1533,18 @@ class GrSubset:
 
     def difference(self, other):
         """
-        Returns the difference with another subset of the same OgPoset.
+        Returns the difference with another graded subset of the same
+        oriented graded poset.
+
+        Arguments
+        ---------
+        other : :class:`GrSubset`
+            Another graded subset of the same oriented graded poset.
+
+        Returns
+        -------
+        difference : :class:`GrSubset`
+            The difference between the two graded subsets.
         """
         utils.typecheck(other, {
             'type': GrSubset,
@@ -1446,6 +1556,20 @@ class GrSubset:
                         wfcheck=False)
 
     def issubset(self, other):
+        """
+        Returns whether the object is a subset of another subset of
+        the same oriented graded poset.
+
+        Arguments
+        ---------
+        other : :class:`GrSubset`
+            Another graded subset of the same oriented graded poset.
+
+        Returns
+        -------
+        issubset : :class:`bool`
+            :code:`True` if and only `self` is a subset of `other`.
+        """
         utils.typecheck(other, {
             'type': GrSubset,
             'st': lambda x: x.ambient == self.ambient,
@@ -1454,6 +1578,20 @@ class GrSubset:
         return self.support.issubset(other.support)
 
     def isdisjoint(self, other):
+        """
+        Returns whether the object is disjoint from another graded subset
+        of the same oriented graded poset.
+
+        Arguments
+        ---------
+        other : :class:`GrSubset`
+            Another graded subset of the same oriented graded poset.
+
+        Returns
+        -------
+        issubset : :class:`bool`
+            :code:`True` if and only `self` and `other` are disjoint.
+        """
         utils.typecheck(other, {
             'type': GrSubset,
             'st': lambda x: x.ambient == self.ambient,
@@ -1463,7 +1601,12 @@ class GrSubset:
 
     def closure(self):
         """
-        Returns the closure of the subset as an object of type Closed.
+        Returns the downwards closure of the graded subset.
+
+        Returns
+        -------
+        closure : :class:`Closed`
+            The downwards closure of the subset.
         """
         closure = self.support.copy()
 
@@ -1477,7 +1620,23 @@ class GrSubset:
 
     def image(self, ogmap):
         """
-        Returns the image of the graded subset through an OgMap.
+        Returns the image of the graded subset through a map of oriented
+        graded posets.
+
+        Arguments
+        ---------
+        ogmap : :class:`OgMap`
+            A map from the ambient to another :class:`OgPoset`.
+
+        Returns
+        -------
+        image : :class:`GrSubset`
+            The image of the subset through the given map.
+
+        Notes
+        -----
+        If the object has type :class:`Closed`, its image has also type
+        :class:`Closed`.
         """
         utils.typecheck(ogmap, {
             'type': OgMap,
