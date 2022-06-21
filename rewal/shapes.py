@@ -17,11 +17,11 @@ class Shape(OgPoset):
     Properly formed objects of the class are unique encodings of the
     *regular molecules* from the theory of diagrammatic sets (plus the
     empty shape, which is not considered a regular molecule).
-    
+
     To create shapes, we start from basic constructors such as
     :meth:`empty`, :meth:`point`, or one of the named shape constructors,
     such as :meth:`globe`, :meth:`simplex`, :meth:`cube`.
-    
+
     Then we generate new shapes by gluing basic shapes together with
     :meth:`paste`, :meth:`to_inputs`, :meth:`to_outputs`, or by
     producing new higher-dimensional shapes with operations such as
@@ -31,7 +31,7 @@ class Shape(OgPoset):
     subclasses of separate interest, which include the *globes*,
     the *oriented simplices*, the *oriented cubes*, and the
     *positive opetopes*. This is to enable the specification of special
-    methods for subclasses of shapes. 
+    methods for subclasses of shapes.
 
     Currently only the :class:`Cube` and :class:`Simplex` classes have
     special methods implemented.
@@ -67,7 +67,7 @@ class Shape(OgPoset):
         -------
         layers : :class:`list[ShapeMap]`
             The current layering.
-        """ 
+        """
         return self.id().layers
 
     @property
@@ -106,9 +106,14 @@ class Shape(OgPoset):
 
         Returns
         -------
-        atom : :class:`Shape` | :class:`OgMapPair`
+        atom : :class:`Shape` | :class:`ogposets.OgMapPair`
             The new atomic shape (optionally with the cospan of
             inclusions of its boundaries).
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the boundaries do not match, or are not round.
 
         Examples
         --------
@@ -120,6 +125,7 @@ class Shape(OgPoset):
         >>> binary.draw(path='docs/_static/img/Shape_atom.png')
 
         .. image:: ../_static/img/Shape_atom.png
+            :width: 400
             :align: center
         """
         cospan = params.get('cospan', False)
@@ -210,8 +216,63 @@ class Shape(OgPoset):
     @staticmethod
     def paste(fst, snd, dim=None, **params):
         """
-        Returns the pasting of two shapes along the output k-boundary
-        of the first and the input k-boundary of the second.
+        Given two shapes and :code:`k` such that the output
+        :code:`k`-boundary of the first is equal to the input
+        :code:`k`-boundary of the second, returns their pasting along
+        the matching boundaries.
+
+        Arguments
+        ---------
+        fst : :class:`Shape`
+            The first shape.
+        snd : :class:`Shape`
+            The second shape.
+        dim : :class:`int`, optional
+            The dimension of the boundary along which they will be pasted
+            (default is :code:`min(fst.dim, snd.dim) - 1`).
+
+        Keyword arguments
+        -----------------
+        cospan : :class:`bool`
+            Whether to return the cospan of inclusions of the two shapes
+            into the pasting (default is :code:`False`).
+
+        Returns
+        -------
+        paste : :class:`Shape` | :class:`ogposets.OgMapPair`
+            The pasted shape (optionally with the cospan of
+            inclusions of its components).
+
+        Examples
+        --------
+        We can paste two 2-dimensional globes either “vertically” along
+        their 1-dimensional boundary or “horizontally” along their
+        0-dimensional boundary.
+
+        >>> globe = Shape.globe(2)
+        >>> vert = globe.paste(globe)
+        >>> horiz = globe.paste(globe, 0)
+        >>> vert.draw(path='docs/_static/img/Shape_paste_vert.png')
+
+        .. image:: ../_static/img/Shape_paste_vert.png
+            :width: 400
+            :align: center
+
+        >>> horiz.draw(path='docs/_static/img/Shape_paste_horiz.png')
+
+        .. image:: ../_static/img/Shape_paste_horiz.png
+            :width: 400
+            :align: center
+
+        We can also check that the interchange equation holds.
+
+        >>> assert vert.paste(vert, 0) == horiz.paste(horiz)
+        >>> horiz.paste(horiz).draw(
+        ...     path='docs/_static/img/Shape_paste_interchange.png')
+
+        .. image:: ../_static/img/Shape_paste_interchange.png
+            :width: 400
+            :align: center
         """
         cospan = params.get('cospan', False)
 
@@ -404,6 +465,9 @@ class Shape(OgPoset):
             other_boundary,
             inclusion,
             wfcheck=False, **params)
+
+    def rewrite(self, positions, shape):
+        return self.to_outputs(positions, shape, self.dim)
 
     @staticmethod
     def suspend(shape, n=1):

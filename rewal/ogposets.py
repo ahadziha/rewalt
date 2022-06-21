@@ -179,6 +179,7 @@ class OgPoset:
     >>> arrow.hasse(path='docs/_static/img/OgPoset_arrow.png')
 
     .. image:: ../_static/img/OgPoset_arrow.png
+        :width: 400
         :align: center
 
     We can ask for the faces and cofaces of a specific element.
