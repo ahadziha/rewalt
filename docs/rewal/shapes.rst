@@ -12,6 +12,3 @@ shapes
    rewal.shapes.ShapeMap
    rewal.shapes.Simplex
    rewal.shapes.Cube
-   rewal.shapes.Arrow
-   rewal.shapes.Point
-   rewal.shapes.Empty

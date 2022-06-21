@@ -11,7 +11,30 @@ from rewal.ogposets import (El, OgPoset, GrSet, GrSubset, Closed,
 
 class Shape(OgPoset):
     """
-    Class for shapes of cells and diagrams.
+    Inductive subclass of :class:`ogposets.OgPoset` for shapes of
+    cells and diagrams.
+
+    Properly formed objects of the class are unique encodings of the
+    *regular molecules* from the theory of diagrammatic sets (plus the
+    empty shape, which is not considered a regular molecule).
+    
+    To create shapes, we start from basic constructors such as
+    :meth:`empty`, :meth:`point`, or one of the named shape constructors,
+    such as :meth:`globe`, :meth:`simplex`, :meth:`cube`.
+    
+    Then we generate new shapes by gluing basic shapes together with
+    :meth:`paste`, :meth:`to_inputs`, :meth:`to_outputs`, or by
+    producing new higher-dimensional shapes with operations such as
+    :meth:`atom`, :meth:`gray`, :meth:`join`.
+
+    When possible, the constructors place the shapes in appropriate
+    subclasses of separate interest, which include the *globes*,
+    the *oriented simplices*, the *oriented cubes*, and the
+    *positive opetopes*. This is to enable the specification of special
+    methods for subclasses of shapes. 
+
+    Currently only the :class:`Cube` and :class:`Simplex` classes have
+    special methods implemented.
     """
     def __new__(self):
         return OgPoset.__new__(Empty)
@@ -20,22 +43,44 @@ class Shape(OgPoset):
     def isatom(self):
         """
         Returns whether the shape is an atom (has a greatest element).
+
+        Returns
+        -------
+        isatom : :class:`bool`
+            :code:`True` if and only if the shape has a greatest element.
         """
         return len(self.maximal()) == 1
 
     @property
     def isround(self):
         """
-        Returns whether the shape is round (has spherical boundary).
+        Shorthand for :code:`all().isround`.
         """
         return self.all().isround
 
     @property
     def layers(self):
+        """
+        Returns the current layering of the shape.
+
+        Returns
+        -------
+        layers : :class:`list[ShapeMap]`
+            The current layering.
+        """ 
         return self.id().layers
 
     @property
     def rewrite_steps(self):
+        """
+        Returns the sequence of rewrite steps associated to the current
+        layering of the shape.
+
+        Returns
+        -------
+        rewrite_steps : :class:`list[ShapeMap]`
+            The current sequence of rewrite steps.
+        """
         return self.id().rewrite_steps
 
     # Main constructors
@@ -45,6 +90,37 @@ class Shape(OgPoset):
         Given two shapes with identical round boundaries, returns a new
         atomic shape whose input boundary is the first one and output
         boundary the second one.
+
+        Arguments
+        ---------
+        fst : :class:`Shape`
+            The input boundary shape.
+        snd : :class:`Shape`
+            The output boundary shape.
+
+        Keyword arguments
+        -----------------
+        cospan : :class:`bool`
+            Whether to return the cospan of inclusions of the input and
+            output boundaries (default is :code:`False`).
+
+        Returns
+        -------
+        atom : :class:`Shape` | :class:`OgMapPair`
+            The new atomic shape (optionally with the cospan of
+            inclusions of its boundaries).
+
+        Examples
+        --------
+        We create a 2-dimensional cell shape with two input 1-cells
+        and one output 2-cell.
+
+        >>> arrow = Shape.arrow()
+        >>> binary = arrow.paste(arrow).atom(arrow)
+        >>> binary.draw(path='docs/_static/img/Shape_atom.png')
+
+        .. image:: ../_static/img/Shape_atom.png
+            :align: center
         """
         cospan = params.get('cospan', False)
 

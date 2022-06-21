@@ -9,9 +9,11 @@ from rewal import utils
 
 class El(tuple):
     """
-    Class for elements of an oriented graded poset, encoded as pairs
-    of non-negative integers: the dimension of the element, and its
-    position in a linear order of elements of the given dimension.
+    Class for elements of an oriented graded poset.
+
+    An element is encoded as a pair of non-negative integers:
+    the dimension of the element, and its position in a linear
+    order of elements of the given dimension.
 
     Arguments
     ---------
@@ -252,7 +254,6 @@ class OgPoset:
         return OgPoset.disjoint_union(self, other)
 
     def __mul__(self, other):
-        """ Returns the Gray product. """
         return self.gray(other)
 
     def __pow__(self, times):
@@ -260,14 +261,12 @@ class OgPoset:
         return self.__class__.gray(*[self for _ in range(times)])
 
     def __rshift__(self, other):
-        """ Returns the join. """
         return self.join(other)
 
     def __lshift__(self, other):
         return other.join(self)
 
     def __invert__(self):
-        """ Returns the dual. """
         return self.dual()
 
     @property
@@ -855,7 +854,7 @@ class OgPoset:
         """
         Returns the join of any number of oriented graded posets.
 
-        This method can be called with the bitwise operators :code:`>>`
+        This method can be called with the shift operators :code:`>>`
         and :code:`<<`, that is, :code:`fst >> snd` is equivalent to
         :code:`join(fst, snd)` and :code:`fst << snd` is equivalent to
         :code:`join(snd, fst)`.
@@ -870,7 +869,7 @@ class OgPoset:
 
         Returns
         -------
-        gray : :class:`OgPoset`
+        join : :class:`OgPoset`
             The join of the arguments.
         """
         if len(ogps) == 0:
@@ -910,6 +909,10 @@ class OgPoset:
         """
         Returns an oriented graded poset with orientations reversed
         in given dimensions.
+
+        The dual in all dimensions can also be called with the bit negation
+        operator :code:`~`, that is, :code:`~ogp` is equivalent to
+        :code:`ogp.dual()`.
 
         This static method can be also used as a bound method, that is,
         :code:`self.dual(*dims)` is equivalent to :code:`dual(self, *dims)`.
@@ -968,7 +971,10 @@ class OgPoset:
 
     def hasse(self, **params):
         """
-        Alias for :code:`hasse.draw(self, **params)`.
+        Bound version of :meth:`hasse.draw`.
+
+        Calling :code:`x.hasse(**params)` is equivalent to calling
+        :code:`hasse.draw(x, **params)`.
         """
         from rewal.hasse import draw
         return draw(self, **params)
@@ -1442,7 +1448,7 @@ class GrSubset:
     def isclosed(self):
         """
         Returns whether the subset is (downwards) closed.
-        
+
         Returns
         -------
         isclosed : :class:`bool`
@@ -1689,9 +1695,9 @@ class Closed(GrSubset):
     Keyword arguments
     -----------------
     wfcheck : :class:`bool`
-        Check whether the support is a well-formed, closed subset of 
+        Check whether the support is a well-formed, closed subset of
         the ambient (default is :code:`True`).
-    
+
     Notes
     -----
     There is an alternative constructor :meth:`subset` which takes
@@ -1774,7 +1780,7 @@ class Closed(GrSubset):
     @property
     def isround(self):
         """
-        Returns whether the closed subset is round (“has spherical 
+        Returns whether the closed subset is round (“has spherical
         boundary”).
 
         This means that, for all :code:`k` smaller than the dimension of
@@ -1889,8 +1895,7 @@ class Closed(GrSubset):
         return self.boundary('+')
 
     @staticmethod
-    def subset(grsubset,
-               wfcheck=True):
+    def subset(grsubset, **params):
         """
         Alternative constructor that promotes a :class:`GrSubset` to a
         :class:`Closed`.
@@ -1916,7 +1921,70 @@ class Closed(GrSubset):
 
 class OgMap:
     """
-    Class for (partial) maps of oriented graded posets.
+    Class for (partial) maps of oriented graded posets, compatible with
+    boundaries.
+
+    To define a map on one element, it must have been defined on all
+    elements below it. The assignment can be made all at once, or element
+    by element. Once the map has been defined on an element, the assignment
+    cannot be modified.
+
+    Arguments
+    ---------
+    source : :class:`OgPoset`
+        The source (domain) of the map.
+    target : :class:`OgPoset`
+        The target (codomain) of the map.
+    mapping : :class:`list[list[El]]`, optional
+        Data specifying the partial map as follows:
+        :code:`mapping[n][k] == El(m, j)` if the map sends :code:`El(n, k)`
+        to :code:`El(m, j)`, and :code:`None` if the map is undefined
+        on :code:`El(n, k)` (default is the nowhere defined map).
+
+    Keyword arguments
+    -----------------
+    wfcheck : :class:`bool`
+        Check whether the data defines a well-formed map compatible with
+        all boundaries (default is :code:`True`).
+
+    Notes
+    -----
+    Objects of the class are callable on objects of type :class:`El`
+    (returning the image of an element) and of type :class:`GrSubset` and
+    :class:`GrSet` (returning the image of a subset of their source).
+
+    Examples
+    --------
+    Let us create two simple oriented graded posets, the “point” and the
+    “arrow”.
+
+    >>> point = OgPoset.point()
+    >>> arrow = point >> point
+
+    We define the map that collapses the arrow onto the point. First we
+    create a nowhere defined map.
+
+    >>> collapse = OgMap(arrow, point)
+    >>> assert not collapse.istotal
+
+    We declare the assignment first on the 0-dimensional elements, then on
+    the single 1-dimensional element. Trying to do otherwise results in
+    a :class:`ValueError`.
+
+    >>> collapse[El(0, 0)] = El(0, 0)
+    >>> collapse[El(0, 1)] = El(0, 0)
+    >>> collapse[El(1, 0)] = El(0, 0)
+
+    We can check various properties of the map.
+
+    >>> assert collapse.istotal
+    >>> assert collapse.issurjective
+    >>> assert not collapse.isinjective
+
+    Alternatively, we could have defined the map all at once, as follows.
+
+    >>> mapping = [[El(0, 0), El(0, 0)], [El(0, 0)]]
+    >>> assert collapse == OgMap(arrow, point, mapping)
     """
 
     def __init__(self, source, target, mapping=None, **params):
@@ -1989,19 +2057,50 @@ class OgMap:
 
     @property
     def source(self):
+        """
+        Returns the source (domain) of the map.
+
+        Returns
+        -------
+        source : :class:`OgPoset`
+            The source of the map.
+        """
         return self._source
 
     @property
     def target(self):
+        """
+        Returns the target (codomain) of the map.
+
+        Returns
+        -------
+        target : :class:`OgPoset`
+            The target of the map.
+        """
         return self._target
 
     @property
     def mapping(self):
+        """
+        Returns the data specifying the map's assignments.
+
+        Returns
+        -------
+        mapping : :class:`list[list[El]]`
+            The mapping data.
+        """
         return self._mapping
 
     @property
     def istotal(self):
-        """ Returns whether the map is total. """
+        """
+        Returns whether the map is total.
+
+        Returns
+        -------
+        istotal : :class:`bool`
+            :code:`True` if and only if the map is total.
+        """
         for n_data in self.mapping:
             if not all(n_data):
                 return False
@@ -2009,7 +2108,14 @@ class OgMap:
 
     @property
     def isinjective(self):
-        """ Returns whether the map is injective. """
+        """
+        Returns whether the map is injective.
+
+        Returns
+        -------
+        isinjective : :class:`bool`
+            :code:`True` if and only if the map is injective.
+        """
         image_list = [x for n_data in self.mapping for x in n_data
                       if x is not None]
         if len(image_list) == len(set(image_list)):
@@ -2018,7 +2124,14 @@ class OgMap:
 
     @property
     def issurjective(self):
-        """ Returns whether the map is surjective. """
+        """
+        Returns whether the map is surjective.
+
+        Returns
+        -------
+        issurjective : :class:`bool`
+            :code:`True` if and only if the map is surjective.
+        """
         image_set = {x for n_data in self.mapping for x in n_data
                      if x is not None}
         if len(image_set) == len(self.target):
@@ -2027,17 +2140,55 @@ class OgMap:
 
     @property
     def isiso(self):
-        """ Returns whether the map is an isomorphism """
+        """
+        Returns whether the map is an isomorphism, that is, total,
+        injective, and surjective.
+
+        Returns
+        -------
+        isiso : :class:`bool`
+            :code:`True` if and only if the map is an isomorphism.
+        """
         return self.istotal and self.isinjective and self.issurjective
 
     def isdefined(self, element):
-        """ Returns whether the map is defined on an element. """
+        """
+        Returns whether the map is defined on a given element.
+
+        Arguments
+        ---------
+        element : :class:`El`
+            The element to check.
+
+        Returns
+        -------
+        isdefined : :class:`bool`
+            :code:`True` if and only if the map is defined on the element.
+        """
         if element in self.source and self[element] is not None:
             return True
         return False
 
     def then(self, other, *others):
-        """ Returns the composite with other maps. """
+        """
+        Returns the composite with other maps or pairs of maps of
+        oriented graded posets, when defined.
+
+        If given a pair of maps as argument, it returns the pair of
+        composites of the map with each map in the pair.
+
+        Arguments
+        ---------
+        other : :class:`OgMap` | :class:`OgMapPair`
+            The first map or pair of maps to follow.
+        others : :class:`OgMap` | :class:`OgMapPair`, optional
+            Any number of other maps or pair of maps to follow.
+
+        Returns
+        -------
+        composite : :class:`OgMap` | :class:`OgMapPair`
+            The composite with all the other arguments.
+        """
         if len(others) > 0:
             return self.then(other).then(*others)
 
@@ -2059,7 +2210,19 @@ class OgMap:
                      wfcheck=False)
 
     def inv(self):
-        """ Returns the inverse of the OgMap if it is an isomorphism. """
+        """
+        Returns the inverse of the map if it is an isomorphism.
+
+        Returns
+        -------
+        inv : :class:`OgMap`
+            The inverse of the map, if defined.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the map is not an isomorphism.
+        """
         if not self.isiso:
             raise ValueError(utils.value_err(
                 self, 'not an isomorphism'))
@@ -2074,27 +2237,59 @@ class OgMap:
                      wfcheck=False)
 
     def image(self):
-        """ The image of the source through the mapping. """
+        """
+        Returns the image of the map.
+
+        Returns
+        -------
+        image : :class:`Closed`
+            The image of the source through the map.
+        """
         return self.source.all().image(self)
 
     def boundary(self, sign=None, dim=None):
         """
-        The map restricted to a boundary of its source.
+        Returns the map restricted to a specified boundary of its source.
+
+        Arguments
+        ---------
+        sign : :class:`str`, optional
+            Orientation: :code:`'-'` for input, :code:`'+'` for output,
+            :code:`None` (default) for both.
+        dim : :class:`int`, optional
+            Dimension of the boundary (default is :code:`self.dim - 1`).
+
+        Returns
+        -------
+        boundary : :class:`OgMap`
+            The map restricted to the requested boundary.
         """
         return self.source.boundary(
                 sign, dim).then(self)
 
     @property
     def input(self):
+        """
+        Alias for :code:`boundary('-')`.
+        """
         return self.boundary('-')
 
     @property
     def output(self):
+        """
+        Alias for :code:`boundary('+')`.
+        """
         return self.boundary('+')
 
     def bot(self):
         """
-        Extension of OgPoset.bot to maps.
+        Functorial extension of :meth:`OgPoset.bot` to maps.
+
+        Returns
+        -------
+        bot : :code:`OgMap`
+            The map extended to a map from :code:`source.bot` to
+            :code:`target.bot`.
         """
         source = self.source.bot()
         target = self.target.bot()
@@ -2107,6 +2302,26 @@ class OgMap:
 
     @staticmethod
     def gray(*maps):
+        """
+        Functorial extension of :meth:`OgPoset.gray` to maps of oriented
+        graded posets.
+
+        This method can be called with the math operator :code:`*`, that is,
+        :code:`fst * snd` is equivalent to :code:`gray(fst, snd)`.
+
+        This static method can also be used as a bound method, that is,
+        :code:`fst.gray(*ogps)` is equivalent to :code:`gray(fst, *ogps)`.
+
+        Arguments
+        ---------
+        ogps : :class:`OgMap`
+            Any number of maps of oriented graded posets.
+
+        Returns
+        -------
+        gray : :class:`OgMap`
+            The Gray product of the arguments.
+        """
         for f in maps:
             utils.typecheck(f, {'type': OgMap})
         if len(maps) == 0:
@@ -2147,6 +2362,28 @@ class OgMap:
 
     @staticmethod
     def join(*maps):
+        """
+        Functorial extension of :meth:`OgPoset.join` to maps of oriented
+        graded posets.
+
+        This method can be called with the shift operators :code:`>>`
+        and :code:`<<`, that is, :code:`fst >> snd` is equivalent to
+        :code:`join(fst, snd)` and :code:`fst << snd` is equivalent to
+        :code:`join(snd, fst)`.
+
+        This static method can also be used as a bound method, that is,
+        :code:`fst.join(*ogps)` is equivalent to :code:`join(fst, *ogps)`.
+
+        Arguments
+        ---------
+        ogps : :class:`OgMap`
+            Any number of maps of oriented graded posets.
+
+        Returns
+        -------
+        join : :class:`OgMap`
+            The join of the arguments.
+        """
         for f in maps:
             utils.typecheck(f, {'type': OgMap})
         if len(maps) == 0:
@@ -2176,6 +2413,29 @@ class OgMap:
 
     @staticmethod
     def dual(ogmap, *dims):
+        """
+        Functorial extension of :meth:`OgPoset.dual` to maps of oriented
+        graded posets.
+
+        The dual in all dimensions can also be called with the negation
+        operator :code:`~`, that is, :code:`~ogp` is equivalent to
+        :code:`ogp.dual()`.
+
+        This static method can be also used as a bound method, that is,
+        :code:`self.dual(*dims)` is equivalent to :code:`dual(self, *dims)`.
+
+        Arguments
+        ---------
+        ogmap : :class:`OgMap`
+            A map of oriented graded posets.
+        dims : :class:`int`
+            Any number of dimensions; if none, defaults to *all* dimensions.
+
+        Returns
+        -------
+        dual : :class:`OgMap`
+            The map dualised in the given dimensions.
+        """
         utils.typecheck(ogmap, {'type': OgMap})
         return OgMap(OgPoset.dual(ogmap.source, *dims),
                      OgPoset.dual(ogmap.target, *dims),
@@ -2186,14 +2446,26 @@ class OgMap:
         return self.__class__.dual(self, *dims)
 
     def op(self):
+        """
+        Returns the dual in all *odd* dimensions.
+        """
         odds = [n for n in range(self.dim + 1) if n % 2 == 1]
         return self.dual(*odds)
 
     def co(self):
+        """
+        Returns the dual in all *even* dimensions.
+        """
         evens = [n for n in range(self.dim + 1) if n % 2 == 0]
         return self.dual(*evens)
 
     def hasse(self, **params):
+        """
+        Bound version of :meth:`hasse.draw`.
+
+        Calling :code:`f.hasse(**params)` is equivalent to calling
+        :code:`hasse.draw(f, **params)`.
+        """
         from rewal.hasse import draw
         return draw(self, **params)
 
@@ -2251,7 +2523,17 @@ class OgMap:
 
 class OgMapPair(tuple):
     """
-    Class for pairs of maps.
+    Class for pairs of maps of oriented graded posets.
+
+    This is used as the argument and/or return type of pushouts and
+    coequalisers, which play a prominent role in the theory.
+
+    Arguments
+    ---------
+    fst : :class:`OgMap`
+        The first map in the pair.
+    snd : :class:`OgMap`
+        The second map in the pair.
     """
 
     def __new__(self, fst, snd):
@@ -2268,46 +2550,151 @@ class OgMapPair(tuple):
 
     @property
     def fst(self):
+        """
+        Returns the first map in the pair.
+
+        Returns
+        -------
+        fst : :class:`OgMap`
+            The first map in the pair.
+        """
         return self[0]
 
     @property
     def snd(self):
+        """
+        Returns the second map in the pair.
+
+        Returns
+        -------
+        snd : :class:`OgMap`
+            The second map in the pair.
+        """
         return self[1]
 
     @property
     def source(self):
+        """
+        Returns the pair of sources of the pair of maps, or, if a
+        span, their common source.
+
+        Returns
+        -------
+        source : :class:`OgMap` | :class:`tuple[OgMap]`
+            The source or sources of the pair.
+        """
         if self.isspan:
             return self.fst.source
         return self.fst.source, self.snd.source
 
     @property
     def target(self):
+        """
+        Returns the pair of targets of the pair of maps, or, if a
+        cospan, their common target.
+
+        Returns
+        -------
+        target : :class:`OgMap` | :class:`tuple[OgMap]`
+            The target or targets of the pair.
+        """
         if self.iscospan:
             return self.fst.target
         return self.fst.target, self.snd.target
 
     @property
     def isspan(self):
+        """
+        Returns whether the pair is a span (has a common source).
+
+        Returns
+        -------
+        isspan : :class:`bool`
+            :code:`True` if and only if the pair is a span.
+        """
         return self.fst.source == self.snd.source
 
     @property
     def iscospan(self):
+        """
+        Returns whether the pair is a cospan (has a common target).
+
+        Returns
+        -------
+        iscospan : :class:`bool`
+            :code:`True` if and only if the pair is a cospan.
+        """
         return self.fst.target == self.snd.target
 
     @property
     def isparallel(self):
+        """
+        Returns whether the pair is parallel (both a span and a cospan).
+
+        Returns
+        -------
+        isparallel : :class:`bool`
+            :code:`True` if and only if the pair is parallel.
+        """
         return self.isspan and self.iscospan
 
     @property
     def istotal(self):
+        """
+        Returns whether both maps are total.
+
+        Returns
+        -------
+        istotal : :class:`bool`
+            :code:`True` if and only if both maps are total.
+        """
         return self.fst.istotal and self.snd.istotal
 
     @property
     def isinjective(self):
+        """
+        Returns whether both maps are injective.
+
+        Returns
+        -------
+        isinjective : :class:`bool`
+            :code:`True` if and only if both maps are injective.
+        """
         return self.fst.isinjective and self.snd.isinjective
 
+    @property
+    def issurjective(self):
+        """
+        Returns whether both maps are surjective.
+
+        Returns
+        -------
+        issurjective : :class:`bool`
+            :code:`True` if and only if both maps are surjective.
+        """
+        return self.fst.issurjective and self.snd.issurjective
+
     def then(self, other, *others):
-        """ Returns the composite with other pairs or maps. """
+        """
+        Returns the composite with other maps or pairs of maps of oriented
+        graded posets, when defined.
+
+        If given two pairs, it composes the first map with the first map,
+        and the second map with the second map. If given a pair and
+        a map, it composes both maps in the pair with the map.
+
+        Arguments
+        ---------
+        other : :class:`OgMap` | :class:`OgMapPair`
+            The first map or pair of maps to follow.
+        others : :class:`OgMap` | :class:`OgMapPair`, optional
+            Any number of other maps or pair of maps to follow.
+
+        Returns
+        -------
+        composite : :class:`OgMapPair`
+            The composite with all the other arguments.
+        """
         if len(others) > 0:
             return self.then(other).then(*others)
 
@@ -2320,11 +2707,27 @@ class OgMapPair(tuple):
                 self.fst.then(other),
                 self.snd.then(other))
 
-    def coequaliser(self,
-                    wfcheck=True):
+    def coequaliser(self, **params):
         """
-        Returns the coequaliser of a pair of total maps, if it exists.
+        Returns the coequaliser of a parallel pair of total maps,
+        if it exists.
+
+        Keyword arguments
+        -----------------
+        wfcheck : :class:`bool`
+            Check whether the coequaliser is well-defined.
+
+        Returns
+        -------
+        coequaliser : :class:`OgMap`
+            The coequaliser of the pair of maps.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the pair is not total and parallel.
         """
+        wfcheck = params.get('wfcheck', True)
         if not (self.isparallel and self.istotal):
             raise ValueError(utils.value_err(
                 self,
@@ -2363,21 +2766,41 @@ class OgMapPair(tuple):
                     for k, x in enumerate(n_data) if El(n, k) not in to_delete
                 ]
                 for n, n_data in enumerate(self.target.face_data)]
-        quotient = OgPoset.from_face_data(face_data, wfcheck)
+        quotient = OgPoset.from_face_data(face_data, wfcheck=wfcheck)
 
         return OgMap(self.target, quotient, mapping, wfcheck=False)
 
-    def pushout(self,
-                wfcheck=True):
+    def pushout(self, **params):
         """
         Returns the pushout of a span of total maps, if it exists.
+
+        Pushouts do not always exist in the category of oriented graded
+        posets and maps; however, pushouts of injective (total) maps do always
+        exist.
+
+        Keyword arguments
+        -----------------
+        wfcheck : :class:`bool`
+            Check whether the pushout is well-defined.
+
+        Returns
+        -------
+        pushout : :class:`OgMapPair`
+            The pushout cospan of the pair of maps.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the pair is not total and a span.
         """
+        wfcheck = params.get('wfcheck', True)
+
         if not (self.isspan and self.istotal):
             raise ValueError(utils.value_err(
                 self,
                 'expecting a span of injective total maps'))
 
         coproduct = OgPoset.coproduct(self.fst.target, self.snd.target)
-        coequaliser = self.then(coproduct).coequaliser(wfcheck)
+        coequaliser = self.then(coproduct).coequaliser(wfcheck=wfcheck)
 
         return coproduct.then(coequaliser)
