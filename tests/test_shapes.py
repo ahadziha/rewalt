@@ -153,7 +153,7 @@ def test_Shape_terminal():
 
 
 def test_Simplex():
-    arrow = Shape.arrow()
+    arrow = Shape.simplex(1)
     triangle = Shape.simplex(2)
     tetra = Shape.simplex(3)
 
@@ -161,29 +161,45 @@ def test_Simplex():
     assert tetra.simplex_face(0) == tetra.atom_inclusion(
             El(2, 3))
 
-    assert triangle.simplex_degeneracy(2).then(
-            arrow.simplex_degeneracy(1)) == \
-        triangle.simplex_degeneracy(1).then(
-            arrow.simplex_degeneracy(1))
+    map1 = triangle.simplex_degeneracy(2).then(
+        arrow.simplex_degeneracy(1))
+    map2 = triangle.simplex_degeneracy(1).then(
+        arrow.simplex_degeneracy(1))
+    assert map1 == map2
+
+    map3 = tetra.simplex_face(2).then(
+        triangle.simplex_degeneracy(2))
+    assert map3 == triangle.id()
+
+    map4 = tetra.simplex_face(0).then(
+        triangle.simplex_degeneracy(2))
+    map5 = arrow.simplex_degeneracy(1).then(
+        triangle.simplex_face(0))
+    assert map4 == map5
 
 
 def test_Cube():
-    arrow = Shape.arrow()
+    arrow = Shape.cube(1)
     square = Shape.cube(2)
     cube = Shape.cube(3)
 
-    assert square.cube_degeneracy(2).then(
-            arrow.cube_degeneracy(1)) == \
-        square.cube_degeneracy(1).then(
-            arrow.cube_degeneracy(1))
-    assert square.cube_face(0, '+').then(
-            cube.cube_face(2, '-')) == \
-        square.cube_face(1, '-').then(
-            cube.cube_face(0, '+'))
-    assert square.cube_connection(1, '-').then(
-            arrow.cube_connection(0, '-')) == \
-        square.cube_connection(0, '-').then(
-            arrow.cube_connection(0, '-'))
+    map1 = square.cube_degeneracy(2).then(
+        arrow.cube_degeneracy(1))
+    map2 = square.cube_degeneracy(1).then(
+        arrow.cube_degeneracy(1))
+    assert map1 == map2
+
+    map3 = square.cube_face(0, '+').then(
+        cube.cube_face(2, '-'))
+    map4 = square.cube_face(1, '-').then(
+        cube.cube_face(0, '+'))
+    assert map3 == map4
+
+    map5 = square.cube_connection(1, '-').then(
+        arrow.cube_connection(0, '-'))
+    map6 = square.cube_connection(0, '-').then(
+        arrow.cube_connection(0, '-'))
+    assert map5 == map6
 
 
 """ Tests for ShapeMap """

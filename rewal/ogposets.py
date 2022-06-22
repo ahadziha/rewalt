@@ -149,7 +149,7 @@ class OgPoset:
 
     Examples
     --------
-    Let us construct explicitly the “oriented face poset” of an arrow, or
+    Let us construct explicitly the "oriented face poset" of an arrow, or
     directed edge.
 
     >>> face_data = [
@@ -329,7 +329,7 @@ class OgPoset:
     @property
     def as_chain(self):
         """
-        Returns a “chain complex” representation of the face data.
+        Returns a "chain complex" representation of the face data.
 
         Returns
         -------
@@ -920,8 +920,9 @@ class OgPoset:
         operator :code:`~`, that is, :code:`~ogp` is equivalent to
         :code:`ogp.dual()`.
 
-        This static method can be also used as a bound method, that is,
-        :code:`self.dual(*dims)` is equivalent to :code:`dual(self, *dims)`.
+        This static method can be also used as a bound method after an object
+        is initialised, that is, :code:`ogp.dual(*dims)` is equivalent to
+        :code:`dual(ogp, *dims)`.
 
         Arguments
         ---------
@@ -1336,7 +1337,7 @@ class GrSet:
 class GrSubset:
     """
     Class for graded subsets, that is, pairs of a :class:`GrSet` and an
-    “ambient” :class:`OgPoset`, where the first is seen as a subset of
+    "ambient" :class:`OgPoset`, where the first is seen as a subset of
     the second.
 
     While objects of the class :class:`GrSet` are mutable, once they are
@@ -1422,7 +1423,7 @@ class GrSubset:
     @property
     def support(self):
         """
-        Returns the underlying graded set (the “support” of the subset).
+        Returns the underlying graded set (the "support" of the subset).
 
         Returns
         -------
@@ -1707,7 +1708,7 @@ class Closed(GrSubset):
     Notes
     -----
     There is an alternative constructor :meth:`subset` which takes
-    a :class:`GrSubset`, and “upgrades” it to a :class:`Closed` if it
+    a :class:`GrSubset`, and "upgrades" it to a :class:`Closed` if it
     is downwards closed.
 
     Examples
@@ -1725,7 +1726,7 @@ class Closed(GrSubset):
     >>> all_out = all.output
 
     And since :code:`all` happens to be a *molecule*, we can check the
-    “globular” relations.
+    "globular" relations.
 
     >>> assert all_in.input == all_out.input
     >>> assert all_in.output == all_out.output
@@ -1786,8 +1787,8 @@ class Closed(GrSubset):
     @property
     def isround(self):
         """
-        Returns whether the closed subset is round (“has spherical
-        boundary”).
+        Returns whether the closed subset is round ("has spherical
+        boundary").
 
         This means that, for all :code:`k` smaller than the dimension of
         the subset, the intersection of its input :code:`k`-boundary
@@ -1961,8 +1962,8 @@ class OgMap:
 
     Examples
     --------
-    Let us create two simple oriented graded posets, the “point” and the
-    “arrow”.
+    Let us create two simple oriented graded posets, the "point" and the
+    "arrow".
 
     >>> point = OgPoset.point()
     >>> arrow = point >> point
