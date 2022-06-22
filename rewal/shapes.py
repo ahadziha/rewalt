@@ -32,6 +32,23 @@ class Shape(OgPoset):
     the *oriented simplices*, the *oriented cubes*, and the
     *positive opetopes*. This is to enable the specification of special
     methods for subclasses of shapes.
+    
+    The following diagram summarises the hierarchy of subclasses of
+    shapes:
+    ::
+        
+         Simplex  Cube  OpetopeTree  Theta
+         |    |\  |\     |      |      |
+         |    | \ | \ Opetope  GlobeString
+         |    |  \|  \   |    /
+         |    |   \   \  Globe
+         |    |   |\   \/    |
+        Empty |   | \  /\    |
+              |   |  \/  \   |
+              |   |  /\   \  |
+              |   | /  \   \ |
+              |   |/    \   \|
+              Point      Arrow
 
     Currently only the :class:`Cube` and :class:`Simplex` classes have
     special methods implemented.
