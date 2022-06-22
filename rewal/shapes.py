@@ -32,11 +32,11 @@ class Shape(OgPoset):
     the *oriented simplices*, the *oriented cubes*, and the
     *positive opetopes*. This is to enable the specification of special
     methods for subclasses of shapes.
-    
+
     The following diagram summarises the hierarchy of subclasses of
     shapes:
     ::
-        
+
          Simplex  Cube  OpetopeTree  Theta
          |    |\  |\     |      |      |
          |    | \ | \ Opetope  GlobeString
@@ -260,6 +260,11 @@ class Shape(OgPoset):
             The pasted shape (optionally with the cospan of
             inclusions of its components).
 
+        Raises
+        ------
+        :class:`ValueError`
+            If the boundaries do not match.
+
         Examples
         --------
         We can paste two 2-dimensional globes either “vertically” along
@@ -361,9 +366,43 @@ class Shape(OgPoset):
     @staticmethod
     def paste_along(fst, snd, **params):
         """
-        Returns the pasting of two shapes along the entire input
-        (output) k-boundary of one, and a subshape of the output
-        (input) k-boundary of the other.
+        Given a span of shape maps, where one is the inclusion of the
+        input (resp output) :code:`k`-boundary of a shape,
+        and the other the inclusion of a round subshape of the
+        output (resp input) :code:`k`-boundary of another shape,
+        returns the pasting (pushout) of the two shapes along the span.
+
+        In practice, it is convenient to use :meth:`to_inputs` and
+        :meth:`to_outputs` instead, where the data of the span is specified
+        by :code:`k` and the positions of the :code:`k`-dimensional
+        elements in the round subshape along which the pasting occurs.
+
+        Arguments
+        ---------
+        fst : :class:`ShapeMap`
+            The first inclusion.
+        snd : :class:`ShapeMap`
+            The second inclusion.
+
+        Keyword arguments
+        -----------------
+        wfcheck : :class:`bool`
+            Check if the span gives rise to a well-formed pasting
+            (default is :code:`True`).
+        cospan : :class:`bool`
+            Whether to return the cospan of inclusions of the two shapes
+            into the pasting (default is :code:`False`).
+
+        Returns
+        -------
+        paste_along : :class:`Shape` | :class:`ogposets.OgMapPair`
+            The pasted shape (optionally with the cospan of
+            inclusions of its components).
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the pair of maps is not an injective span.
         """
         wfcheck = params.get('wfcheck', True)
         cospan = params.get('cospan', False)
@@ -426,7 +465,72 @@ class Shape(OgPoset):
 
     def to_outputs(self, positions, other, dim=None, **params):
         """
-        Paste along the inclusion of several outputs.
+        Paste another shape along a round subshape of the output
+        :code:`k`-boundary, specified by the positions of its
+        :code:`k`-dimensional elements.
+
+        Arguments
+        ---------
+        positions : :class:`list[int]` | :class:`int`
+            The positions of the outputs along which to paste. If given
+            an integer :code:`n`, interprets it as the list :code:`[n]`.
+        other : :class:`Shape`
+            The other shape to paste.
+        dim : :class:`int`, optional
+            The dimension of the boundary along which to paste
+            (default is :code:`self.dim - 1`)
+
+        Keyword arguments
+        -----------------
+        cospan : :class:`bool`
+            Whether to return the cospan of inclusions of the two shapes
+            into the pasting (default is :code:`False`).
+
+        Returns
+        -------
+        to_outputs : :class:`Shape` | :class:`ogposets.OgMapPair`
+            The pasted shape (optionally with the cospan of
+            inclusions of its components).
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the boundaries do not match, or the pasting does not produce
+            a well-formed shape.
+
+        Examples
+        --------
+        We create a 2-simplex and visualise it as a string diagram with the
+        :code:`positions` parameter enabled.
+
+        >>> simplex = Shape.simplex(2)
+        >>> simplex.draw(
+        ...     positions=True, path='docs/_static/img/Shape_to_outputs1.png')
+
+        .. image:: ../_static/img/Shape_to_outputs1.png
+            :width: 400
+            :align: center
+
+        We paste another 2-simplex to the output in position :code:`2`.
+
+        >>> paste1 = simplex.to_outputs(2, simplex)
+        >>> paste1.draw(
+        ...     positions=True, path='docs/_static/img/Shape_to_outputs2.png')
+
+        .. image:: ../_static/img/Shape_to_outputs2.png
+            :width: 400
+            :align: center
+
+        Finally, we paste the *dual* of a 2-simplex to the outputs in
+        positions :code:`2, 3`.
+
+        >>> paste2 = paste1.to_outputs([1, 3], simplex.dual())
+        >>> paste2.draw(
+        ...     positions=True, path='docs/_static/img/Shape_to_outputs3.png')
+
+        .. image:: ../_static/img/Shape_to_outputs3.png
+            :width: 400
+            :align: center
         """
         if isinstance(positions, int):
             positions = [positions]
@@ -455,7 +559,66 @@ class Shape(OgPoset):
 
     def to_inputs(self, positions, other, dim=None, **params):
         """
-        Paste along the inclusion of several outputs.
+        Paste another shape along a round subshape of the input
+        :code:`k`-boundary, specified by the positions of its
+        :code:`k`-dimensional elements.
+
+        Arguments
+        ---------
+        positions : :class:`list[int]` | :class:`int`
+            The positions of the inputs along which to paste. If given
+            an integer :code:`n`, interprets it as the list :code:`[n]`.
+        other : :class:`Shape`
+            The other shape to paste.
+        dim : :class:`int`, optional
+            The dimension of the boundary along which to paste
+            (default is :code:`self.dim - 1`)
+
+        Keyword arguments
+        -----------------
+        cospan : :class:`bool`
+            Whether to return the cospan of inclusions of the two shapes
+            into the pasting (default is :code:`False`).
+
+        Returns
+        -------
+        to_inputs : :class:`Shape` | :class:`ogposets.OgMapPair`
+            The pasted shape (optionally with the cospan of
+            inclusions of its components).
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the boundaries do not match, or the pasting does not produce
+            a well-formed shape.
+
+        Examples
+        --------
+        We work dually to the example for :meth:`to_outputs`.
+
+        >>> binary = Shape.simplex(2).dual()
+        >>> binary.draw(
+        ...     positions=True, path='docs/_static/img/Shape_to_inputs1.png')
+
+        .. image:: ../_static/img/Shape_to_inputs1.png
+            :width: 400
+            :align: center
+
+        >>> paste1 = binary.to_inputs(1, binary)
+        >>> paste1.draw(
+        ...     positions=True, path='docs/_static/img/Shape_to_inputs2.png')
+
+        .. image:: ../_static/img/Shape_to_inputs2.png
+            :width: 400
+            :align: center
+        
+        >>> paste2 = paste1.to_inputs([0, 1], binary.dual())
+        >>> paste2.draw(
+        ...     positions=True, path='docs/_static/img/Shape_to_inputs3.png')
+
+        .. image:: ../_static/img/Shape_to_inputs3.png
+            :width: 400
+            :align: center
         """
         if isinstance(positions, int):
             positions = [positions]
@@ -483,11 +646,37 @@ class Shape(OgPoset):
             inclusion,
             wfcheck=False, **params)
 
-    def rewrite(self, positions, shape):
-        return self.to_outputs(positions, shape, self.dim)
-
     @staticmethod
     def suspend(shape, n=1):
+        """
+        Returns the n-fold suspension of a shape.
+
+        This static method can be also used as a bound method after
+        an object is initialised, that is, :code:`shape.suspend(n)` is
+        equivalent to :code:`suspend(shape, n)`.
+
+        Arguments
+        ---------
+        shape : :class:`Shape`
+            The object to suspend.
+        n : :class:`int`, optional
+            The number of iterations of the suspension (default is 1).
+
+        Returns
+        -------
+        suspension : :class:`Shape`
+            The suspended shape.
+
+        Examples
+        --------
+        The suspension of the point is the arrow, and the suspension of
+        an arrow is the 2-globe.
+
+        >>> assert Shape.point().suspend() == Shape.arrow()
+        >>> assert Shape.arrow().suspend() == Shape.globe(2)
+
+        In general, the suspension of the n-globe is the (n+1)-globe.
+        """
         if n == 0:
             return shape
 
@@ -512,7 +701,42 @@ class Shape(OgPoset):
 
     @staticmethod
     def gray(*shapes):
-        """ Gray product of shapes. """
+        """
+        Returns the Gray product of any number of shapes.
+
+        This method can be called with the math operator :code:`*`, that is,
+        :code:`fst * snd` is equivalent to :code:`gray(fst, snd)`.
+
+        This static method can also be used as a bound method after an object
+        is initialised, that is, :code:`fst.gray(*shapes)` is equivalent to
+        :code:`gray(fst, *shapes)`.
+
+        Arguments
+        ---------
+        shapes : :class:`Shape`
+            Any number of shapes.
+
+        Returns
+        -------
+        gray : :class:`Shape`
+            The Gray product of the arguments.
+
+        Example
+        -------
+        The point is a unit for the Gray product.
+
+        >>> point = Shape.point()
+        >>> arrow = Shape.arrow()
+        >>> assert point*arrow == arrow*point == arrow
+
+        The Gray product of two arrows is the oriented square (2-cube).
+
+        >>> arrow = Shape.arrow()
+        >>> assert arrow*arrow == Shape.cube(2)
+
+        In general, the Gray product of the n-cube with the k-cube
+        is the (n+k)-cube.
+        """
         for x in shapes:
             if not isinstance(x, Shape):
                 return OgPoset.gray(*shapes)
@@ -536,6 +760,46 @@ class Shape(OgPoset):
 
     @staticmethod
     def join(*shapes):
+        """
+        Returns the join of any number of shapes.
+
+        This method can be called with the shift operators :code:`>>`
+        and :code:`<<`, that is, :code:`fst >> snd` is equivalent to
+        :code:`join(fst, snd)` and :code:`fst << snd` is equivalent to
+        :code:`join(snd, fst)`.
+
+        This static method can also be used as a bound method after an
+        object is initialised, that is, :code:`fst.join(*shapes)` is
+        equivalent to :code:`join(fst, *shapes)`.
+
+        Arguments
+        ---------
+        shapes : :class:`Shape`
+            Any number of shapes.
+
+        Returns
+        -------
+        join : :class:`Shape`
+            The join of the arguments.
+
+        Examples
+        --------
+        The empty shape is a unit for the join.
+
+        >>> empty = Shape.empty()
+        >>> point = Shape.point()
+        >>> assert empty >> point == point >> empty == point
+
+        The join of two points is the arrow, and the join of an arrow
+        and a point is the 2-simplex.
+
+        >>> arrow = Shape.arrow()
+        >>> assert point >> point == Shape.arrow()
+        >>> assert arrow >> point == Shape.simplex(2)
+
+        In general, the join of an n-simplex with a k-simplex is
+        the (n+k+1)-simplex.
+        """
         for x in shapes:
             if not isinstance(x, Shape):
                 return OgPoset.join(*shapes)
@@ -561,6 +825,29 @@ class Shape(OgPoset):
 
     @staticmethod
     def dual(shape, *dims, **params):
+        """
+        Returns the shape with orientations reversed in given dimensions.
+
+        The dual in all dimensions can also be called with the bit negation
+        operator :code:`~`, that is, :code:`~shape` is equivalent to
+        :code:`shape.dual()`.
+
+        This static method can be also used as a bound method after an object
+        is initialised, that is, :code:`shape.dual(*dims)` is equivalent to
+        :code:`dual(shape, *dims)`.
+
+        Arguments
+        ---------
+        shape : :class:`Shape`
+            A shape.
+        dims : :class:`int`
+            Any number of dimensions; if none, defaults to *all* dimensions.
+
+        Returns
+        -------
+        dual : :class:`Shape`
+            The shape, dualised in the given dimensions.
+        """
         reordering = params.get('reordering', False)
 
         reordermap = Shape._reorder(OgPoset.dual(shape, *dims))
@@ -581,7 +868,12 @@ class Shape(OgPoset):
 
     def merge(self):
         """
-        Returns an atom with the same boundary as the shape (if round).
+        Returns the unique atom with the same boundary as the shape,
+        if the shape is round.
+
+        Returns
+        -------
+        merge : :class:`Shape`
         """
         if self.isatom:
             return self

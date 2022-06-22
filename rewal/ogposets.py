@@ -704,8 +704,9 @@ class OgPoset:
         """
         Returns the n-fold suspension of an oriented graded poset.
 
-        This static method can be also used as a bound method, that is,
-        :code:`self.suspend(n)` is equivalent to :code:`suspend(self, n)`.
+        This static method can be also used as a bound method after
+        an object is initialised, that is, :code:`ogp.suspend(n)` is
+        equivalent to :code:`suspend(ogp, n)`.
 
         Arguments
         ---------
@@ -756,8 +757,9 @@ class OgPoset:
         This method can be called with the math operator :code:`*`, that is,
         :code:`fst * snd` is equivalent to :code:`gray(fst, snd)`.
 
-        This static method can also be used as a bound method, that is,
-        :code:`fst.gray(*ogps)` is equivalent to :code:`gray(fst, *ogps)`.
+        This static method can also be used as a bound method after an object
+        is initialised, that is, :code:`fst.gray(*ogps)` is equivalent to
+        :code:`gray(fst, *ogps)`.
 
         Arguments
         ---------
@@ -841,9 +843,11 @@ class OgPoset:
         """
         if len(self) == 0:
             return OgPoset.point()
-        face_data = [[{'-': set(), '+': set()}], *self.face_data]
-        for x in face_data[1]:
-            x['+'].add(0)
+        face_data = [
+                [{'-': set(), '+': set()}],
+                [{'-': x['-'], '+': x['+'].union({0})}
+                 for x in self.face_data[0]],
+                *self.face_data[1:]]
         coface_data = [[
             {'-': set(), '+': {k for k in range(self.size[0])}}
             ], *self.coface_data]
@@ -860,8 +864,9 @@ class OgPoset:
         :code:`join(fst, snd)` and :code:`fst << snd` is equivalent to
         :code:`join(snd, fst)`.
 
-        This static method can also be used as a bound method, that is,
-        :code:`fst.join(*ogps)` is equivalent to :code:`join(fst, *ogps)`.
+        This static method can also be used as a bound method after an
+        object is initialised, that is, :code:`fst.join(*ogps)` is
+        equivalent to :code:`join(fst, *ogps)`.
 
         Arguments
         ---------
