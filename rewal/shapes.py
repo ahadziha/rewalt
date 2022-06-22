@@ -465,8 +465,8 @@ class Shape(OgPoset):
 
     def to_outputs(self, positions, other, dim=None, **params):
         """
-        Paste another shape along a round subshape of the output
-        :code:`k`-boundary, specified by the positions of its
+        Returns the pasting of another shape along a round subshape of
+        the output :code:`k`-boundary, specified by the positions of its
         :code:`k`-dimensional elements.
 
         Arguments
@@ -559,8 +559,8 @@ class Shape(OgPoset):
 
     def to_inputs(self, positions, other, dim=None, **params):
         """
-        Paste another shape along a round subshape of the input
-        :code:`k`-boundary, specified by the positions of its
+        Returns the pasting of another shape along a round subshape
+        of the input :code:`k`-boundary, specified by the positions of its
         :code:`k`-dimensional elements.
 
         Arguments
@@ -611,7 +611,7 @@ class Shape(OgPoset):
         .. image:: ../_static/img/Shape_to_inputs2.png
             :width: 400
             :align: center
-        
+
         >>> paste2 = paste1.to_inputs([0, 1], binary.dual())
         >>> paste2.draw(
         ...     positions=True, path='docs/_static/img/Shape_to_inputs3.png')
@@ -868,12 +868,43 @@ class Shape(OgPoset):
 
     def merge(self):
         """
-        Returns the unique atom with the same boundary as the shape,
+        Returns the unique atomic shape with the same boundary,
         if the shape is round.
 
         Returns
         -------
         merge : :class:`Shape`
+            The unique atomic shape with the same boundary.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the shape is not round.
+
+        Examples
+        --------
+        We create a 2-dimensional shape with two input 1-cells and
+        one output 1-cell, and paste it to itself along one of the
+        inputs.
+
+        >>> arrow = Shape.arrow()
+        >>> binary = arrow.paste(arrow).atom(arrow)
+        >>> to_merge = binary.to_inputs(1, binary)
+        >>> to_merge.draw(path='docs/_static/img/Shape_merge1.png')
+
+        .. image:: ../_static/img/Shape_merge1.png
+            :width: 400
+            :align: center
+
+        The “merged” shape is the 2-dimensional atom with three input
+        2-cells and one output 1-cell.
+
+        >>> merged = to_merge.merge()
+        >>> merged.draw(path='docs/_static/img/Shape_merge2.png')
+
+        .. image:: ../_static/img/Shape_merge2.png
+            :width: 400
+            :align: center
         """
         if self.isatom:
             return self
@@ -899,18 +930,55 @@ class Shape(OgPoset):
     # Named shapes
     @staticmethod
     def empty():
+        """
+        Constructs the initial, empty shape.
+
+        Returns
+        -------
+        empty : :class:`Empty`
+            The empty shape.
+        """
         return Empty()
 
     @staticmethod
     def point():
+        """
+        Constructs the terminal shape, consisting of a single point.
+
+        Returns
+        -------
+        point : :class:`Point`
+            The point.
+        """
         return Point()
 
     @staticmethod
     def arrow():
+        """
+        Constructs the arrow, the unique 1-dimensional atomic shape.
+
+        Returns
+        -------
+        arrow : :class:`Arrow`
+            The arrow.
+        """
         return Arrow()
 
     @staticmethod
     def simplex(dim=-1):
+        """
+        Constructs the oriented simplex of a given dimension.
+
+        Arguments
+        ---------
+        dim : :class:`int`
+            The dimension of the simplex (default is :code:`-1`).
+
+        Returns
+        -------
+        simplex : :class:`Simplex`
+            The simplex of the requested dimension.
+        """
         utils.typecheck(dim, {
             'type': int,
             'st': lambda n: n >= -1,
@@ -920,6 +988,19 @@ class Shape(OgPoset):
 
     @staticmethod
     def cube(dim=0):
+        """
+        Constructs the oriented cube of a given dimension.
+
+        Arguments
+        ---------
+        dim : :class:`int`
+            The dimension of the cube (default is :code:`0`).
+
+        Returns
+        -------
+        cube : :class:`Cube`
+            The cube of the requested dimension.
+        """
         utils.typecheck(dim, {
             'type': int,
             'st': lambda n: n >= 0,
@@ -929,12 +1010,60 @@ class Shape(OgPoset):
 
     @staticmethod
     def globe(dim=0):
-        """ Globes. """
+        """
+        Constructs the globe of a given dimension.
+
+        Arguments
+        ---------
+        dim : :class:`int`
+            The dimension of the globe (default is :code:`0`).
+
+        Returns
+        -------
+        globe : :class:`Globe`
+            The globe of the requested dimension.
+        """
         return Shape.suspend(Point(), dim)
 
     @staticmethod
     def theta(*thetas):
-        """ Batanin cells. """
+        """
+        Inductive constructor for the objects of the Theta category,
+        sometimes known as Batanin cells.
+
+        Batanin cells are in 1-to-1 correspondence with finite plane trees.
+        The constructor is based on this correspondence, using the
+        well-known inductive definition of plane trees: given any number
+        :code:`k` of Batanin cells, it returns the Batanin cell encoded by
+        a root with :code:`k` children, to which the :code:`k` plane trees
+        encoding the arguments are attached.
+
+        Arguments
+        ---------
+        thetas : :class:`Theta`
+            Any number of Batanin cells.
+
+        Returns
+        -------
+        theta : :class:`Theta`
+            The resulting Batanin cell.
+
+        Examples
+        --------
+        Every globe is a Batanin cell, encoded by the linear tree of length
+        equal to its dimension.
+
+        >>> assert Shape.theta() == Shape.globe(0)
+        >>> assert Shape.theta(Shape.theta()) == Shape.globe(1)
+        >>> assert Shape.theta(Shape.theta(Shape.theta())) == Shape.globe(2)
+
+        The tree with one root with n children corresponds to a string
+        of n arrows.
+
+        >>> point = Shape.theta()
+        >>> arrow = Shape.arrow()
+        >>> assert Shape.theta(point, point) == arrow.paste(arrow)
+        """
         if len(thetas) > 0:
             theta = thetas[0]
             utils.typecheck(theta, {'type': Theta})
@@ -948,12 +1077,39 @@ class Shape(OgPoset):
 
     # Special maps
     def id(self):
+        """
+        Returns the identity map on the shape.
+
+        Returns
+        -------
+        id : :class:`ShapeMap`
+            The identity map on the object.
+        """
         return ShapeMap(super().id(),
                         wfcheck=False)
 
     def boundary(self, sign=None, dim=None):
         """
-        Input and output boundaries of Shapes are Shapes.
+        Returns the inclusion of the boundary of a given orientation
+        and dimension into the shape.
+
+        Note that input and output boundaries of shapes are shapes,
+        so they are returned as shape maps; however, the entire (input
+        + output) boundary of a shape is not a shape, so it is returned
+        simply as a map of oriented graded posets.
+
+        Arguments
+        ---------
+        sign : :class:`str`, optional
+            Orientation: :code:`'-'` for input, :code:`'+'` for output,
+            :code:`None` (default) for both.
+        dim : :class:`int`, optional
+            Dimension of the boundary (default is :code:`self.dim - 1`).
+
+        Returns
+        -------
+        boundary : :class:`ShapeMap` | :class:`OgMap`
+            The inclusion of the requested boundary into the object.
         """
         if isinstance(dim, int) and dim >= self.dim:
             return self.id()
@@ -983,8 +1139,18 @@ class Shape(OgPoset):
 
     def atom_inclusion(self, element):
         """
-        Returns the inclusion of an atom as the closure of an element
-        in the shape.
+        Returns the inclusion of the closure of an element, which
+        is an atomic shape, in the shape.
+
+        Arguments
+        ---------
+        element : :class:`El`
+            An element of the shape.
+
+        Returns
+        -------
+        atom_inclusion : :class:`ShapeMap`
+            The inclusion of the closure of the element.
         """
         oginclusion = self.underset(element).as_map
         reordering = Shape._reorder(oginclusion.source)
@@ -1009,7 +1175,12 @@ class Shape(OgPoset):
 
     def initial(self):
         """
-        Returns the unique map from the initial (empty) shape.
+        Returns the unique map from the initial, empty shape.
+
+        Returns
+        -------
+        initial : :class:`ShapeMap`
+            The unique map from the empty shape.
         """
         return ShapeMap(
                 OgMap(Empty(), self,
@@ -1018,7 +1189,12 @@ class Shape(OgPoset):
 
     def terminal(self):
         """
-        Returns the unique map to the point.
+        Returns the unique map to the point, the terminal shape.
+
+        Returns
+        -------
+        terminal : :class:`ShapeMap`
+            The unique map to the point.
         """
         mapping = [
                 [El(0, 0) for _ in n_data]
@@ -1030,10 +1206,30 @@ class Shape(OgPoset):
 
     def inflate(self, collapsed=None):
         """
-        Forms a cylinder on a shape with some "collapsed" sides, specified
-        by a closed subset of the boundary of the shape, and returns its
-        projection on the original shape.
-        Used in constructing units and unitors on diagrams.
+        Given a closed subset of the boundary of the shape, forms a
+        cylinder on the shape, with the sides incident to the closed subset
+        collapsed, and returns its projection map onto the original shape.
+
+        This is mainly used in constructing units and unitors on diagrams;
+        see :meth:`diagrams.Diagram.unit`, :meth:`diagrams.Diagram.lunitor`,
+        :meth:`diagrams.Diagram.runitor`.
+
+        Arguments
+        ---------
+        collapsed : :class:`Closed`, optional
+            A closed subset of the boundary of the shape (default is
+            the entire boundary).
+
+        Returns
+        -------
+        inflate : :class:`Closed`
+            The projection map of the “partially collapsed cylinder” onto
+            the shape.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If `collapsed` is not a subset of the boundary.
         """
         if self.dim == -1:  # Some simple cases
             return self.id()
@@ -1081,7 +1277,14 @@ class Shape(OgPoset):
 
     def all_layerings(self):
         """
-        Returns an iterator on all layerings of a shape.
+        Returns an iterator on all *layerings* of a shape of dimension
+        :code:`n` into shapes with a single :code:`n`-dimensional element,
+        pasted along their :code:`(n-1)`-dimensional boundary.
+
+        Returns
+        -------
+        all_layerings : :class:`Iterable`
+            The iterator on all layerings of the shape.
         """
         dim = self.dim
         maximal = self.maximal().support
@@ -1110,7 +1313,8 @@ class Shape(OgPoset):
 
     def generate_layering(self):
         """
-        Iterates through layerings.
+        Assigns a layering to the shape, iterating through all
+        the layerings.
         """
         if not hasattr(self, '_layering_gen'):
             self._layering_gen = self.all_layerings()
@@ -1123,10 +1327,22 @@ class Shape(OgPoset):
         return self.layers
 
     def draw(self, **params):
+        """
+        Bound version of :meth:`strdiags.draw`.
+
+        Calling :code:`x.draw(**params)` is equivalent to calling
+        :code:`strdiags.draw(x, **params)`.
+        """
         from rewal.strdiags import draw
         return draw(self, **params)
 
     def draw_boundaries(self, **params):
+        """
+        Bound version of :meth:`strdiags.draw_boundaries`.
+
+        Calling :code:`x.draw_boundaries(**params)` is equivalent to
+        calling :code:`strdiags.draw_boundaries(x, **params)`.
+        """
         from rewal.strdiags import draw_boundaries
         return draw_boundaries(self, **params)
 
