@@ -2181,8 +2181,8 @@ class OgMap:
         Returns the composite with other maps or pairs of maps of
         oriented graded posets, when defined.
 
-        If given a pair of maps as argument, it returns the pair of
-        composites of the map with each map in the pair.
+        If given an :class:`OgMapPair` as argument, it returns
+        the pair of composites of the map with each map in the pair.
 
         Arguments
         ---------
@@ -2195,6 +2195,11 @@ class OgMap:
         -------
         composite : :class:`OgMap` | :class:`OgMapPair`
             The composite with all the other arguments.
+
+        Notes
+        -----
+        If all the maps have type :class:`shapes.ShapeMap`, their
+        composite has the same type.
         """
         if len(others) > 0:
             return self.then(other).then(*others)
@@ -2317,17 +2322,22 @@ class OgMap:
         :code:`fst * snd` is equivalent to :code:`gray(fst, snd)`.
 
         This static method can also be used as a bound method, that is,
-        :code:`fst.gray(*ogps)` is equivalent to :code:`gray(fst, *ogps)`.
+        :code:`fst.gray(*maps)` is equivalent to :code:`gray(fst, *maps)`.
 
         Arguments
         ---------
-        ogps : :class:`OgMap`
+        maps : :class:`OgMap`
             Any number of maps of oriented graded posets.
 
         Returns
         -------
         gray : :class:`OgMap`
             The Gray product of the arguments.
+
+        Notes
+        -----
+        If all the arguments have type :class:`shapes.ShapeMap`, so does their
+        Gray product.
         """
         for f in maps:
             utils.typecheck(f, {'type': OgMap})
@@ -2379,17 +2389,22 @@ class OgMap:
         :code:`join(snd, fst)`.
 
         This static method can also be used as a bound method, that is,
-        :code:`fst.join(*ogps)` is equivalent to :code:`join(fst, *ogps)`.
+        :code:`fst.join(*maps)` is equivalent to :code:`join(fst, *maps)`.
 
         Arguments
         ---------
-        ogps : :class:`OgMap`
+        maps : :class:`OgMap`
             Any number of maps of oriented graded posets.
 
         Returns
         -------
         join : :class:`OgMap`
             The join of the arguments.
+
+        Notes
+        -----
+        If all the arguments have type :class:`shapes.ShapeMap`, so does their
+        join.
         """
         for f in maps:
             utils.typecheck(f, {'type': OgMap})
@@ -2425,8 +2440,8 @@ class OgMap:
         graded posets.
 
         The dual in all dimensions can also be called with the negation
-        operator :code:`~`, that is, :code:`~ogp` is equivalent to
-        :code:`ogp.dual()`.
+        operator :code:`~`, that is, :code:`~ogmap` is equivalent to
+        :code:`ogmap.dual()`.
 
         This static method can be also used as a bound method, that is,
         :code:`self.dual(*dims)` is equivalent to :code:`dual(self, *dims)`.
@@ -2442,6 +2457,10 @@ class OgMap:
         -------
         dual : :class:`OgMap`
             The map dualised in the given dimensions.
+
+        Notes
+        -----
+        If the map is a :class:`ShapeMap`, so is its dual.
         """
         utils.typecheck(ogmap, {'type': OgMap})
         return OgMap(OgPoset.dual(ogmap.source, *dims),

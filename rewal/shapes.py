@@ -1676,7 +1676,7 @@ class Simplex(Shape):
 
     def simplex_degeneracy(self, k):
         """
-        Returns one of the collapse maps of the simplex
+        Returns one of the collapse (degeneracy) maps of the simplex
         one dimension higher.
 
         Arguments
@@ -1986,16 +1986,26 @@ class Arrow(Globe, Simplex, Cube):
 
 class ShapeMap(OgMap):
     """
-    An overlay of :class:`OgMap` for total maps between :class:`Shape`
-    objects.
+    An overlay of :class:`ogposets.OgMap` for total maps between
+    :class:`Shape` objects.
 
     It is used to extend constructions of shapes functorially to their
     maps, in a way that is compatible with the unique representation
-    of shapes as :class:`OgPoset` objects.
+    of shapes by their underlying :class:`ogposets.OgPoset` objects.
+
+    The most common :class:`ShapeMap` objects are created by methods of
+    :class:`Shape` such as :meth:`Shape.boundary` and :meth:`Shape.inflate`,
+    or of its subclasses, such as :meth:`Simplex.simplex_degeneracy` or
+    :meth:`Cube.cube_connection`.
+
+    Nevertheless, occasionally we may need to define a map explicitly,
+    in which case we first define an object :code:`f` of class
+    :class:`ogposets.OgMap`, then upgrade it to a :class:`ShapeMap`
+    with the constructor :code:`ShapeMap(f)`.
 
     Arguments
     ---------
-    ogmap : :class:`OgMap`
+    ogmap : :class:`ogposets.OgMap`
         A total map between shapes.
 
     Keyword arguments
@@ -2028,6 +2038,16 @@ class ShapeMap(OgMap):
 
     @property
     def layers(self):
+        """
+        Returns the current layering of the map's source, composed
+        with the map.
+
+        Returns
+        -------
+        layers : :class:`list[ShapeMap]`
+            The source's current layering, composed with the map.
+        """
+ 
         if not hasattr(self.source, '_layering'):
             return [self]
         return [
@@ -2037,6 +2057,16 @@ class ShapeMap(OgMap):
 
     @property
     def rewrite_steps(self):
+        """
+        Returns the sequence of rewrite steps associated to the current
+        layering of the map's source, composed with the map.
+
+        Returns
+        -------
+        rewrite_steps : :class:`list[ShapeMap]`
+            The source's current sequence of rewrite steps, composed
+            with the map.
+        """
         rewrite_steps = [
                 *[layer.input for layer in self.layers],
                 self.layers[-1].output
@@ -2123,12 +2153,27 @@ class ShapeMap(OgMap):
                     dual))
 
     def generate_layering(self):
+        """
+        Shorthand for :code:`source.generate_layering()`.
+        """
         self.source.generate_layering()
 
     def draw(self, **params):
+        """
+        Bound version of :meth:`strdiags.draw`.
+
+        Calling :code:`f.draw(**params)` is equivalent to calling
+        :code:`strdiags.draw(f, **params)`.
+        """
         from rewal.strdiags import draw
         return draw(self, **params)
 
     def draw_boundaries(self, **params):
+        """
+        Bound version of :meth:`strdiags.draw_boundaries`.
+
+        Calling :code:`f.draw_boundaries(**params)` is equivalent to calling
+        :code:`strdiags.draw_boundaries(f, **params)`.
+        """
         from rewal.strdiags import draw_boundaries
         return draw_boundaries(self, **params)
