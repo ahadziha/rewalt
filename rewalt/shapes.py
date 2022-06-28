@@ -4,8 +4,8 @@ Implements shapes of cells and diagrams.
 
 import networkx as nx
 
-from rewal import utils
-from rewal.ogposets import (El, OgPoset, GrSet, GrSubset, Closed,
+from rewalt import utils
+from rewalt.ogposets import (El, OgPoset, GrSet, GrSubset, Closed,
                             OgMap, OgMapPair)
 
 
@@ -1333,7 +1333,7 @@ class Shape(OgPoset):
         Calling :code:`x.draw(**params)` is equivalent to calling
         :code:`strdiags.draw(x, **params)`.
         """
-        from rewal.strdiags import draw
+        from rewalt.strdiags import draw
         return draw(self, **params)
 
     def draw_boundaries(self, **params):
@@ -1343,7 +1343,7 @@ class Shape(OgPoset):
         Calling :code:`x.draw_boundaries(**params)` is equivalent to
         calling :code:`strdiags.draw_boundaries(x, **params)`.
         """
-        from rewal.strdiags import draw_boundaries
+        from rewalt.strdiags import draw_boundaries
         return draw_boundaries(self, **params)
 
     # Private methods
@@ -2165,7 +2165,7 @@ class ShapeMap(OgMap):
         Calling :code:`f.draw(**params)` is equivalent to calling
         :code:`strdiags.draw(f, **params)`.
         """
-        from rewal.strdiags import draw
+        from rewalt.strdiags import draw
         return draw(self, **params)
 
     def draw_boundaries(self, **params):
@@ -2175,5 +2175,5 @@ class ShapeMap(OgMap):
         Calling :code:`f.draw_boundaries(**params)` is equivalent to calling
         :code:`strdiags.draw_boundaries(f, **params)`.
         """
-        from rewal.strdiags import draw_boundaries
+        from rewalt.strdiags import draw_boundaries
         return draw_boundaries(self, **params)

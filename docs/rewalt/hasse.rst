@@ -1,12 +1,12 @@
 hasse
 =====
 
-.. automodule:: rewal.hasse
+.. automodule:: rewalt.hasse
    :no-members:
 
 .. autosummary::
    :template: class.rst
    :toctree: ../_autosummary
 
-   rewal.hasse.Hasse
-   rewal.hasse.draw
+   rewalt.hasse.Hasse
+   rewalt.hasse.draw

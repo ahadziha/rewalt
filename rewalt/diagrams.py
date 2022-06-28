@@ -2,9 +2,9 @@
 Implements diagrammatic sets and diagrams.
 """
 
-from rewal import utils, shapes
-from rewal.ogposets import (El, GrSet, GrSubset)
-from rewal.shapes import (Shape, ShapeMap)
+from rewalt import utils, shapes
+from rewalt.ogposets import (El, GrSet, GrSubset)
+from rewalt.shapes import (Shape, ShapeMap)
 
 
 class DiagSet:
@@ -1008,15 +1008,15 @@ class Diagram:
         return self.layers
 
     def hasse(self, **params):
-        from rewal.hasse import draw
+        from rewalt.hasse import draw
         return draw(self, **params)
 
     def draw(self, **params):
-        from rewal.strdiags import draw
+        from rewalt.strdiags import draw
         return draw(self, **params)
 
     def draw_boundaries(self, **params):
-        from rewal.strdiags import draw_boundaries
+        from rewalt.strdiags import draw_boundaries
         return draw_boundaries(self, **params)
 
     # Alternative constructors

@@ -1,21 +1,21 @@
 """
-Setup rewal package
+Setup rewalt package
 """
 
 from re import search, M
 from setuptools import find_packages, setup
 
-with open('rewal/__init__.py', 'r') as file:
+with open('rewalt/__init__.py', 'r') as file:
     MATCH = search(r"^__version__ = ['\"]([^'\"]*)['\"]", file.read(), M)
     if MATCH:
         VERSION = MATCH.group(1)
     else:
         raise RuntimeError('Unable to find version string.')
 
-setup(name='rewal',
-      package_dir={'rewal': 'rewal'},
+setup(name='rewalt',
+      package_dir={'rewalt': 'rewalt'},
       packages=find_packages(),
-      description='Rewriting and Algebraic Topology',
+      description='Rewriting Algebraic Topology',
       version=VERSION,
       tests_suite='tests'
       )

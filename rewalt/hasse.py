@@ -4,7 +4,7 @@ Implements oriented Hasse diagram visualisation.
 
 import networkx as nx
 
-from rewal import utils, ogposets, diagrams, drawing
+from rewalt import utils, ogposets, diagrams, drawing
 
 
 DEFAULT = {

@@ -4,7 +4,7 @@ Implements oriented graded posets, their elements, subsets, and maps.
 
 import numpy as np
 
-from rewal import utils
+from rewalt import utils
 
 
 class El(tuple):
@@ -983,7 +983,7 @@ class OgPoset:
         Calling :code:`x.hasse(**params)` is equivalent to calling
         :code:`hasse.draw(x, **params)`.
         """
-        from rewal.hasse import draw
+        from rewalt.hasse import draw
         return draw(self, **params)
 
     # Private methods
@@ -2492,7 +2492,7 @@ class OgMap:
         Calling :code:`f.hasse(**params)` is equivalent to calling
         :code:`hasse.draw(f, **params)`.
         """
-        from rewal.hasse import draw
+        from rewalt.hasse import draw
         return draw(self, **params)
 
     # Private methods.

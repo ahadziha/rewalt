@@ -1,8 +1,8 @@
 from pytest import raises
 
-from rewal import utils
-from rewal.ogposets import (El, OgMap)
-from rewal.shapes import (Shape, ShapeMap, Simplex, Opetope)
+from rewalt import utils
+from rewalt.ogposets import (El, OgMap)
+from rewalt.shapes import (Shape, ShapeMap, Simplex, Opetope)
 
 
 """ Tests for Shape """

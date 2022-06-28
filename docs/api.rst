@@ -1,14 +1,14 @@
 API
 ===
 
-.. automodule:: rewal
+.. automodule:: rewalt
 
 .. toctree::
    :maxdepth: 2
 
-   rewal/diagrams
-   rewal/shapes
-   rewal/ogposets
-   rewal/strdiags
-   rewal/hasse
-   rewal/drawing
+   rewalt/diagrams
+   rewalt/shapes
+   rewalt/ogposets
+   rewalt/strdiags
+   rewalt/hasse
+   rewalt/drawing

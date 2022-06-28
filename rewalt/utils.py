@@ -1,5 +1,5 @@
 """
-Utility functions for rewal.
+Utility functions for rewalt.
 """
 
 

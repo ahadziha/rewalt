@@ -1,5 +1,5 @@
-rewal
-=====
+rewalt
+======
 
 .. toctree::
    :maxdepth: 3

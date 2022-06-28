@@ -4,7 +4,7 @@ Implements string diagram visualisations.
 
 import networkx as nx
 
-from rewal import (utils, ogposets, shapes, diagrams, drawing)
+from rewalt import (utils, ogposets, shapes, diagrams, drawing)
 
 
 DEFAULT = {

@@ -17,13 +17,13 @@ sys.path.insert(0, os.path.abspath('..'))
 
 
 def get_version():
-    from rewal import __version__
+    from rewalt import __version__
     return __version__
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'rewal'
+project = 'rewalt'
 copyright = '2022, Amar Hadzihasanovic'
 author = 'Amar Hadzihasanovic'
 
