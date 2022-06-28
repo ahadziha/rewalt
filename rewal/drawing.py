@@ -4,12 +4,9 @@ Drawing backends.
 
 from abc import ABC
 
-import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 from matplotlib.patches import PathPatch
-
-matplotlib.use('TkCairo')
 
 
 DEFAULT = {
