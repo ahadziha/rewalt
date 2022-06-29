@@ -135,7 +135,7 @@ class DiagSet:
         Returns
         -------
         generators : :class:`dict[dict]`
-            The generators' data.
+            The generators data.
         """
         return self._generators
 
@@ -227,7 +227,7 @@ class DiagSet:
         Arguments
         ---------
         name : :class:`hashable`
-            The name of the generator; can be any hashable object.
+            Name to assign to the new generator.
         input : :class:`Diagram`, optional
             The input diagram of the new generator (default is :code:`None`)
         output : :class:`Diagram`, optional
@@ -251,15 +251,16 @@ class DiagSet:
 
         Returns
         -------
-        cell : :class:`Diagram`
-            The diagram corresponding to the mapping of the new generator
-            into the diagrammatic set.
+        generator : :class:`Diagram`
+            The diagram picking the new generator.
 
         Raises
         ------
         :class:`ValueError`
             If the name is already in use, or the input and output diagrams
             do not have round and matching boundaries.
+        :class:`AttributeError`
+            If the optional arguments use a private keyword.
         """
         if name in self.generators:
             raise ValueError(utils.value_err(
@@ -314,7 +315,7 @@ class DiagSet:
         Arguments
         ---------
         name : :class:`hashable`
-            The name of the generator; can be any hashable object.
+            Name to assign to the new generator.
         faces : :class:`SimplexDiagram`
             The simplicial faces of the new generator.
 
@@ -325,15 +326,16 @@ class DiagSet:
 
         Returns
         -------
-        cell : :class:`SimplexDiagram`
-            The diagram corresponding to the mapping of the new generator
-            into the diagrammatic set.
+        generator : :class:`SimplexDiagram`
+            The diagram picking the new generator.
 
         Raises
         ------
         :class:`ValueError`
             If the name is already in use, or the faces do not have
             matching boundaries.
+        :class:`AttributeError`
+            If the optional arguments use a private keyword.
         """
         if len(faces) <= 1:
             return self.add(name, **kwargs)
@@ -387,7 +389,7 @@ class DiagSet:
         Arguments
         ---------
         name : :class:`hashable`
-            The name of the generator; can be any hashable object.
+            Name to assign to the new generator.
         faces : :class:`CubeDiagram`
             The cubical faces of the new generator.
 
@@ -398,15 +400,16 @@ class DiagSet:
 
         Returns
         -------
-        cell : :class:`CubeDiagram`
-            The diagram corresponding to the mapping of the new generator
-            into the diagrammatic set.
+        generator : :class:`CubeDiagram`
+            The diagram picking the new generator.
 
         Raises
         ------
         :class:`ValueError`
             If the name is already in use, or the faces do not have
             matching boundaries.
+        :class:`AttributeError`
+            If the optional arguments use a private keyword.
         """
         if len(faces) % 2 == 1:
             raise ValueError(utils.value_err(
@@ -454,7 +457,60 @@ class DiagSet:
                linvertorname=None,
                **kwargs):
         """
-        Adds an inverse and 'invertors' for a generator.
+        Adds a weak inverse for a generator, together
+        with left and right invertors that witness the
+        inversion, and returns them as diagrams.
+
+        Both the inverse and the invertors can be given custom names.
+        If the generator to be inverted is named :code:`'a'`, the
+        default names are
+
+        - :code:`'a⁻¹'` for the inverse,
+        - :code:`'inv(a, a⁻¹)'` for the right invertor,
+        - :code:`'inv(a⁻¹, a)'` for the left invertor.
+
+        In the theory of diagrammatic sets, weak invertibility would
+        correspond to the situation where the invertors themselves
+        are weakly invertible, coinductively.
+        In the implementation, we take an "invert when necessary"
+        approach, where invertors are not invertible by default, and
+        should be inverted when needed.
+
+        Notes
+        -----
+        The right invertor for the generator is the left invertor
+        for its inverse, and the left invertor for the generator is the
+        right invertor for its inverse.
+
+        Arguments
+        ---------
+        generatorname : :class:`hashable`
+            Name of the generator to invert.
+        inversename : :class:`hashable`, optional
+            Name assigned to the inverse.
+        rinvertorname : :class:`hashable`, optional
+            Name assigned to the right invertor.
+        linvertorname : :class:`hashable`, optional
+            Name assigned to the left invertor.
+
+        Keyword arguments
+        -----------------
+        kwargs
+            Passed to :meth:`add` when adding the inverse.
+
+        Returns
+        -------
+        inverse : :class:`Diagram`
+            The diagram picking the inverse.
+        rinvertor : :class:`Diagram`
+            The diagram picking the right invertor.
+        linvertor : :class:`Diagram`
+            The diagram picking the left invertor.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the generator is already inverted, or 0-dimensional.
         """
         if isinstance(generatorname, Diagram):
             generatorname = generatorname.name
@@ -512,7 +568,48 @@ class DiagSet:
                       rinvertorname=None,
                       linvertorname=None):
         """
-        Makes two pre-existing cells each other's inverse.
+        Makes two generators each other's weak inverse by adding
+        invertors, and returns the invertors.
+
+        In what follows, "right/left" invertors are relative to
+        the first generator.
+        Both invertors can be given custom names.
+        If the generators are named :code:`'a'`, :code:`'b'`, the
+        default names for the invertors are
+
+        - :code:`'inv(a, b)'` for the right invertor,
+        - :code:`'inv(b, a)'` for the left invertor.
+
+        In the theory of diagrammatic sets, weak invertibility would
+        correspond to the situation where the invertors themselves
+        are weakly invertible, coinductively.
+        In the implementation, we take an "invert when necessary"
+        approach, where invertors are not invertible by default, and
+        should be inverted when needed.
+
+        Arguments
+        ---------
+        generatorname1 : :class:`hashable`
+            Name of the first generator.
+        generatorname2 : :class:`hashable`, optional
+            Name of the second generator.
+        rinvertorname : :class:`hashable`, optional
+            Name assigned to the right invertor.
+        linvertorname : :class:`hashable`, optional
+            Name assigned to the left invertor.
+
+        Returns
+        -------
+        rinvertor : :class:`Diagram`
+            The diagram picking the right invertor.
+        linvertor : :class:`Diagram`
+            The diagram picking the left invertor.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the generators are already inverted, or 0-dimensional,
+            or do not have compatible boundaries.
         """
         for x in (generatorname1, generatorname2):
             if isinstance(x, Diagram):
@@ -577,8 +674,54 @@ class DiagSet:
                 name=None, compositorname=None,
                 **kwargs):
         """
-        Adds the 'weak composite' of a diagram together with
-        a compositor, and returns them.
+        Given a round diagram, adds a weak composite for it,
+        together with a compositor witnessing the composition, and
+        returns them as diagrams.
+
+        Both the composite and the compositor can be given custom names.
+        If the diagram to be composed is named :code:`'a'`, the
+        default names are
+
+        - :code:`'⟨a⟩'` for the composite,
+        - :code:`'comp(a)'` for the compositor.
+
+        In the theory of diagrammatic sets, a weak composite is
+        witnessed by a weakly invertible compositor.
+        In the implementation, we take an "invert when necessary"
+        approach, where compositors are not invertible by default, and
+        should be inverted when needed.
+
+        Notes
+        -----
+        A cell (a diagram whose shape is an atom) is treated as already
+        having itself as a composite, witnessed by a unit cell; this
+        method can only be used on non-atomic diagrams.
+
+        Arguments
+        ---------
+        diagram : :class:`Diagram`
+            The diagram to compose.
+        name : :class:`hashable`, optional
+            Name of the weak composite.
+        compositorname : :class:`hashable`, optional
+            Name of the compositor.
+
+        Keyword arguments
+        -----------------
+        kwargs
+            Passed to :meth:`add` when adding the composite.
+
+        Returns
+        -------
+        composite : :class:`Diagram`
+            The diagram picking the composite.
+        compositor : :class:`Diagram`
+            The diagram picking the compositor.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the diagram is not round, or already has a composite.
         """
         utils.typecheck(diagram, {
             'type': Diagram,
@@ -621,7 +764,45 @@ class DiagSet:
     def make_composite(self, diagram, generatorname,
                        compositorname=None):
         """
-        Makes a pre-existing generator the composite of a diagram.
+        Given a round diagram and a generator, it makes the second
+        the weak composite of the first by adding a compositor, and
+        returns the compositor as a diagram.
+
+        The compositor can be given a custom name.
+        If the diagram to be composed is named :code:`'a'`, the
+        default name is :code:`'comp(a)'`.
+
+        In the theory of diagrammatic sets, a weak composite is
+        witnessed by a weakly invertible compositor.
+        In the implementation, we take an "invert when necessary"
+        approach, where compositors are not invertible by default, and
+        should be inverted when needed.
+
+        Notes
+        -----
+        A cell (a diagram whose shape is an atom) is treated as already
+        having itself as a composite, witnessed by a unit cell; this
+        method can only be used on non-atomic diagrams.
+
+        Arguments
+        ---------
+        diagram : :class:`Diagram`
+            The diagram to compose.
+        generatorname : :class:`hashable`
+            Name of the generator that should be its composite.
+        compositorname : :class:`hashable`, optional
+            Name of the compositor.
+
+        Returns
+        -------
+        compositor : :class:`Diagram`
+            The diagram picking the compositor.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the diagram is not round, or already has a composite, or
+            the diagram and the generator do not have matching boundaries.
         """
         if isinstance(generatorname, Diagram):
             generatorname = generatorname.name
@@ -658,7 +839,13 @@ class DiagSet:
 
     def remove(self, generatorname):
         """
-        Removes a generator.
+        Removes a generator, together with all other generators
+        that depend on it.
+
+        Arguments
+        ---------
+        generatorname : :class:`hashable`
+            Name of the generator to remove.
         """
         if isinstance(generatorname, Diagram):
             generatorname = generatorname.name
@@ -698,6 +885,21 @@ class DiagSet:
     def update(self, generatorname, **kwargs):
         """
         Updates the optional arguments of a generator.
+
+        Arguments
+        ---------
+        generatorname : :class:`hashable`
+            Name of the generator to update.
+
+        Keyword arguments
+        -----------------
+        kwargs
+            Any arguments to update.
+
+        Raises
+        ------
+        :class:`AttributeError`
+            If the optional arguments use a private keyword.
         """
         if isinstance(generatorname, Diagram):
             generatorname = generatorname.name
@@ -707,6 +909,14 @@ class DiagSet:
         self.generators[generatorname].update(kwargs)
 
     def copy(self):
+        """
+        Returns a copy of the object.
+
+        Returns
+        -------
+        copy : :class:`DiagSet`
+            A copy of the object.
+        """
         new = DiagSet()
         new._generators = self.generators.copy()
         new._by_dim = self.by_dim.copy()
@@ -715,6 +925,26 @@ class DiagSet:
 
     @staticmethod
     def yoneda(shape):
+        """
+        Alternative constructor creating a diagrammatic set from
+        a :class:`shapes.Shape`.
+
+        Mathematically, diagrammatic sets are certain sheaves on the
+        category of shapes and maps of shapes; this constructor
+        implements the Yoneda embedding of a shape.
+        This has an `n`-dimensional generator for each `n`-dimensional
+        element of the shape.
+
+        Arguments
+        ---------
+        shape : :class:`shapes.Shape`
+            A shape.
+
+        Returns
+        -------
+        yoneda : :class:`DiagSet`
+            The Yoneda-embedded shape.
+        """
         utils.typecheck(shape, {'type': Shape})
         yoneda = DiagSet()
         for x in shape:
