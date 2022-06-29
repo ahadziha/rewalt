@@ -15,7 +15,7 @@ with open('rewalt/__init__.py', 'r') as file:
 setup(name='rewalt',
       package_dir={'rewalt': 'rewalt'},
       packages=find_packages(),
-      description='Rewriting Algebraic Topology',
+      description='Rewriting Algebra & Topology',
       version=VERSION,
       tests_suite='tests'
       )
