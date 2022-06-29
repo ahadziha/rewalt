@@ -6,7 +6,7 @@ import networkx as nx
 
 from rewalt import utils
 from rewalt.ogposets import (El, OgPoset, GrSet, GrSubset, Closed,
-                            OgMap, OgMapPair)
+                             OgMap, OgMapPair)
 
 
 class Shape(OgPoset):
@@ -92,6 +92,10 @@ class Shape(OgPoset):
         """
         Returns the sequence of rewrite steps associated to the current
         layering of the shape.
+
+        The :code:`0`-th rewrite step is the input boundary of the shape.
+        For :code:`n > 0`, the :code:`n`-th rewrite step is the output
+        boundary of the :code:`(n-1)`-th layer.
 
         Returns
         -------
@@ -2047,7 +2051,6 @@ class ShapeMap(OgMap):
         layers : :class:`list[ShapeMap]`
             The source's current layering, composed with the map.
         """
- 
         if not hasattr(self.source, '_layering'):
             return [self]
         return [

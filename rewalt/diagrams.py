@@ -1133,7 +1133,7 @@ class Diagram:
 
         The :code:`0`-th rewrite step is the input boundary of the diagram.
         For :code:`n > 0`, the :code:`n`-th rewrite step is the output
-        boundary of the :code:`n`-th layer.
+        boundary of the :code:`(n-1)`-th layer.
 
         Returns
         -------
@@ -1195,7 +1195,7 @@ class Diagram:
         Returns whether the diagram is an invertible cell.
 
         A cell is invertible if either
-        
+
         - it is degenerate, or
         - its image is an invertible generator.
 
