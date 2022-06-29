@@ -990,10 +990,38 @@ class DiagSet:
 
 class Diagram:
     """
-    Class for diagrams in diagrammatic sets.
+    Class for diagrams, that is, mappings from a shape to an
+    "ambient" diagrammatic set.
+
+    To create a diagram, we start from *generators*
+    of a diagrammatic set, returned by the :meth:`DiagSet.add`
+    method or requested with indexer operators.
+
+    Then we produce other diagrams in two main ways:
+
+    - pulling back a diagram along a map of shapes
+      (:meth:`pullback`), or
+    - pasting together two diagrams along their boundaries
+      (:meth:`paste`, :meth:`to_inputs`, :meth:`to_outputs`).
+
+    In practice, the direct use of :meth:`pullback`, which requires
+    an explicit shape map, can be avoided in common cases by using
+    :meth:`unit`, :meth:`lunitor`, :meth:`runitor`, or the
+    specialised :class:`SimplexDiagram.simplex_degeneracy`,
+    :class:`CubeDiagram.cube_degeneracy`, and
+    :class:`CubeDiagram.cube_connection` methods.
+
+    Notes
+    -----
+    Initialising a :class:`Diagram` directly creates an empty
+    diagram in a given diagrammatic set.
+
+    Arguments
+    ---------
+    ambient : :class:`DiagSet`
+        The ambient diagrammatic set.
     """
     def __init__(self, ambient):
-        """ Initialises to the empty diagram. """
         utils.typecheck(ambient, {'type': DiagSet})
 
         self._shape = Shape.empty()
@@ -1027,22 +1055,69 @@ class Diagram:
 
     @property
     def name(self):
+        """
+        Returns the name of the diagram.
+
+        Returns
+        -------
+        name : :class:`hashable`
+            The name of the diagram.
+        """
         return self._name
 
     @property
     def shape(self):
+        """
+        Returns the shape of the diagram.
+
+        Returns
+        -------
+        shape : :class:`shapes.Shape`
+            The shape of the diagram.
+        """
         return self._shape
 
     @property
     def ambient(self):
+        """
+        Returns the ambient diagrammatic set.
+
+        Returns
+        -------
+        ambient : :class:`DiagSet`
+            The ambient diagrammatic set.
+        """
         return self._ambient
 
     @property
     def mapping(self):
+        """
+        Returns the data specifying the mapping of shape elements to
+        generators.
+
+        The mapping is specified as a list of lists, similar to
+        :class:`ogposets.OgMap`, in the following way:
+        :code:`mapping[n][k] == s` if the diagram sends :code:`El(n, k)`
+        to the generator named :code:`s`.
+
+        Returns
+        -------
+        mapping : :class:`list[list[hashable]]`
+            The data specifying the diagram's assignment.
+        """
         return self._mapping
 
     @property
     def layers(self):
+        """
+        Returns the layering of the diagram corresponding to the current
+        layering of the shape.
+
+        Returns
+        -------
+        layers : :class:`list[Diagram]`
+            The current layering.
+        """
         if not hasattr(self.shape, '_layering'):
             return [self]
         return [
@@ -1052,6 +1127,19 @@ class Diagram:
 
     @property
     def rewrite_steps(self):
+        """
+        Returns the sequence of rewrite steps associated to the current
+        layering of the diagram.
+
+        The :code:`0`-th rewrite step is the input boundary of the diagram.
+        For :code:`n > 0`, the :code:`n`-th rewrite step is the output
+        boundary of the :code:`n`-th layer.
+
+        Returns
+        -------
+        rewrite_steps : :class:`list[Diagram]`
+            The current sequence of rewrite steps.
+        """
         rewrite_steps = [
                 *[layer.input for layer in self.layers],
                 self.layers[-1].output
@@ -1063,10 +1151,22 @@ class Diagram:
 
     @property
     def dim(self):
+        """
+        Shorthand for :code:`shape.dim`.
+        """
         return self.shape.dim
 
     @property
     def isdegenerate(self):
+        """
+        Returns whether the diagram is *degenerate*, that is, its
+        image has dimension strictly lower than the dimension of the shape.
+
+        Returns
+        -------
+        isdegenerate : :class:`bool`
+            :code:`True` if and only if the diagram is degenerate.
+        """
         if self.dim <= 0:
             return False
         for x in self.mapping[-1]:
@@ -1077,16 +1177,15 @@ class Diagram:
     @property
     def isround(self):
         """
-        Return whether the diagram has a round shape (hence can appear
-        as the boundary of another diagram).
+        Shorthand for :code:`shape.isround`.
         """
         return self.shape.isround
 
     @property
     def iscell(self):
         """
-        Returns whether the diagram is a cell, that is, its shape
-        is an atom.
+        Shorthand for :code:`shape.isatom`; a *cell* is a diagram
+        whose shape is an atom.
         """
         return self.shape.isatom
 
@@ -1094,6 +1193,16 @@ class Diagram:
     def isinvertiblecell(self):
         """
         Returns whether the diagram is an invertible cell.
+
+        A cell is invertible if either
+        
+        - it is degenerate, or
+        - its image is an invertible generator.
+
+        Returns
+        -------
+        isinvertiblecell : :class:`bool`
+            :code:`True` if and only if the diagram is an invertible cell.
         """
         if self.iscell:
             if self.isdegenerate:
