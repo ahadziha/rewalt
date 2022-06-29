@@ -9,7 +9,53 @@ from rewalt.shapes import (Shape, ShapeMap)
 
 class DiagSet:
     """
-    Class for diagrammatic sets.
+    Class for diagrammatic sets, a model of higher-dimensional rewrite
+    systems and/or directed cell complexes.
+
+    A diagrammatic set is constructed by creating an empty object, then
+    adding named *generators* of different dimensions. The addition of a
+    generator models the gluing of an atomic :class:`shapes.Shape` object
+    along its boundary.
+
+    This operation produces a *diagram*, that is, a map from a shape
+    to the diagrammatic set, modelled as a :class:`Diagram` object.
+    From these "basic" diagrams, we can construct "derived" diagrams
+    either by pasting, or by pulling back along shape maps (this is
+    used to produce "unit" or "degenerate" diagrams).
+
+    To add a 0-dimensional generator (a point), we just give it a name.
+    In the main constructor :meth:`add`, the gluing of an
+    :code:`n`-dimensional generator is specified by a pair of round,
+    :code:`(n-1)`-dimensional :class:`Diagram` objects, describing
+    the gluing maps for the input and output boundaries of a shape.
+
+    Simplicial sets, cubical sets with connections, and reflexive globular
+    sets are all special cases of diagrammatic sets, where the generators
+    have simplicial, cubical, or globular shapes.
+    There are special constructors :meth:`add_simplex` and
+    :meth:`add_cube` for adding simplicial and cubical generators by
+    listing all their faces.
+
+    The generators of a diagrammatic set are, by default, "directed" and
+    not invertible. The class supports a model of weak or pseudo-
+    invertibility, where two generators being each other's "weak inverse"
+    is witnessed by a pair of higher-dimensional generators (*invertors*).
+    This is produced by the methods :meth:`invert` (creates an inverse) and
+    :meth:`make_inverses` (makes an existing generator the inverse).
+
+    Diagrammatic sets do not have an intrinsic notion of composition
+    of diagrams, so they are not by themselves a model of higher categories.
+    However, the class supports a model of higher categories in which one
+    generator being the composite of a diagram is witnessed by a
+    higher-dimensional generator (a *compositor*). This is produced
+    by the methods :meth:`compose` (creates a composite) and
+    :meth:`make_composite` (makes an existing generator the composite).
+
+    Notes
+    -----
+    There is an alternative constructor :meth:`yoneda` which turns
+    a :class:`shapes.Shape` object into a diagrammatic set with one
+    generator for every face of the shape.
     """
     _PRIVATE = (
             'shape',
@@ -23,7 +69,6 @@ class DiagSet:
             'composite')
 
     def __init__(self):
-        """ Initialises to an empty diagrammatic set. """
         self._generators = dict()
         self._by_dim = dict()
         self._compositors = dict()
@@ -56,36 +101,166 @@ class DiagSet:
 
     @property
     def generators(self):
+        """
+        Returns the object's internal representation of the set of
+        generators and related data.
+
+        This is a dictionary whose keys are the generators' names.
+        For each generator, the object stores another dictionary,
+        which contains at least
+
+        - the generator's shape (:code:`shape`, :class:`shapes.Shape`),
+        - the mapping of the shape (:code:`mapping`,
+          :class:`list[list[hashable]]`),
+        - the generator's set of "faces", that is, other generators
+          appearing as codimension-1 faces of the generator
+          (:code:`faces`, :class:`set[hashable]`),
+        - the generator's set of "cofaces", that is, other generators
+          that have the generator as a face (:code:`cofaces`,
+          :class:`set[hashable]`).
+
+        If the generator has been inverted, it will also contain
+
+        - its inverse's name (:code:`inverse`, :class:`hashable`),
+        - the left invertor's name (:code:`linvertor`, :class:`hashable`),
+        - the right invertor's name (:code:`rinvertor`, :class:`hashable`).
+
+        If the generator happens to be a compositor, it will also
+        contain the name of the composite it is exhibiting
+        (:code:`composite`, :class:`hashable`).
+
+        This also stores any additional keyword arguments passed when
+        adding the generator.
+
+        Returns
+        -------
+        generators : :class:`dict[dict]`
+            The generators' data.
+        """
         return self._generators
 
     @property
     def by_dim(self):
+        """
+        Returns the set of generators indexed by dimension.
+
+        Returns
+        -------
+        by_dim : :class:`dict[hashable]`
+            The set of generators indexed by dimension.
+        """
         return self._by_dim
 
     @property
     def compositors(self):
+        """
+        Returns a dictionary of diagrams that have a non-trivial
+        composite, indexed by their compositor's name.
+
+        More precisely, rather than :class:`Diagram` objects,
+        the dictionary stores the :code:`shape` and :code:`mapping`
+        data that allows to reconstruct them.
+
+        Returns
+        -------
+        compositors : :class:`dict[dict]`
+            The dictionary of composed diagrams.
+        """
         return self._compositors
 
     @property
     def dim(self):
+        """
+        Returns the maximal dimension of a generator.
+
+        Returns
+        -------
+        dim : :class:`int`
+            The maximal dimension of a generator, or :code:`-1` if empty.
+        """
         return max(self.by_dim, default=-1)
 
     @property
     def issimplicial(self):
+        """
+        Returns whether the diagrammatic sets is simplicial, that is,
+        all its generators are simplex-shaped.
+
+        Returns
+        -------
+        issimplicial : :class:`bool`
+            :code:`True` if and only if the shape of every generator is
+            a :class:`shapes.Simplex` object.
+        """
         for x in self:
-            if not isinstance(self[x], SimplexDiagram):
+            if not isinstance(self.generators[x]['shape'], shapes.Simplex):
                 return False
         return True
 
     @property
     def iscubical(self):
+        """
+        Returns whether the diagrammatic sets is cubical, that is,
+        all its generators are cube-shaped.
+
+        Returns
+        -------
+        iscubical : :class:`bool`
+            :code:`True` if and only if the shape of every generator is
+            a :class:`shapes.Cube` object.
+        """
         for x in self:
-            if not isinstance(self[x], CubeDiagram):
+            if not isinstance(self.generators[x]['shape'], shapes.Cube):
                 return False
         return True
 
     def add(self, name, input=None, output=None, **kwargs):
-        """ Adds a generator and returns it. """
+        """
+        Adds a generator and returns the diagram that maps the new
+        generator into the diagrammatic set.
+
+        The gluing of the generator is specified by a pair of round
+        diagrams with identical boundaries, corresponding to the input
+        and output diagrams of the new generator. If none are given,
+        adds a point (0-dimensional generator).
+
+        Arguments
+        ---------
+        name : :class:`hashable`
+            The name of the generator; can be any hashable object.
+        input : :class:`Diagram`, optional
+            The input diagram of the new generator (default is :code:`None`)
+        output : :class:`Diagram`, optional
+            The output diagram of the new generator (default is :code:`None`)
+
+        Keyword arguments
+        -----------------
+        color : multiple types
+            Fill color when pictured as a node in string diagrams.
+            If :code:`stroke` is not specified, this is
+            also the color when pictured as a wire.
+        stroke : multiple types
+            Stroke color when pictured as a node, and color when pictured
+            as a wire.
+        draw_node : :class:`bool`
+            If :code:`False`, no node is drawn when picturing the
+            generator in string diagrams.
+        draw_label : :class:`bool`
+            If :code:`False`, no label is drawn when picturing the
+            generator in string diagrams.
+
+        Returns
+        -------
+        cell : :class:`Diagram`
+            The diagram corresponding to the mapping of the new generator
+            into the diagrammatic set.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the name is already in use, or the input and output diagrams
+            do not have round and matching boundaries.
+        """
         if name in self.generators:
             raise ValueError(utils.value_err(
                 name, 'name already in use'))
@@ -128,6 +303,38 @@ class DiagSet:
         return self[name]
 
     def add_simplex(self, name, *faces, **kwargs):
+        """
+        Variant of :meth:`add` for simplex-shaped generators.
+
+        The gluing of the generator is specified by a number of
+        :class:`SimplexDiagram` objects, corresponding to the faces
+        of the new generator as listed by
+        :class:`SimplexDiagram.simplex_face`.
+
+        Arguments
+        ---------
+        name : :class:`hashable`
+            The name of the generator; can be any hashable object.
+        faces : :class:`SimplexDiagram`
+            The simplicial faces of the new generator.
+
+        Keyword arguments
+        -----------------
+        kwargs
+            Same as :meth:`add`.
+
+        Returns
+        -------
+        cell : :class:`SimplexDiagram`
+            The diagram corresponding to the mapping of the new generator
+            into the diagrammatic set.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the name is already in use, or the faces do not have
+            matching boundaries.
+        """
         if len(faces) <= 1:
             return self.add(name, **kwargs)
 
@@ -167,6 +374,40 @@ class DiagSet:
         return self[name]
 
     def add_cube(self, name, *faces, **kwargs):
+        """
+        Variant of :meth:`add` for cube-shaped generators.
+
+        The gluing of the generator is specified by a number of
+        :class:`CubeDiagram` objects, corresponding to the faces
+        of the new generator as listed by
+        :class:`CubeDiagram.cube_face`, in the order
+        :code:`(0, '-')`, :code:`(0, '+')`, :code:`(1, '-')`,
+        :code:`(1, '+')`, etc.
+
+        Arguments
+        ---------
+        name : :class:`hashable`
+            The name of the generator; can be any hashable object.
+        faces : :class:`CubeDiagram`
+            The cubical faces of the new generator.
+
+        Keyword arguments
+        -----------------
+        kwargs
+            Same as :meth:`add`.
+
+        Returns
+        -------
+        cell : :class:`CubeDiagram`
+            The diagram corresponding to the mapping of the new generator
+            into the diagrammatic set.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the name is already in use, or the faces do not have
+            matching boundaries.
+        """
         if len(faces) % 2 == 1:
             raise ValueError(utils.value_err(
                 faces, 'expecting an even number of faces'))
