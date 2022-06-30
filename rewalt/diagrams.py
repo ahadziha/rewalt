@@ -2035,6 +2035,13 @@ class Diagram:
 
 
 class SimplexDiagram(Diagram):
+    """
+    Subclass of :class:`Diagram` for diagrams whose shape is an
+    oriented simplex.
+
+    The methods of this class provide an implementation of the
+    structural maps of a simplicial set.
+    """
     def simplex_face(self, k):
         """
         Returns one of the faces of the simplex.
@@ -2093,6 +2100,13 @@ class SimplexDiagram(Diagram):
 
 
 class CubeDiagram(Diagram):
+    """
+    Subclass of :class:`Diagram` for diagrams whose shape is an
+    oriented cube.
+
+    The methods of this class provide an implementation of the
+    structural maps of a cubical set with connections.
+    """
     def cube_face(self, k, sign):
         """
         Returns one of the faces of the cube.
@@ -2189,6 +2203,9 @@ class ArrowDiagram(SimplexDiagram, CubeDiagram):
 
 
 class PointDiagram(SimplexDiagram, CubeDiagram):
+    """
+    Subclass of :class:`Diagram` for diagrams whose shape is a point.
+    """
     def degeneracy(self, shape):
         """
         Given a shape, returns the unique degenerate diagram
