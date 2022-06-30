@@ -1551,7 +1551,30 @@ class Diagram:
 
     def lunitor(self, sign='-', positions=None):
         """
-        Left unitor or inverse unitor.
+        Returns a left unitor on the diagram:
+        a degenerate diagram one dimension higher, with one
+        boundary equal to the diagram, and the other equal to the
+        diagram with units pasted to some of its inputs.
+
+        Arguments
+        ---------
+        sign : :class:`str`, optional
+            The boundary on which the units are: :code:`'-'` (default)
+            for input, :code:`'+'` for output.
+        positions : :class:`list[int]` | :class:`int`
+            The positions of the inputs to which a unit is attached
+            (default is *all* of the inputs). If given
+            an integer :code:`n`, interprets it as the list :code:`[n]`.
+
+        Returns
+        -------
+        lunitor : :class:`Diagram`
+            The left unitor diagram.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the positions do not correspond to inputs.
         """
         sign = utils.mksign(sign)
         dim = self.dim - 1
@@ -1593,7 +1616,30 @@ class Diagram:
 
     def runitor(self, sign='-', positions=None):
         """
-        Right unitor or inverse unitor.
+        Returns a right unitor on the diagram:
+        a degenerate diagram one dimension higher, with one
+        boundary equal to the diagram, and the other equal to the
+        diagram with units pasted to some of its outputs.
+
+        Arguments
+        ---------
+        sign : :class:`str`, optional
+            The boundary on which the units are: :code:`'-'` (default)
+            for input, :code:`'+'` for output.
+        positions : :class:`list[int]` | :class:`int`
+            The positions of the outputs to which a unit is attached
+            (default is *all* of the outputs). If given
+            an integer :code:`n`, interprets it as the list :code:`[n]`.
+
+        Returns
+        -------
+        runitor : :class:`Diagram`
+            The right unitor diagram.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the positions do not correspond to outputs.
         """
         sign = utils.mksign(sign)
         dim = self.dim - 1
@@ -1636,6 +1682,16 @@ class Diagram:
     def inverse(self):
         """
         Returns the inverse of an invertible cell.
+
+        Returns
+        -------
+        inverse : :class:`Diagram`
+            The inverse cell.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the diagram is not an invertible cell.
         """
         if not self.isinvertiblecell:
             raise ValueError(utils.value_err(
@@ -1669,6 +1725,16 @@ class Diagram:
     def rinvertor(self):
         """
         Returns the right invertor for an invertible cell.
+
+        Returns
+        -------
+        rinvertor : :class:`Diagram`
+            The right invertor.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the diagram is not an invertible cell.
         """
         if not self.isinvertiblecell:
             raise ValueError(utils.value_err(
@@ -1707,6 +1773,16 @@ class Diagram:
     def linvertor(self):
         """
         Returns the left invertor for an invertible cell.
+
+        Returns
+        -------
+        linvertor : :class:`Diagram`
+            The left invertor.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the diagram is not an invertible cell.
         """
         if not self.isinvertiblecell:
             raise ValueError(utils.value_err(
@@ -1745,6 +1821,16 @@ class Diagram:
     def composite(self):
         """
         Returns the composite of the diagram, if it exists.
+
+        Returns
+        -------
+        composite : :class:`Diagram`
+            The composite.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the diagram does not have a composite.
         """
         if not self.hascomposite:
             raise ValueError(utils.value_err(
@@ -1760,6 +1846,16 @@ class Diagram:
     def compositor(self):
         """
         Returns the compositor of the diagram, if it exists.
+
+        Returns
+        -------
+        compositor : :class:`Diagram`
+            The compositor.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the diagram does not have a composite.
         """
         if not self.hascomposite:
             raise ValueError(utils.value_err(
@@ -1772,26 +1868,70 @@ class Diagram:
 
     def generate_layering(self):
         """
-        Iterates through layerings of the diagram.
+        Assigns a layering to the diagram, iterating through all
+        the layerings, and returns it.
+
+        Returns
+        -------
+        layers : :class:`list[Diagram]`
+            The generated layering.
         """
         self.shape.generate_layering()
         return self.layers
 
     def hasse(self, **params):
+        """
+        Bound version of :meth:`hasse.draw`.
+
+        Calling :code:`x.hasse(**params)` is equivalent to calling
+        :code:`hasse.draw(x, **params)`.
+        """
         from rewalt.hasse import draw
         return draw(self, **params)
 
     def draw(self, **params):
+        """
+        Bound version of :meth:`strdiags.draw`.
+
+        Calling :code:`x.draw(**params)` is equivalent to calling
+        :code:`strdiags.draw(x, **params)`.
+        """
         from rewalt.strdiags import draw
         return draw(self, **params)
 
     def draw_boundaries(self, **params):
+        """
+        Bound version of :meth:`strdiags.draw_boundaries`.
+
+        Calling :code:`x.draw_boundaries(**params)` is equivalent to
+        calling :code:`strdiags.draw_boundaries(x, **params)`.
+        """
         from rewalt.strdiags import draw_boundaries
         return draw_boundaries(self, **params)
 
     # Alternative constructors
     @staticmethod
     def yoneda(shapemap, name=None):
+        """
+        Alternative constructor creating a diagram from
+        a :class:`shapes.ShapeMap`.
+
+        Mathematically, diagrammatic sets are certain sheaves on the
+        category of shapes and maps of shapes; this constructor
+        implements the Yoneda embedding of a map of shapes.
+
+        Arguments
+        ---------
+        shapemap : :class:`shapes.Shape`
+            A map of shapes.
+        name : :class:`hashable`, optional
+            The name of the generated diagram.
+
+        Returns
+        -------
+        yoneda : :class:`Diagram`
+            The Yoneda-embedded map.
+        """
         utils.typecheck(shapemap, {
             'type': ShapeMap})
         return Diagram._new(
@@ -1802,6 +1942,27 @@ class Diagram:
 
     @staticmethod
     def with_layers(fst, *layers):
+        """
+        Given a non-zero number of diagrams that can be pasted sequentially
+        in the top dimension, returns their pasting.
+
+        Arguments
+        ---------
+        fst : :class:`Diagram`
+            The first diagram.
+        layers : :class:`Diagram`
+            Any number of additional diagrams.
+
+        Returns
+        -------
+        with_layers : :class:`Diagram`
+            The pasting of all the diagrams in the top dimension.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the diagrams are not pastable.
+        """
         utils.typecheck(fst, {'type': Diagram})
         dim = fst.dim
 
@@ -1875,12 +2036,56 @@ class Diagram:
 
 class SimplexDiagram(Diagram):
     def simplex_face(self, k):
+        """
+        Returns one of the faces of the simplex.
+
+        This is, by definition, the pullback of the diagram along
+        :code:`self.shape.simplex_face(k)`.
+
+        Arguments
+        ---------
+        k : :class:`int`
+            The index of the face, ranging from :code:`0` to
+            :code:`self.dim`.
+
+        Returns
+        -------
+        simplex_face : :class:`Diagram`
+            The face.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the index is out of range.
+        """
         face_map = self.shape.simplex_face(k)
         name = 'd[{}]({})'.format(
                 str(k), str(self.name))
         return self.pullback(face_map, name)
 
     def simplex_degeneracy(self, k):
+        """
+        Returns one of the degeneracies of the simplex.
+
+        This is, by definition, the pullback of the diagram along
+        :code:`self.shape.simplex_degeneracy(k)`.
+
+        Arguments
+        ---------
+        k : :class:`int`
+            The index of the degeneracy, ranging from :code:`0` to
+            :code:`self.dim`.
+
+        Returns
+        -------
+        simplex_degeneracy : :class:`Diagram`
+            The degeneracy.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the index is out of range.
+        """
         degeneracy_map = self.shape.simplex_degeneracy(k)
         name = 's[{}]({})'.format(
                 str(k), str(self.name))
@@ -1889,6 +2094,30 @@ class SimplexDiagram(Diagram):
 
 class CubeDiagram(Diagram):
     def cube_face(self, k, sign):
+        """
+        Returns one of the faces of the cube.
+
+        This is, by definition, the pullback of the diagram along
+        :code:`self.shape.cube_face(k, sign)`.
+
+        Arguments
+        ---------
+        k : :class:`int`
+            Index of the face, ranging from :code:`0` to
+            :code:`self.dim - 1`.
+        sign : :class:`str`
+            Side: :code:`'-'` or :code:`'+'`.
+
+        Returns
+        -------
+        cube_face : :class:`Diagram`
+            The face.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the index is out of range.
+        """
         sign = utils.mksign(sign)
         face_map = self.shape.cube_face(k, sign)
         name = 'δ[{},{}]({})'.format(
@@ -1896,12 +2125,58 @@ class CubeDiagram(Diagram):
         return self.pullback(face_map, name)
 
     def cube_degeneracy(self, k):
+        """
+        Returns one of the degeneracies of the cube.
+
+        This is, by definition, the pullback of the diagram along
+        :code:`self.shape.cube_degeneracy(k)`.
+
+        Arguments
+        ---------
+        k : :class:`int`
+            The index of the degeneracy, ranging from :code:`0` to
+            :code:`self.dim`.
+
+        Returns
+        -------
+        cube_degeneracy : :class:`Diagram`
+            The degeneracy.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the index is out of range.
+        """
         degeneracy_map = self.shape.cube_degeneracy(k)
         name = 'σ[{}]({})'.format(
                 str(k), str(self.name))
         return self.pullback(degeneracy_map, name)
 
     def cube_connection(self, k, sign):
+        """
+        Returns one of the connections of the cube.
+
+        This is, by definition, the pullback of the diagram along
+        :code:`self.shape.cube_connection(k, sign)`.
+
+        Arguments
+        ---------
+        k : :class:`int`
+            Index of the connection, ranging from :code:`0` to
+            :code:`self.dim - 1`.
+        sign : :class:`str`
+            Side: :code:`'-'` or :code:`'+'`.
+
+        Returns
+        -------
+        cube_face : :class:`Diagram`
+            The connection.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the index is out of range.
+        """
         sign = utils.mksign(sign)
         connection_map = self.shape.cube_connection(k, sign)
         name = 'γ[{},{}]({})'.format(
@@ -1915,6 +2190,23 @@ class ArrowDiagram(SimplexDiagram, CubeDiagram):
 
 class PointDiagram(SimplexDiagram, CubeDiagram):
     def degeneracy(self, shape):
+        """
+        Given a shape, returns the unique degenerate diagram
+        of that shape over the point.
+
+        This is, by definition, the pullback of the point diagram along
+        :code:`self.shape.terminal()`.
+
+        Arguments
+        ---------
+        shape : :class:`shapes.Shape`
+            The shape of the degenerate diagram.
+
+        Returns
+        -------
+        degeneracy : :class:`Diagram`
+            The degenerate diagram.
+        """
         utils.typecheck(shape, {'type': Shape})
         return self.pullback(
                 shape.terminal(), self.name)
