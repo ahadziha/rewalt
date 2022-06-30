@@ -1184,8 +1184,8 @@ class Diagram:
     @property
     def iscell(self):
         """
-        Shorthand for :code:`shape.isatom`; a *cell* is a diagram
-        whose shape is an atom.
+        Shorthand for :code:`shape.isatom` (a *cell* is a diagram
+        whose shape is an atom).
         """
         return self.shape.isatom
 
@@ -1215,6 +1215,11 @@ class Diagram:
     def hascomposite(self):
         """
         Returns whether the diagram has a composite.
+
+        Returns
+        -------
+        hascomposite : :class:`bool`
+            :code:`True` if and only if the diagram has a composite.
         """
         if self.iscell:
             return True
@@ -1223,11 +1228,53 @@ class Diagram:
         return True
 
     def rename(self, name):
-        """ Renames the diagram. """
+        """
+        Renames the diagram.
+
+        Arguments
+        ---------
+        name : :class:`hashable`
+            The new name for the diagram.
+        """
         self._name = name
 
     # Methods for creating new diagrams
     def paste(self, other, dim=None, **params):
+        """
+        Given two diagrams and :code:`k` such that the output
+        :code:`k`-boundary of the first is equal to the input
+        :code:`k`-boundary of the second, returns their pasting along
+        the matching boundaries.
+
+        Arguments
+        ---------
+        fst : :class:`Diagram`
+            The first diagram.
+        snd : :class:`Diagram`
+            The second diagram.
+        dim : :class:`int`, optional
+            The dimension of the boundary along which they will be pasted
+            (default is :code:`min(fst.dim, snd.dim) - 1`).
+
+        Keyword arguments
+        -----------------
+        cospan : :class:`bool`
+            Whether to also return the cospan of inclusions of the two
+            diagrams' shapes into the pasting (default is :code:`False`).
+
+        Returns
+        -------
+        paste : :class:`Diagram`
+            The pasted diagram.
+        paste_cospan : :class:`ogposets.OgMapPair`, optional
+            The cospan of inclusions of the two diagrams' shapes into
+            their pasting.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the boundaries do not match.
+        """
         cospan = params.get('cospan', False)
 
         utils.typecheck(other, {
@@ -1256,6 +1303,42 @@ class Diagram:
         return pasted
 
     def to_outputs(self, positions, other, dim=None, **params):
+        """
+        Returns the pasting of another diagram along a round subshape of
+        the output :code:`k`-boundary, specified by the positions of its
+        :code:`k`-dimensional elements.
+
+        Arguments
+        ---------
+        positions : :class:`list[int]` | :class:`int`
+            The positions of the outputs along which to paste. If given
+            an integer :code:`n`, interprets it as the list :code:`[n]`.
+        other : :class:`Diagram`
+            The other diagram to paste.
+        dim : :class:`int`, optional
+            The dimension of the boundary along which to paste
+            (default is :code:`self.dim - 1`)
+
+        Keyword arguments
+        -----------------
+        cospan : :class:`bool`
+            Whether to return the cospan of inclusions of the two diagrams'
+            shapes into the pasting (default is :code:`False`).
+
+        Returns
+        -------
+        to_outputs : :class:`Shape`
+            The pasted diagram.
+        paste_cospan : :class:`ogposets.OgMapPair`, optional
+            The cospan of inclusions of the two diagrams' shapes into
+            their pasting.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the boundaries do not match, or the pasting does not produce
+            a well-formed shape.
+        """
         cospan = params.get('cospan', False)
         if isinstance(positions, int):
             positions = [positions]
@@ -1281,6 +1364,42 @@ class Diagram:
         return pasted
 
     def to_inputs(self, positions, other, dim=None, **params):
+        """
+        Returns the pasting of another diagram along a round subshape of
+        the input :code:`k`-boundary, specified by the positions of its
+        :code:`k`-dimensional elements.
+
+        Arguments
+        ---------
+        positions : :class:`list[int]` | :class:`int`
+            The positions of the inputs along which to paste. If given
+            an integer :code:`n`, interprets it as the list :code:`[n]`.
+        other : :class:`Diagram`
+            The other diagram to paste.
+        dim : :class:`int`, optional
+            The dimension of the boundary along which to paste
+            (default is :code:`self.dim - 1`)
+
+        Keyword arguments
+        -----------------
+        cospan : :class:`bool`
+            Whether to return the cospan of inclusions of the two diagrams'
+            shapes into the pasting (default is :code:`False`).
+
+        Returns
+        -------
+        to_inputs : :class:`Shape`
+            The pasted diagram.
+        paste_cospan : :class:`ogposets.OgMapPair`, optional
+            The cospan of inclusions of the two diagrams' shapes into
+            their pasting.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the boundaries do not match, or the pasting does not produce
+            a well-formed shape.
+        """
         cospan = params.get('cospan', False)
         if isinstance(positions, int):
             positions = [positions]
@@ -1306,11 +1425,52 @@ class Diagram:
         return pasted
 
     def rewrite(self, positions, diagram):
+        """
+        Returns the diagram representing the application of a
+        higher-dimensional rewrite to a subdiagram, specified
+        by the positions of its top-dimensional elements.
+
+        This is in fact an alias for :meth:`to_outputs` in the top
+        dimension, reflecting the intuitions of higher-dimensional
+        rewriting in this situation.
+
+        Arguments
+        ---------
+        positions : :class:`list[int]` | :class:`int`
+            The positions of the top-dimensional elements to rewrite.
+            If given an integer :code:`n`, interprets it as the list
+            :code:`[n]`.
+        diagram : :class:`Diagram`
+            The diagram representing the rewrite to apply.
+
+        Returns
+        -------
+        rewrite : :class:`Shape`
+            The diagram representing the application of the rewrite to
+            the given positions.
+        """
         return self.to_outputs(positions, diagram, self.dim)
 
     def pullback(self, shapemap, name=None):
         """
-        Pullback of the diagram by a ShapeMap.
+        Returns the pullback of the diagram along a shape map.
+
+        Arguments
+        ---------
+        shapemap : :class:`shapes.ShapeMap`
+            The map along which to pull back.
+        name : :class:`hashable`, optional
+            The name to give to the new diagram.
+
+        Returns
+        -------
+        pullback : :class:`Diagram`
+            The pulled back diagram.
+
+        Raises
+        ------
+        :class:`ValueError`
+            If the target of the map is not equal to the diagram shape.
         """
         utils.typecheck(shapemap, {
             'type': ShapeMap,
@@ -1334,7 +1494,22 @@ class Diagram:
 
     def boundary(self, sign, dim=None):
         """
-        Boundaries of the diagram.
+        Returns the boundary of a given orientation and dimension.
+
+        This is, by definition, the pullback of a diagram along the
+        inclusion map :code:`self.shape.boundary(sign, dim)`.
+
+        Arguments
+        ---------
+        sign : :class:`str`
+            Orientation: :code:`'-'` for input, :code:`'+'` for output.
+        dim : :class:`int`, optional
+            Dimension of the boundary (default is :code:`self.dim - 1`).
+
+        Returns
+        -------
+        boundary : :class:`Diagram`
+            The requested boundary.
         """
         if dim is None:
             dim = self.dim - 1
@@ -1346,15 +1521,30 @@ class Diagram:
 
     @property
     def input(self):
+        """
+        Alias for :code:`boundary('-')`.
+        """
         return self.boundary('-')
 
     @property
     def output(self):
+        """
+        Alias for :code:`boundary('+')`.
+        """
         return self.boundary('+')
 
     def unit(self):
         """
-        Unit on the diagram.
+        Returns the unit on the diagram: a degenerate diagram one
+        dimension higher, with input and output equal to the diagram.
+
+        This is, by definition, the pullback of the diagram along
+        :code:`self.shape.inflate()`.
+
+        Returns
+        -------
+        unit : :class:`Diagram`
+            The unit diagram.
         """
         name = '1({})'.format(str(self.name))
         return self.pullback(self.shape.inflate(), name)

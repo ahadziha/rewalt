@@ -12,3 +12,4 @@ diagrams
    rewalt.diagrams.Diagram
    rewalt.diagrams.SimplexDiagram
    rewalt.diagrams.CubeDiagram
+   rewalt.diagrams.PointDiagram
