@@ -414,7 +414,7 @@ class StrDiag:
             (TikZ only) Scale factor to apply to y axis in output
             (default is same as `scale`)
         show : :class:`bool`
-            Whether to show the output (default :code:`True`).
+            Whether to show the output (default is :code:`True`).
         path : :class:`str`
             Path where to save the output (default is :code:`None`).
         depth : :class:`bool`
