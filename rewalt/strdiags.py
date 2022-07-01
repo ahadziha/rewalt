@@ -426,8 +426,44 @@ class StrDiag:
             The foreground colour, given by default to nodes, wires,
             and labels (default is :code:`'black'`).
         infocolor : multiple types
-            The colour given to additional information displayed in
+            The colour of additional information displayed in
             the diagram, such as positions (default is :code:`'magenta'`).
+        wirecolor : multiple types
+            The default wire colour (default is same as `fgcolor`).
+        nodecolor : multiple types
+            The default node fill colour (default is same as `fgcolor`).
+        nodestroke : multiple types
+            The default node stroke colour (default is same as `nodecolor`).
+        degenalpha : :class:`float`
+            The alpha factor of wires corresponding to degenerate cells
+            (default is :code:`0.1`).
+        labels : :class:`bool`
+            Whether to display node and wire labels (default is
+            :code:`True`).
+        nodelabels : :class:`bool`
+            Whether to display node labels (default is same as `labels`).
+        wirelabels : :class:`bool`
+            Whether to display wire labels (default is same as `labels`).
+        labeloffset : :class:`tuple[float]`
+            Point offset of labels relative to vertices (default is
+            :code:`(4, 4)`).
+        positions : :class:`bool`
+            Whether to display node and wire positions (default is
+            :code:`False`).
+        nodepositions : :class:`bool`
+            Whether to display node positions (default is same as
+            `positions`).
+        wirepositions : :class:`bool`
+            Whether to display wire positions (default is same as
+            `positions`).
+        positionoffset : :class:`tuple[float]`
+            Point offset of positions relative to vertices (default is
+            :code:`(4, -16)` for Matplotlib, :code:`(4, -6)` for TikZ).
+        orientation : :class:`str`
+            Orientation of the string diagram: one of :code:`'bt'`
+            (bottom-to-top), :code:`'lr'` (left-to-right),
+            :code:`'tb'` (top-to-bottom), :code:`'rl'` (right-to-left)
+            (default is :code:`'bt'`).
         """
         # Parameters
         tikz = params.get('tikz', DEFAULT['tikz'])
@@ -559,19 +595,67 @@ class StrDiag:
 
 
 def draw(*diagrams, **params):
+    """
+    Given any number of diagrams, generates their string
+    diagrams and draws them.
+
+    This is the same as generating the string diagram for each
+    diagram, and calling :meth:`StrDiag.draw` with the given
+    parameters on each one of them.
+
+    Arguments
+    ---------
+    *diagrams : :class:`diagrams.Diagram | shapes.Shape | shapes.ShapeMap`
+        Any number of diagrams or shapes or shape maps.
+
+    Keyword arguments
+    -----------------
+    **params
+        Passed to :meth:`StrDiag.draw`.
+    """
     for diagram in diagrams:
         StrDiag(diagram).draw(**params)
 
 
 def draw_boundaries(diagram, dim=None, **params):
     """
-    Draws the input and the output boundaries of a diagram.
+    Given a diagram, generates the string diagram of its input and
+    output boundaries of a given dimension, and draws them.
+
+    Arguments
+    ---------
+    diagram : :class:`diagrams.Diagram | shapes.Shape | shapes.ShapeMap`
+        A diagram or a shape or a shape map.
+    dim : :class:`int`, optional
+        Dimension of the boundary (default is :code:`diagram.dim - 1`).
+
+    Keyword arguments
+    -----------------
+    *params
+        Passed to :meth:`StrDiag.draw`.
     """
     StrDiag(diagram.boundary('-', dim)).draw(**params)
     StrDiag(diagram.boundary('+', dim)).draw(**params)
 
 
 def to_gif(diagram, *diagrams, **params):
+    """
+    Given a non-zero number of diagrams, generates their string
+    diagrams and outputs a GIF animation of the sequence of their
+    visualisations.
+
+    Arguments
+    ---------
+    diagram : :class:`diagrams.Diagram | shapes.Shape | shapes.ShapeMap`
+        A diagram or a shape or a shape map.
+    *diagrams : :class:`diagrams.Diagram | shapes.Shape | shapes.ShapeMap`
+        Any number of diagrams or shapes or shape maps.
+
+    Keyword arguments
+    -----------------
+    **params
+        Passed to :meth:`StrDiag.draw`.
+    """
     import os
     from tempfile import NamedTemporaryFile, TemporaryDirectory
     from PIL import Image

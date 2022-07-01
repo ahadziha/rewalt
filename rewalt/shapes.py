@@ -717,7 +717,7 @@ class Shape(OgPoset):
 
         Arguments
         ---------
-        shapes : :class:`Shape`
+        *shapes : :class:`Shape`
             Any number of shapes.
 
         Returns
@@ -778,7 +778,7 @@ class Shape(OgPoset):
 
         Arguments
         ---------
-        shapes : :class:`Shape`
+        *shapes : :class:`Shape`
             Any number of shapes.
 
         Returns
@@ -844,7 +844,7 @@ class Shape(OgPoset):
         ---------
         shape : :class:`Shape`
             A shape.
-        dims : :class:`int`
+        *dims : :class:`int`
             Any number of dimensions; if none, defaults to *all* dimensions.
 
         Returns
@@ -1318,7 +1318,12 @@ class Shape(OgPoset):
     def generate_layering(self):
         """
         Assigns a layering to the shape, iterating through all
-        the layerings.
+        the layerings, and returns it.
+ 
+        Returns
+        -------
+        layers : :class:`list[ShapeMap]`
+            The generated layering.
         """
         if not hasattr(self, '_layering_gen'):
             self._layering_gen = self.all_layerings()

@@ -316,12 +316,12 @@ class DiagSet:
         ---------
         name : :class:`hashable`
             Name to assign to the new generator.
-        faces : :class:`SimplexDiagram`
+        *faces : :class:`SimplexDiagram`
             The simplicial faces of the new generator.
 
         Keyword arguments
         -----------------
-        kwargs
+        **kwargs
             Same as :meth:`add`.
 
         Returns
@@ -390,12 +390,12 @@ class DiagSet:
         ---------
         name : :class:`hashable`
             Name to assign to the new generator.
-        faces : :class:`CubeDiagram`
+        *faces : :class:`CubeDiagram`
             The cubical faces of the new generator.
 
         Keyword arguments
         -----------------
-        kwargs
+        **kwargs
             Same as :meth:`add`.
 
         Returns
@@ -495,7 +495,7 @@ class DiagSet:
 
         Keyword arguments
         -----------------
-        kwargs
+        **kwargs
             Passed to :meth:`add` when adding the inverse.
 
         Returns
@@ -708,7 +708,7 @@ class DiagSet:
 
         Keyword arguments
         -----------------
-        kwargs
+        **kwargs
             Passed to :meth:`add` when adding the composite.
 
         Returns
@@ -893,7 +893,7 @@ class DiagSet:
 
         Keyword arguments
         -----------------
-        kwargs
+        **kwargs
             Any arguments to update.
 
         Raises
@@ -1160,7 +1160,7 @@ class Diagram:
     def isdegenerate(self):
         """
         Returns whether the diagram is *degenerate*, that is, its
-        image has dimension strictly lower than the dimension of the shape.
+        image has dimension strictly lower than the dimension of its shape.
 
         Returns
         -------
@@ -1950,7 +1950,7 @@ class Diagram:
         ---------
         fst : :class:`Diagram`
             The first diagram.
-        layers : :class:`Diagram`
+        *layers : :class:`Diagram`
             Any number of additional diagrams.
 
         Returns

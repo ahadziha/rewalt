@@ -763,7 +763,7 @@ class OgPoset:
 
         Arguments
         ---------
-        ogps : :class:`OgPoset`
+        *ogps : :class:`OgPoset`
             Any number of oriented graded posets.
 
         Returns
@@ -870,7 +870,7 @@ class OgPoset:
 
         Arguments
         ---------
-        ogps : :class:`OgPoset`
+        *ogps : :class:`OgPoset`
             Any number of oriented graded posets.
 
         Returns
@@ -928,7 +928,7 @@ class OgPoset:
         ---------
         ogp : :class:`OgPoset`
             An oriented graded poset.
-        dims : :class:`int`
+        *dims : :class:`int`
             Any number of dimensions; if none, defaults to *all* dimensions.
 
         Returns
@@ -1234,7 +1234,7 @@ class GrSet:
 
         Arguments
         ---------
-        others : :class:`GrSet`
+        *others : :class:`GrSet`
             Any number of graded sets.
 
         Returns
@@ -1254,7 +1254,7 @@ class GrSet:
 
         Arguments
         ---------
-        others : :class:`GrSet`
+        *others : :class:`GrSet`
             Any number of graded sets.
 
         Returns
@@ -1475,7 +1475,7 @@ class GrSubset:
 
         Arguments
         ---------
-        others : :class:`GrSubset`
+        *others : :class:`GrSubset`
             Any number of graded subsets of the same oriented graded poset.
 
         Returns
@@ -1515,7 +1515,7 @@ class GrSubset:
 
         Arguments
         ---------
-        others : :class:`GrSubset`
+        *others : :class:`GrSubset`
             Any number of graded subsets of the same oriented graded poset.
 
         Returns
@@ -2188,7 +2188,7 @@ class OgMap:
         ---------
         other : :class:`OgMap` | :class:`OgMapPair`
             The first map or pair of maps to follow.
-        others : :class:`OgMap` | :class:`OgMapPair`, optional
+        *others : :class:`OgMap` | :class:`OgMapPair`, optional
             Any number of other maps or pair of maps to follow.
 
         Returns
@@ -2326,7 +2326,7 @@ class OgMap:
 
         Arguments
         ---------
-        maps : :class:`OgMap`
+        *maps : :class:`OgMap`
             Any number of maps of oriented graded posets.
 
         Returns
@@ -2393,7 +2393,7 @@ class OgMap:
 
         Arguments
         ---------
-        maps : :class:`OgMap`
+        *maps : :class:`OgMap`
             Any number of maps of oriented graded posets.
 
         Returns
@@ -2450,7 +2450,7 @@ class OgMap:
         ---------
         ogmap : :class:`OgMap`
             A map of oriented graded posets.
-        dims : :class:`int`
+        *dims : :class:`int`
             Any number of dimensions; if none, defaults to *all* dimensions.
 
         Returns
