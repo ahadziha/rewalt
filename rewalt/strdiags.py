@@ -26,7 +26,60 @@ DEFAULT = {
 
 class StrDiag:
     """
-    Class for string diagrams.
+    Class for string diagram visualisations of diagrams and shapes.
+
+    A string diagram depicts a top-dimensional "slice" of a diagram.
+    The top-dimensional cells are represented as *nodes*, and the
+    codimension-1 cells are represented as *wires*. The inputs of a
+    top-dimensional cell are incoming wires of the associated node,
+    and the outputs are outgoing wires.
+
+    The input->node->output order determines an acyclic flow
+    between nodes and wires, which is represented in a string diagram
+    by placing them at different "heights".
+
+    There are two other "flows" that we take into account:
+
+    - from codimension-2 inputs, to top-dimensional or codimension-1
+      cell, to codimension-2 outputs (only in dimension > 1);
+    - from codimension-3 inputs, to codimension-1 cells, to
+      codimension-3 outputs (only in dimension > 2).
+
+    These are not in general acyclic; however, we obtain an acyclic
+    flow by removing all directed loops. If there is a flow of the first
+    kind between nodes and wires, we place them at different "widths".
+
+    If there is a flow of the second kind between wires, we place them
+    at different "depths"; this is only seen when wires cross each other,
+    in which case the one of lower depth is depicted as passing over
+    the one of higher depth.
+
+    Internally, these data are encoded as a triple of NetworkX directed
+    graphs, sharing the same vertices, partitioned into "node vertices"
+    and "wire vertices". These graphs encode the "main (height) flow", the
+    "width flow" and the "depth flow" between nodes and wires.
+
+    The class then contains a method :meth:`place_vertices` that places
+    the vertices on a [0, 1]x[0, 1] canvas, taking into account the
+    height and width relations and resolving clashes.
+
+    Finally, it contains a method :meth:`draw` that outputs a
+    visualisation of the string diagram. The visualisation has
+    customisable colours, orientation, and labels, and works with any
+    :class:`drawing.DrawBackend`; currently available are
+
+    - a Matplotlib backend, and
+    - a TikZ backend.
+
+    Arguments
+    ---------
+    diagram : :class:`diagrams.Diagram | shapes.Shape | shapes.ShapeMap`
+        A diagram or a shape or a shape map.
+
+    Notes
+    -----
+    The "main flow" graph is essentially the *open graph* encoding of
+    the string diagram in the sense of Dixon & Kissinger.
     """
     def __init__(self, diagram):
         if isinstance(diagram, diagrams.Diagram):
@@ -166,26 +219,115 @@ class StrDiag:
 
     @property
     def graph(self):
+        """
+        Returns the main flow graph between node and wire vertices.
+
+        Returns
+        -------
+        graph : :class:`networkx.DiGraph`
+            The main flow graph.
+        """
         return self._graph
 
     @property
     def widthgraph(self):
+        """
+        Returns the "width" flow graph between node and wire vertices.
+
+        Returns
+        -------
+        widthgraph : :class:`networkx.DiGraph`
+            The width flow graph.
+        """
         return self._widthgraph
 
     @property
     def depthgraph(self):
+        """
+        Returns the "depth" flow graph between wire vertices.
+
+        Returns
+        -------
+        depthgraph : :class:`networkx.DiGraph`
+            The depth flow graph.
+        """
         return self._depthgraph
 
     @property
     def nodes(self):
+        """
+        Returns the nodes of the string diagram, together with all
+        the stored associated information.
+
+        This is a dictionary whose keys are the elements
+        of the diagram's shape corresponding to nodes. For each node, the
+        object stores another dictionary, which contains
+
+        - the node's label (:code:`label`),
+        - the node's fill colour (:code:`color`) and stroke colour
+          (:code:`stroke`),
+        - booleans specifying whether to draw the node and/or its label
+          (:code:`draw_node`, :code:`draw_label`), and
+        - a boolean specifying whether the node represents a degenerate
+          cell (:code:`isdegenerate`).
+
+        Returns
+        -------
+        nodes : :class:`dict[dict]`
+            The nodes of the string diagram.
+        """
         return self._nodes
 
     @property
     def wires(self):
+        """
+        Returns the wires of the string diagram, together with all
+        the stored associated information.
+
+        This is a dictionary whose keys are the elements
+        of the diagram's shape corresponding to wires. For each node, the
+        object stores another dictionary, which contains
+
+        - the wire's label (:code:`label`),
+        - the wire's colour (:code:`color`),
+        - a boolean specifying whether to draw the wire's label
+          (:code:`draw_label`), and
+        - a boolean specifying whether the wire represents a degenerate
+          cell (:code:`isdegenerate`).
+
+        Returns
+        -------
+        wires : :class:`dict[dict]`
+            The nodes of the string diagram.
+        """
         return self._wires
 
     def place_vertices(self):
-        """ Places vertices on unit square. """
+        """
+        Places node and wire vertices on the unit square canvas, and
+        returns their coordinates.
+
+        The node and wire vertices are first placed on different heights
+        and widths, proportional to the ratio between the longest path
+        to the vertex and the longest path from the vertex in the main
+        flow graph and the width flow graph.
+
+        In dimension > 2, this may result in clashes, where some vertices
+        are given the same coordinates. In this case, these are
+        resolved by "splitting" the clashing vertices, placing them
+        at equally spaced angles of a circle centred on the clash
+        coordinates, with an appropriately small radius that does not
+        result in further clashes.
+
+        The coordinates are returned as a dictionary whose keys are
+        the elements corresponding to nodes and wires, and values
+        are pairs of floating point numbers.
+
+        Returns
+        -------
+        coordinates : :class:`dict[tuple[float]]`
+            The coordinates assigned to wire and node vertices.
+        """
         def longest_paths(graph):
             tsort = list(nx.topological_sort(graph))
             longest_paths = dict()
@@ -249,7 +391,43 @@ class StrDiag:
 
     def draw(self, **params):
         """
-        Draws the string diagram with a backend.
+        Outputs a visualisation of the string diagram, using a backend.
+
+        Currently supported are a Matplotlib backend and a TikZ backend;
+        in both cases it is possible to show the output (as a pop-up
+        window for Matplotlib, or as code for TikZ) or save to file.
+
+        Various customisation options are available, including different
+        orientations and colours; see below.
+
+        Keyword arguments
+        -----------------
+        tikz : :class:`bool`
+            Whether to output TikZ code (default is :code:`False`).
+        scale : :class:`float`
+            (TikZ only) Scale factor to apply to output (default is
+            :code:`3`).
+        xscale : :class:`float`
+            (TikZ only) Scale factor to apply to x axis in output
+            (default is same as `scale`)
+        yscale : :class:`float`
+            (TikZ only) Scale factor to apply to y axis in output
+            (default is same as `scale`)
+        show : :class:`bool`
+            Whether to show the output (default :code:`True`).
+        path : :class:`str`
+            Path where to save the output (default is :code:`None`).
+        depth : :class:`bool`
+            Whether to take into account the depth flow graph when
+            drawing wires (default is :code:`True`).
+        bgcolor : multiple types
+            The background colour (default is :code:`'white'`).
+        fgcolor : multiple types
+            The foreground colour, given by default to nodes, wires,
+            and labels (default is :code:`'black'`).
+        infocolor : multiple types
+            The colour given to additional information displayed in
+            the diagram, such as positions (default is :code:`'magenta'`).
         """
         # Parameters
         tikz = params.get('tikz', DEFAULT['tikz'])
