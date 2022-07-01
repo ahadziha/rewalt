@@ -320,8 +320,7 @@ class StrDiag:
         result in further clashes.
 
         The coordinates are returned as a dictionary whose keys are
-        the elements corresponding to nodes and wires, and values
-        are pairs of floating point numbers.
+        the elements corresponding to nodes and wires.
 
         Returns
         -------
@@ -398,25 +397,21 @@ class StrDiag:
         window for Matplotlib, or as code for TikZ) or save to file.
 
         Various customisation options are available, including different
-        orientations and colours; see below.
+        orientations and colours.
 
         Keyword arguments
         -----------------
         tikz : :class:`bool`
             Whether to output TikZ code (default is :code:`False`).
-        scale : :class:`float`
-            (TikZ only) Scale factor to apply to output (default is
-            :code:`3`).
-        xscale : :class:`float`
-            (TikZ only) Scale factor to apply to x axis in output
-            (default is same as `scale`)
-        yscale : :class:`float`
-            (TikZ only) Scale factor to apply to y axis in output
-            (default is same as `scale`)
         show : :class:`bool`
             Whether to show the output (default is :code:`True`).
         path : :class:`str`
             Path where to save the output (default is :code:`None`).
+        orientation : :class:`str`
+            Orientation of the string diagram: one of :code:`'bt'`
+            (bottom-to-top), :code:`'lr'` (left-to-right),
+            :code:`'tb'` (top-to-bottom), :code:`'rl'` (right-to-left)
+            (default is :code:`'bt'`).
         depth : :class:`bool`
             Whether to take into account the depth flow graph when
             drawing wires (default is :code:`True`).
@@ -459,11 +454,15 @@ class StrDiag:
         positionoffset : :class:`tuple[float]`
             Point offset of positions relative to vertices (default is
             :code:`(4, -16)` for Matplotlib, :code:`(4, -6)` for TikZ).
-        orientation : :class:`str`
-            Orientation of the string diagram: one of :code:`'bt'`
-            (bottom-to-top), :code:`'lr'` (left-to-right),
-            :code:`'tb'` (top-to-bottom), :code:`'rl'` (right-to-left)
-            (default is :code:`'bt'`).
+        scale : :class:`float`
+            (TikZ only) Scale factor to apply to output (default is
+            :code:`3`).
+        xscale : :class:`float`
+            (TikZ only) Scale factor to apply to x axis in output
+            (default is same as `scale`)
+        yscale : :class:`float`
+            (TikZ only) Scale factor to apply to y axis in output
+            (default is same as `scale`)
         """
         # Parameters
         tikz = params.get('tikz', DEFAULT['tikz'])
