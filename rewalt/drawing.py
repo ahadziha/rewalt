@@ -439,6 +439,7 @@ class MatBackend(DrawBackend):
         self.fig.subplots_adjust(
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         self.fig.canvas.manager.set_window_title(self.name)
+        plt.axis('off')
         if path is None and show:
             self.fig.show()
         if path is not None:
