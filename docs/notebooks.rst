@@ -1,0 +1,5 @@
+Notebooks
+=========
+
+.. toctree::
+   notebooks/monoids

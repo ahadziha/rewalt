@@ -4,7 +4,8 @@ rewalt
 .. toctree::
    :maxdepth: 3
    :caption: Contents:
-
+   
+   notebooks
    api
 
 
