@@ -319,6 +319,9 @@ class MatBackend(DrawBackend):
         self.axes.set_facecolor(self.bgcolor)
         self.axes.set_xlim(0, 1)
         self.axes.set_ylim(0, 1)
+
+        self.axes.xaxis.set_visible(False)
+        self.axes.yaxis.set_visible(False)
         for side in ('top', 'right', 'bottom', 'left'):
             self.axes.spines[side].set_visible(False)
 
@@ -439,7 +442,6 @@ class MatBackend(DrawBackend):
         self.fig.subplots_adjust(
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         self.fig.canvas.manager.set_window_title(self.name)
-        plt.axis('off')
         if path is None and show:
             self.fig.show()
         if path is not None:
