@@ -653,7 +653,7 @@ def to_gif(diagram, *diagrams, **params):
     Keyword arguments
     -----------------
     timestep : :class:`int`
-        The time step for the animation (default is :code:`500`).
+        The time step for the animation (default is :code:`1000`).
     loop : :class:`bool`
         Whether to loop around the animation (default is :code:`True`).
     **params
@@ -665,7 +665,7 @@ def to_gif(diagram, *diagrams, **params):
 
     path = params.pop('path', None)
     params.pop('show', False)
-    timestep = params.get('timestep', 500)
+    timestep = params.get('timestep', 1000)
     loop = params.get('loop', False)
     frames = []
 
