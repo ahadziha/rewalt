@@ -2475,14 +2475,16 @@ class OgMap:
         """
         Returns the dual in all *odd* dimensions.
         """
-        odds = [n for n in range(self.dim + 1) if n % 2 == 1]
+        dim = max(self.source.dim, self.target.dim)
+        odds = [n for n in range(dim + 1) if n % 2 == 1]
         return self.dual(*odds)
 
     def co(self):
         """
         Returns the dual in all *even* dimensions.
         """
-        evens = [n for n in range(self.dim + 1) if n % 2 == 0]
+        dim = max(self.source.dim, self.target.dim)
+        evens = [n for n in range(dim + 1) if n % 2 == 0]
         return self.dual(*evens)
 
     def hasse(self, **params):
