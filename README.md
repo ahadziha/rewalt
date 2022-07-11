@@ -115,6 +115,6 @@ A description and complexity analysis of some of the data structures and algorit
 
 ## Contributing
 
-Currently, the only active developer of `rewalt` is [Amar Hadzihasanovic](https://ioc.ee/~amar) (Tallinn University of Technology & Quantinuum).
+Currently, the only active developer of `rewalt` is [Amar Hadzihasanovic](https://ioc.ee/~amar).
 
 Contributions are welcome. Please reach out either by sending me an email, or by [opening an issue](https://github.com/ahadziha/rewalt/issues/new).
