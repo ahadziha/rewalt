@@ -13,11 +13,11 @@
 - **homotopical algebra**,
 - **combinatorial topology**,
 
-and more. Thanks to its visualisation features, it can also be used as a structure-aware **string diagram** editor, supporting [TikZ](https://tikz.net/) output so the string diagrams can be directly embedded in your LaTeX files.
+and more. Thanks to its visualisation features, it can also be used as a structure-aware **string diagram** editor, supporting [TikZ](//tikz.net/) output so the string diagrams can be directly embedded in your LaTeX files.
 
 ![BlackWhiteDiagram](https://raw.githubusercontent.com/ahadziha/rewalt/main/docs/_static/img/readme_2.png)
 
-It implements [diagrammatic sets](https://arxiv.org/abs/2007.14505), which, by the "higher-dimensional rewriting" paradigm, double as a model of
+It implements [diagrammatic sets](//arxiv.org/abs/2007.14505), which, by the "higher-dimensional rewriting" paradigm, double as a model of
 
 - *higher-dimensional rewrite systems*, and of
 - *directed cell complexes*.
@@ -34,11 +34,11 @@ A diagrammatic set can be seen as a generalisation of a *simplicial set* or of a
 pip install rewalt
 ```
 
-Then you should take a look at the [documentation](https://rewalt.readthedocs.io/), which includes several worked examples from category theory, algebra, and homotopy theory.
+Then you should take a look at the [documentation](//rewalt.readthedocs.io/), which includes several worked examples from category theory, algebra, and homotopy theory.
 
 ## Usage
 
-The [docs/notebooks/](docs/notebooks/) folder contains several worked examples in the form of Jupyter notebooks.
+The [docs/notebooks/](//github.com/ahadziha/rewalt/tree/main/docs/notebooks/) folder contains several worked examples in the form of Jupyter notebooks.
 
 For example, this is how you create a single-sorted algebraic signature with one binary operation $m$ and one constant $u$, then represent the term $m(u, -)$ as a string diagram oriented bottom-to-top.
 
@@ -81,7 +81,7 @@ pytest
 
 ## Documentation
 
-The latest documentation is hosted on [Read The Docs](https://rewalt.readthedocs.io/).
+The latest documentation is hosted on [Read The Docs](//rewalt.readthedocs.io/).
 
 If you want to build a local copy of the documentation, first install the required dependencies:
 
@@ -101,20 +101,20 @@ You will then find the documentation under `docs/_build/`.
 
 ## Further reading
 
-For a first introduction to the ideas of higher-dimensional rewriting, diagrammatic sets, and "topological soundness", you may want to watch these presentations at the [CIRM meeting on *Higher Structures*](https://cirmbox.cirm-math.fr/s/8a8DXyFA4bzaSNF) and at the [GETCO 2022 conference](https://youtu.be/UlVZPiJ87kw).
+For a first introduction to the ideas of higher-dimensional rewriting, diagrammatic sets, and "topological soundness", you may want to watch these presentations at the [CIRM meeting on *Higher Structures*](//cirmbox.cirm-math.fr/s/8a8DXyFA4bzaSNF) and at the [GETCO 2022 conference](//youtu.be/UlVZPiJ87kw).
 
-A nice overview of the general landscape of higher-dimensional rewriting is Yves Guiraud's [mémoire d'habilitation](https://webusers.imj-prg.fr/~yves.guiraud/articles/hdr.pdf).
+A nice overview of the general landscape of higher-dimensional rewriting is Yves Guiraud's [mémoire d'habilitation](//webusers.imj-prg.fr/~yves.guiraud/articles/hdr.pdf).
 
-So far there are two papers on the theory of diagrammatic sets: [the first one](https://arxiv.org/abs/2007.14505) containing the foundations, [the second one](https://arxiv.org/abs/2101.10361) containing some developments applied to categorical universal algebra.
+So far there are two papers on the theory of diagrammatic sets: [the first one](//arxiv.org/abs/2007.14505) containing the foundations, [the second one](//arxiv.org/abs/2101.10361) containing some developments applied to categorical universal algebra.
 
 A description and complexity analysis of some of the data structures and algorithms behind `rewalt` will be published in the [proceedings of ACT 2022](https://msp.cis.strath.ac.uk/act2022/).
 
 ## License
 
-`rewalt` is distributed under the BSD 3-clause license; see [`LICENSE`](LICENSE).
+`rewalt` is distributed under the BSD 3-clause license; see [`LICENSE`](//github.com/ahadziha/rewalt/tree/main/LICENSE).
 
 ## Contributing
 
-Currently, the only active developer of `rewalt` is [Amar Hadzihasanovic](https://ioc.ee/~amar).
+Currently, the only active developer of `rewalt` is [Amar Hadzihasanovic](//ioc.ee/~amar).
 
 Contributions are welcome. Please reach out either by sending me an email, or by [opening an issue](https://github.com/ahadziha/rewalt/issues/new).
