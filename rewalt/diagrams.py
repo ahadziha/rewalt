@@ -761,11 +761,11 @@ class DiagSet:
 
         return composite, compositor
 
-    def make_composite(self, diagram, generatorname,
+    def make_composite(self, generatorname, diagram,
                        compositorname=None):
         """
-        Given a round diagram and a generator, it makes the second
-        the weak composite of the first by adding a compositor, and
+        Given a generator and a round diagram, it makes the first
+        the weak composite of the second by adding a compositor, and
         returns the compositor as a diagram.
 
         The compositor can be given a custom name.
@@ -786,10 +786,10 @@ class DiagSet:
 
         Arguments
         ---------
-        diagram : :class:`Diagram`
-            The diagram to compose.
         generatorname : :class:`hashable`
             Name of the generator that should be its composite.
+        diagram : :class:`Diagram`
+            The diagram to compose.
         compositorname : :class:`hashable`, optional
             Name of the compositor.
 

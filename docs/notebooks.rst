@@ -6,3 +6,4 @@ Notebooks
    notebooks/stringdiagrams
    notebooks/simplicescubes
    notebooks/eckmannhilton
+   notebooks/presentcategory
