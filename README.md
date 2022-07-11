@@ -3,7 +3,7 @@
 1. *(archaic)* to overturn, throw down
 2. a library for **rew**riting, **al**gebra, and **t**opology, developed in Tallinn (aka **Reval**)
 
-![CoolDiagram](docs/_static/img/readme_1.png)
+![CoolDiagram](https://raw.githubusercontent.com/ahadziha/rewalt/main/docs/_static/img/readme_1.png)
 
 ## About
 
@@ -15,7 +15,7 @@
 
 and more. Thanks to its visualisation features, it can also be used as a structure-aware **string diagram** editor, supporting [TikZ](https://tikz.net/) output so the string diagrams can be directly embedded in your LaTeX files.
 
-![BlackWhiteDiagram](docs/_static/img/readme_2.png)
+![BlackWhiteDiagram](https://raw.githubusercontent.com/ahadziha/rewalt/main/docs/_static/img/readme_2.png)
 
 It implements [diagrammatic sets](https://arxiv.org/abs/2007.14505), which, by the "higher-dimensional rewriting" paradigm, double as a model of
 
@@ -55,7 +55,7 @@ u = X.add('u', pt.unit(), a)  # constant
 m.to_inputs(0, u).draw()
 ```
 
-![ExampleAlgebra](docs/_static/img/readme_3.png)
+![ExampleAlgebra](https://raw.githubusercontent.com/ahadziha/rewalt/main/docs/_static/img/readme_3.png)
 
 This is how you construct a 3-dimensional diagram shape as an "oriented cylinder" whose bases are 2-simplices, then output its *oriented face poset* in the form of a Hasse diagram with *magenta* edges for *input* faces, and *blue* edges for *output* faces.
 
@@ -69,7 +69,7 @@ cylinder = arrow * twosimplex  # Gray product of arrow and 2-simplex
 cylinder.hasse(labels=False)
 ```
 
-![ExampleTopology](docs/_static/img/readme_4.png)
+![ExampleTopology](https://raw.githubusercontent.com/ahadziha/rewalt/main/docs/_static/img/readme_4.png)
 
 ## Testing
 
