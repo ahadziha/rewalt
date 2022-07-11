@@ -34,7 +34,7 @@ A diagrammatic set can be seen as a generalisation of a *simplicial set* or of a
 pip install rewalt
 ```
 
-Then you should take a look at the [documentation](https://rewalt.readthedocs.io/), which includes several [worked examples](https://rewalt.readthedocs.io/en/latest/notebooks.html) from category theory, algebra, and homotopy theory.
+Then you should take a look at the [documentation](https://rewalt.readthedocs.io/), which includes several worked examples from category theory, algebra, and homotopy theory.
 
 ## Usage
 
