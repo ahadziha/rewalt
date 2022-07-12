@@ -81,7 +81,7 @@ pytest
 
 ## Documentation
 
-The latest documentation is hosted on [Read The Docs](//rewalt.readthedocs.io/).
+The latest documentation is hosted on [Read the Docs](//rewalt.readthedocs.io/).
 
 If you want to build a local copy of the documentation, first install the required dependencies:
 

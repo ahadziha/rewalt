@@ -443,7 +443,7 @@ class MatBackend(DrawBackend):
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         self.fig.canvas.manager.set_window_title(self.name)
         if path is None and show:
-            self.fig.show()
+            plt.show()
         if path is not None:
             self.fig.savefig(path)
             plt.close(self.fig)
