@@ -139,6 +139,9 @@ class Hasse:
             The coordinates assigned to nodes.
         """
         dim = self.nodes.dim
+        if dim < 0:
+            return dict()
+
         ystep = 1/(dim+1)
         xstep = [1/(len(self.nodes[n])) for n in range(dim+1)]
 
@@ -208,7 +211,9 @@ class Hasse:
         xscale = params.get('xscale', None)
         yscale = params.get('yscale', None)
         SCALE = (
-                max((len(self.nodes[n]) for n in range(self.nodes.dim+1))),
+                max(
+                    (len(self.nodes[n]) for n in range(self.nodes.dim+1)),
+                    default=0),
                 2*self.nodes.dim
                 )
         if orientation in ('bt', 'tb'):
