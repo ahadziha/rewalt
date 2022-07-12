@@ -351,9 +351,9 @@ class StrDiag:
         longest_height = longest_paths(self.graph)
 
         xstep = 1 / (max(
-            [longest_width[x][0] for x in longest_width]) + 2)
+            [longest_width[x][0] for x in longest_width], default=0) + 2)
         ystep = 1 / (max(
-            [longest_height[x][0] for x in longest_height]) + 2)
+            [longest_height[x][0] for x in longest_height], default=0) + 2)
 
         coordinates = dict()
         sources, sinks = [], []
