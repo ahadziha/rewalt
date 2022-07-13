@@ -878,6 +878,17 @@ class Shape(OgPoset):
         -------
         dual : :class:`Shape`
             The shape, dualised in the given dimensions.
+
+        Examples
+        --------
+        >>> arrow = Shape.arrow()
+        >>> simplex = Shape.simplex(2)
+        >>> binary = arrow.paste(arrow).atom(arrow)
+        >>> assert binary == simplex.dual()
+
+        >>> assoc_l = binary.to_inputs(0, binary)
+        >>> assoc_r = binary.to_inputs(1, binary)
+        >>> assert assoc_r == assoc_l.dual(1)
         """
         reordering = params.get('reordering', False)
 
@@ -1141,8 +1152,19 @@ class Shape(OgPoset):
         -------
         boundary : :class:`ShapeMap` | :class:`OgMap`
             The inclusion of the requested boundary into the object.
+
+        Examples
+        --------
+        >>> point = Shape.point()
+        >>> arrow = Shape.arrow()
+        >>> binary = arrow.paste(arrow).atom(arrow)
+        >>> assert binary.boundary('-').source == arrow.paste(arrow)
+        >>> assert binary.boundary('+').source == arrow
+        >>> assert binary.boundary('-', 0).source == point
+        >>> assert binary.boundary('-').target == binary
         """
-        if isinstance(dim, int) and dim >= self.dim:
+        dim = self.dim-1 if dim is None else dim
+        if dim >= self.dim:
             return self.id()
 
         boundary_ogmap = super().boundary(sign, dim)
@@ -1162,6 +1184,8 @@ class Shape(OgPoset):
                         return Arrow
                     return Globe
                 if utils.mksign(sign) == '+':
+                    if dim == 1:
+                        return Arrow
                     return Opetope
                 return OpetopeTree
             return Shape
@@ -1182,6 +1206,13 @@ class Shape(OgPoset):
         -------
         atom_inclusion : :class:`ShapeMap`
             The inclusion of the closure of the element.
+
+        Examples
+        --------
+        >>> arrow = Shape.arrow()
+        >>> globe = Shape.globe(2)
+        >>> whisker_l = arrow.paste(globe)
+        >>> assert whisker_l.atom_inclusion(El(2, 0)).source == globe
         """
         oginclusion = self.underset(element).as_map
         reordering = Shape._reorder(oginclusion.source)
@@ -1212,6 +1243,13 @@ class Shape(OgPoset):
         -------
         initial : :class:`ShapeMap`
             The unique map from the empty shape.
+
+        Examples
+        --------
+        >>> point = Shape.point()
+        >>> empty = Shape.empty()
+        >>> assert point.initial() == empty.terminal()
+        >>> assert empty.initial() == empty.id()
         """
         return ShapeMap(
                 OgMap(Empty(), self,
@@ -1226,6 +1264,11 @@ class Shape(OgPoset):
         -------
         terminal : :class:`ShapeMap`
             The unique map to the point.
+
+        Examples
+        --------
+        >>> point = Shape.point()
+        >>> assert point.terminal() == point.id()
         """
         mapping = [
                 [El(0, 0) for _ in n_data]
@@ -1346,7 +1389,7 @@ class Shape(OgPoset):
         """
         Assigns a layering to the shape, iterating through all
         the layerings, and returns it.
- 
+
         Returns
         -------
         layers : :class:`list[ShapeMap]`
@@ -1753,7 +1796,8 @@ class Empty(Simplex):
     def __new__(self):
         return OgPoset.__new__(Empty)
 
-    def __init__(self):
+    def __init__(self, face_data=None, coface_data=None,
+                 **params):
         super().__init__([], [],
                          wfcheck=False, matchcheck=False)
 
@@ -1991,7 +2035,7 @@ class Point(Globe, Simplex, Cube):
         return OgPoset.__new__(Point)
 
     def __init__(self, face_data=None, coface_data=None,
-                 wfcheck=False, matchcheck=False):
+                 **params):
         super().__init__(
                 [[{'-': set(), '+': set()}]],
                 [[{'-': set(), '+': set()}]],
@@ -2008,7 +2052,7 @@ class Arrow(Globe, Simplex, Cube):
         return OgPoset.__new__(Arrow)
 
     def __init__(self, face_data=None, coface_data=None,
-                 wfcheck=False, matchcheck=False):
+                 **params):
         super().__init__(
                 [
                     [{'-': set(), '+': set()}, {'-': set(), '+': set()}],

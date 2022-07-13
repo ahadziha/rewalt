@@ -734,10 +734,12 @@ class OgPoset:
                 [
                     {'-': set(), '+': set()},
                     {'-': set(), '+': set()}
-                ], *ogp.face_data]
-        for x in ogp[0]:
-            face_data[1][x.pos]['-'].add(0)
-            face_data[1][x.pos]['+'].add(1)
+                ],
+                [
+                    {'-': x['-'].union({0}), '+': x['+'].union({1})}
+                    for x in ogp.face_data[0]
+                ],
+                *ogp.face_data[1:]]
         coface_data = [
                 [
                     {'-': {x.pos for x in ogp[0]}, '+': set()},

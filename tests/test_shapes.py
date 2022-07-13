@@ -173,6 +173,26 @@ def test_Shape_to_outputs():
     assert pasted.size == [7, 8, 2]
 
 
+def test_Shape_to_inputs():
+    arrow = Shape.arrow()
+    twothree = arrow.paste(arrow).atom(arrow.paste(arrow).paste(arrow))
+    threetwo = twothree.dual()
+
+    with raises(ValueError) as err:
+        threetwo.to_inputs([0, 2], threetwo)
+    assert str(err.value) == utils.value_err(
+            [0, 2], 'cannot paste to these inputs')
+
+    with raises(ValueError) as err:
+        threetwo.to_inputs([0, 1], twothree)
+    assert str(err.value) == utils.value_err(
+            [0, 1], 'does not match output boundary of {}'.format(
+                repr(twothree)))
+
+    pasted = threetwo.to_inputs([0, 1], threetwo)
+    assert pasted.size == [7, 8, 2]
+
+
 def test_Shape_suspend():
     globe2 = Shape.globe(2)
     arrow = Shape.arrow()
@@ -181,6 +201,9 @@ def test_Shape_suspend():
 
     assert whisker_l.suspend().size == [2] + whisker_l.size
     assert arrow.suspend(2) == globe2.suspend()
+
+    assert isinstance(arrow.paste(arrow).suspend(), shapes.GlobeString)
+    assert isinstance(whisker_l.suspend(), shapes.Theta)
 
 
 def test_Shape_gray():
@@ -191,6 +214,8 @@ def test_Shape_gray():
     assert Shape.gray() == Shape.point()
     assert (arrow * arrow) * arrow == arrow * (arrow * arrow)
 
+    assert isinstance(arrow * arrow, shapes.Cube)
+
 
 def test_Shape_join():
     point = Shape.point()
@@ -198,7 +223,23 @@ def test_Shape_join():
 
     assert arrow >> point == point << point << point
     assert Shape.join() == Shape.empty()
+    assert (point >> point) >> point == point >> (point >> point)
+
     assert isinstance(arrow >> point, shapes.Simplex)
+
+
+def test_Shape_dual():
+    arrow = Shape.arrow()
+    simplex = Shape.simplex(2)
+    binary = arrow.paste(arrow).atom(arrow)
+    assert binary == simplex.dual()
+
+    assoc_l = binary.to_inputs(0, binary)
+    assoc_r = binary.to_inputs(1, binary)
+    assert assoc_r == assoc_l.dual(1)
+
+    globe = Shape.globe(2)
+    assert isinstance(arrow.paste(globe).dual(), shapes.Theta)
 
 
 def test_Shape_merge():
@@ -211,28 +252,104 @@ def test_Shape_merge():
     assert isinstance(assoc_l.merge(), shapes.Opetope)
 
 
-def test_Shape_inflate():
-    simplex2 = Shape.simplex(2)
-    assert simplex2.inflate().source.boundary('-').source == \
-        simplex2
+def test_Shape_empty():
+    empty = Shape.empty()
+    assert len(empty) == 0
 
-    whisker_l = Shape.arrow().paste(Shape.globe(2))
-    assert whisker_l.inflate().source.boundary('+').source == \
-        whisker_l
+
+def test_Shape_point():
+    point = Shape.point()
+    assert len(point) == 1
+
+
+def test_Shape_arrow():
+    arrow = Shape.arrow()
+    assert arrow.size == [2, 1]
+
+
+def test_Shape_simplex():
+    assert len(Shape.simplex()) == 0
+    arrow = Shape.simplex(1)
+    assert arrow == Shape.arrow()
+    assert arrow >> arrow == Shape.simplex(3)
+
+
+def test_Shape_cube():
+    assert len(Shape.cube()) == 1
+
+    arrow = Shape.cube(1)
+    assert arrow == Shape.arrow()
+    assert arrow*arrow == Shape.cube(2)
+
+
+def test_Shape_globe():
+    assert len(Shape.globe()) == 1
+
+    arrow = Shape.globe(1)
+    assert arrow == Shape.arrow()
+    assert arrow.suspend() == Shape.globe(2)
+
+
+def test_Shape_theta():
+    assert Shape.theta() == Shape.globe(0)
+    assert Shape.theta(Shape.theta()) == Shape.globe(1)
+    assert Shape.theta(Shape.theta(Shape.theta())) == Shape.globe(2)
+
+    point = Shape.theta()
+    arrow = Shape.arrow()
+    assert Shape.theta(point, point) == arrow.paste(arrow)
+
+
+def test_Shape_id():
+    arrow = Shape.arrow()
+    assert arrow.id().source == arrow
+    assert arrow.id().target == arrow
+
+
+def test_Shape_boundary():
+    arrow = Shape.arrow()
+    binary = arrow.paste(arrow).atom(arrow)
+
+    assert binary.boundary('-').source == arrow.paste(arrow)
+    assert binary.boundary('+').source == arrow
+    assert binary.boundary('-', 0).source == Shape.point()
+    assert binary.boundary('-').target == binary
+    assert not isinstance(binary.boundary().source, Shape)
+
+    assoc_l = binary.to_inputs(0, binary)
+    assert isinstance(assoc_l.boundary('-').source, shapes.OpetopeTree)
+    assert isinstance(assoc_l.boundary('+').source, shapes.Arrow)
 
 
 def test_Shape_atom_inclusion():
-    globe2 = Shape.globe(2)
     arrow = Shape.arrow()
-    whisker_l = arrow.paste(globe2)
+    globe = Shape.globe(2)
+    whisker_l = arrow.paste(globe)
+    assert whisker_l.atom_inclusion(El(2, 0)).source == globe
 
-    assert whisker_l.atom_inclusion(El(2, 0)).source == globe2
+    assert isinstance(
+            whisker_l.atom_inclusion(El(2, 0)).source,
+            shapes.Globe)
+    binary = arrow.paste(arrow).atom(arrow)
+    assoc_l = binary.to_inputs(0, binary)
+    assert isinstance(
+            assoc_l.atom_inclusion(El(2, 0)).source,
+            shapes.Opetope)
+
+    simplex = Shape.simplex(3)
+    assert isinstance(
+            simplex.atom_inclusion(El(2, 0)).source,
+            shapes.Simplex)
+
+    cube = Shape.cube(3)
+    assert isinstance(
+            cube.atom_inclusion(El(2, 0)).source,
+            shapes.Cube)
 
 
 def test_Shape_initial():
     point = Shape.point()
     empty = Shape.empty()
-
     assert point.initial() == empty.terminal()
     assert empty.initial() == empty.id()
     assert point.initial().istotal
@@ -241,6 +358,16 @@ def test_Shape_initial():
 def test_Shape_terminal():
     point = Shape.point()
     assert point.terminal() == point.id()
+
+
+def test_Shape_inflate():
+    simplex2 = Shape.simplex(2)
+    assert simplex2.inflate().source.boundary('-').source == \
+        simplex2
+
+    whisker_l = Shape.arrow().paste(Shape.globe(2))
+    assert whisker_l.inflate().source.boundary('+').source == \
+        whisker_l
 
 
 """ Tests for Shape subclasses """
