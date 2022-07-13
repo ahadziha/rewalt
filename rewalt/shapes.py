@@ -65,6 +65,12 @@ class Shape(OgPoset):
         -------
         isatom : :class:`bool`
             :code:`True` if and only if the shape has a greatest element.
+
+        Examples
+        --------
+        >>> arrow = Shape.arrow()
+        >>> assert arrow.isatom
+        >>> assert not arrow.paste(arrow).isatom
         """
         return len(self.maximal()) == 1
 
@@ -84,6 +90,15 @@ class Shape(OgPoset):
         -------
         layers : :class:`list[ShapeMap]`
             The current layering.
+
+        Examples
+        --------
+        >>> arrow = Shape.arrow()
+        >>> globe = Shape.globe(2)
+        >>> cospan = globe.paste(arrow).paste(
+        ...         arrow.paste(globe), cospan=True)
+        >>> shape = cospan.target
+        >>> assert shape.layers == [cospan.fst, cospan.snd]
         """
         return self.id().layers
 
@@ -101,6 +116,18 @@ class Shape(OgPoset):
         -------
         rewrite_steps : :class:`list[ShapeMap]`
             The current sequence of rewrite steps.
+
+        Examples
+        --------
+        >>> arrow = Shape.arrow()
+        >>> globe = Shape.globe(2)
+        >>> cospan = globe.paste(arrow).paste(
+        ...         arrow.paste(globe), cospan=True)
+        >>> shape = cospan.target
+        >>> assert shape.rewrite_steps == [
+        ...         cospan.fst.input,
+        ...         cospan.fst.output,
+        ...         cospan.snd.output]
         """
         return self.id().rewrite_steps
 

@@ -1,8 +1,9 @@
 from pytest import raises
 
 from rewalt import utils
-from rewalt.ogposets import (El, OgMap)
-from rewalt.shapes import (Shape, ShapeMap, Simplex, Opetope)
+from rewalt import shapes
+from rewalt.ogposets import (El, OgMap, OgMapPair)
+from rewalt.shapes import (Shape, ShapeMap)
 
 
 """ Tests for Shape """
@@ -11,6 +12,14 @@ from rewalt.shapes import (Shape, ShapeMap, Simplex, Opetope)
 def test_Shape_init():
     assert Shape() == Shape()
     assert Shape().dim == -1
+
+
+def test_Shape_isatom():
+    empty = Shape.empty()
+    arrow = Shape.arrow()
+    assert not empty.isatom
+    assert arrow.isatom
+    assert not arrow.paste(arrow).isatom
 
 
 def test_Shape_isround():
@@ -22,18 +31,42 @@ def test_Shape_isround():
     assert not whisker_l.isround
 
 
-def test_Shape_atom():
-    point = Shape.point()
-    assert point == Shape.empty().atom(Shape.empty())
-    assert Shape.arrow() == point.atom(point)
+def test_Shape_layers():
+    arrow = Shape.arrow()
+    globe = Shape.globe(2)
+    cospan = globe.paste(arrow).paste(
+            arrow.paste(globe), cospan=True)
+    shape = cospan.target
+    assert shape.layers == [cospan.fst, cospan.snd]
 
-    whisker_l = Shape.arrow().paste(Shape.globe(2))
+
+def test_Shape_rewrite_steps():
+    arrow = Shape.arrow()
+    globe = Shape.globe(2)
+    cospan = globe.paste(arrow).paste(
+            arrow.paste(globe), cospan=True)
+    shape = cospan.target
+    assert shape.rewrite_steps == [
+            cospan.fst.input,
+            cospan.fst.output,
+            cospan.snd.output]
+
+
+def test_Shape_atom():
+    empty = Shape.empty()
+    point = Shape.point()
+    arrow = Shape.arrow()
+    globe = Shape.globe(2)
+    assert point == empty.atom(empty)
+    assert arrow == point.atom(point)
+
+    whisker_l = arrow.paste(globe)
     with raises(ValueError) as err:
         whisker_l.atom(whisker_l)
     assert str(err.value) == utils.value_err(
             whisker_l, 'expecting a round Shape')
 
-    binary = Shape.simplex(2).dual()
+    binary = arrow.paste(arrow).atom(arrow)
     cobinary = Shape.simplex(2)
     with raises(ValueError) as err:
         binary.atom(cobinary)
@@ -41,29 +74,36 @@ def test_Shape_atom():
             cobinary, 'input boundary does not match '
             'input boundary of {}'.format(repr(binary)))
 
-    globe2 = Shape.globe(2)
     with raises(ValueError) as err:
-        cobinary.atom(globe2)
+        cobinary.atom(globe)
     assert str(err.value) == utils.value_err(
-            globe2, 'output boundary does not match '
+            globe, 'output boundary does not match '
             'output boundary of {}'.format(repr(cobinary)))
+
+    assert isinstance(arrow.atom(arrow), shapes.Globe)
+    assert isinstance(point.atom(point), shapes.Arrow)
+    assert isinstance(binary, shapes.Opetope)
+
+    cospan = arrow.paste(arrow).atom(arrow, cospan=True)
+    assert cospan.fst == binary.input
+    assert cospan.snd == binary.output
 
 
 def test_Shape_paste():
-    globe2 = Shape.globe(2)
+    globe = Shape.globe(2)
     arrow = Shape.arrow()
 
-    whisker_l = arrow.paste(globe2)
-    whisker_r = globe2.paste(arrow)
+    whisker_l = arrow.paste(globe)
+    whisker_r = globe.paste(arrow)
 
     interch_1 = whisker_l.paste(whisker_r)
     interch_2 = whisker_r.paste(whisker_l)
-    interch_3 = globe2.paste(globe2, 0)
+    interch_3 = globe.paste(globe, 0)
     assert interch_1 == interch_2 == interch_3
 
     point = Shape.point()
     assert point.paste(arrow, 0) == arrow
-    assert globe2.paste(arrow, 1) == globe2
+    assert globe.paste(arrow, 1) == globe
 
     with raises(ValueError) as err:
         point.paste(point)
@@ -77,6 +117,60 @@ def test_Shape_paste():
             cobinary,
             'input 1-boundary does not match '
             'output 1-boundary of {}'.format(repr(cobinary)))
+
+    binary = arrow.paste(arrow).atom(arrow)
+    assert isinstance(arrow.paste(arrow), shapes.GlobeString)
+    assert isinstance(whisker_l, shapes.Theta)
+    assert isinstance(binary.paste(globe), shapes.OpetopeTree)
+
+    cospan = globe.paste(arrow, cospan=True)
+    assert cospan.fst.source == globe
+    assert cospan.snd.source == arrow
+    assert cospan.target == whisker_r
+
+
+def test_Shape_paste_along():
+    arrow = Shape.arrow()
+    pasting = arrow.paste(arrow, cospan=True)
+    atoming = pasting.target.atom(arrow, cospan=True)
+    binary = atoming.target
+
+    fst = binary.output
+    snd = pasting.fst.then(atoming.fst)
+    snd2 = pasting.snd.then(atoming.fst)
+
+    assoc_l = Shape.paste_along(fst, snd)
+    assert isinstance(assoc_l, shapes.OpetopeTree)
+
+    with raises(ValueError) as err:
+        Shape.paste_along(snd, snd)
+    assert str(err.value) == utils.value_err(
+            OgMapPair(snd, snd),
+            'not a well-formed span for pasting')
+
+    cospan = Shape.paste_along(fst, snd2, cospan=True)
+    assert cospan.fst.image().intersection(
+            cospan.snd.image()) == fst.then(cospan.fst).image()
+
+
+def test_Shape_to_outputs():
+    arrow = Shape.arrow()
+    twothree = arrow.paste(arrow).atom(arrow.paste(arrow).paste(arrow))
+    threetwo = twothree.dual()
+
+    with raises(ValueError) as err:
+        twothree.to_outputs([2, 4], twothree)
+    assert str(err.value) == utils.value_err(
+            [2, 4], 'cannot paste to these outputs')
+
+    with raises(ValueError) as err:
+        twothree.to_outputs([2, 3], threetwo)
+    assert str(err.value) == utils.value_err(
+            [2, 3], 'does not match input boundary of {}'.format(
+                repr(threetwo)))
+
+    pasted = twothree.to_outputs([2, 3], twothree)
+    assert pasted.size == [7, 8, 2]
 
 
 def test_Shape_suspend():
@@ -104,7 +198,7 @@ def test_Shape_join():
 
     assert arrow >> point == point << point << point
     assert Shape.join() == Shape.empty()
-    assert isinstance(arrow >> point, Simplex)
+    assert isinstance(arrow >> point, shapes.Simplex)
 
 
 def test_Shape_merge():
@@ -114,7 +208,7 @@ def test_Shape_merge():
     assoc_l = binary.to_inputs(0, binary)
 
     assert assoc_l.merge() == ternary
-    assert isinstance(assoc_l.merge(), Opetope)
+    assert isinstance(assoc_l.merge(), shapes.Opetope)
 
 
 def test_Shape_inflate():
