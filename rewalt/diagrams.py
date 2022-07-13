@@ -77,10 +77,6 @@ class DiagSet:
         return '{} with {} generators'.format(
                 type(self).__name__, str(len(self)))
 
-    def __eq__(self, other):
-        return isinstance(other, DiagSet) and \
-                self.generators == other.generators
-
     def __getitem__(self, key):
         if key in self.generators:
             return Diagram._new(
