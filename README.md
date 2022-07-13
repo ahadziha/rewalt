@@ -7,7 +7,7 @@
 
 ## About
 
-`rewalt` is a toolkit for **higher-dimensional diagrammatic rewriting**, with applications in
+`rewalt` is a toolkit for **higher-dimensional diagram rewriting**, with applications in
 
 - **higher** and **monoidal category theory**,
 - **homotopical algebra**,
