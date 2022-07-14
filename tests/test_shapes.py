@@ -1,7 +1,6 @@
 from pytest import raises
 
-from rewalt import utils
-from rewalt import shapes
+from rewalt import utils, shapes
 from rewalt.ogposets import (El, OgPoset, OgMap, OgMapPair)
 from rewalt.shapes import (Shape, ShapeMap)
 
