@@ -1394,6 +1394,18 @@ class Shape(OgPoset):
         -------
         layers : :class:`list[ShapeMap]`
             The generated layering.
+
+        Examples
+        --------
+        >>> arrow = Shape.arrow()
+        >>> globe = Shape.globe(2)
+        >>> chain = globe.paste(globe, 0)
+        >>> chain.generate_layering()
+        >>> assert chain.layers[0].source == arrow.paste(globe)
+        >>> assert chain.layers[1].source == globe.paste(arrow)
+        >>> chain.generate_layering()
+        >>> assert chain.layers[0].source == globe.paste(arrow)
+        >>> assert chain.layers[1].source == arrow.paste(globe)
         """
         if not hasattr(self, '_layering_gen'):
             self._layering_gen = self.all_layerings()
@@ -2158,7 +2170,7 @@ class ShapeMap(OgMap):
             if not isinstance(f, ShapeMap):
                 return OgMap.gray(*maps)
         if len(maps) == 0:
-            return Point().id()
+            return Shape.point().id()
         if len(maps) == 1:
             return maps[0]
 
@@ -2187,7 +2199,7 @@ class ShapeMap(OgMap):
             if not isinstance(f, ShapeMap):
                 return OgMap.join(*maps)
         if len(maps) == 0:
-            return Empty().id()
+            return Shape.empty().id()
         if len(maps) == 1:
             return maps[0]
 

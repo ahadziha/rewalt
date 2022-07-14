@@ -2,7 +2,7 @@ from pytest import raises
 
 from rewalt import utils
 from rewalt import shapes
-from rewalt.ogposets import (El, OgMap, OgMapPair)
+from rewalt.ogposets import (El, OgPoset, OgMap, OgMapPair)
 from rewalt.shapes import (Shape, ShapeMap)
 
 
@@ -362,12 +362,31 @@ def test_Shape_terminal():
 
 def test_Shape_inflate():
     simplex2 = Shape.simplex(2)
-    assert simplex2.inflate().source.boundary('-').source == \
+    assert simplex2.inflate().boundary('-').source == \
         simplex2
-
     whisker_l = Shape.arrow().paste(Shape.globe(2))
-    assert whisker_l.inflate().source.boundary('+').source == \
+    assert whisker_l.inflate().boundary('+').source == \
         whisker_l
+
+
+def test_Shape_all_layerings():
+    globe = Shape.globe(2)
+    chain = globe.paste(globe, 0)
+    for n, x in enumerate(chain.all_layerings()):
+        number = n+1
+    assert number == 2
+
+
+def test_Shape_generate_layering():
+    arrow = Shape.arrow()
+    globe = Shape.globe(2)
+    chain = globe.paste(globe, 0)
+    chain.generate_layering()
+    assert chain.layers[0].source == arrow.paste(globe)
+    assert chain.layers[1].source == globe.paste(arrow)
+    chain.generate_layering()
+    assert chain.layers[0].source == globe.paste(arrow)
+    assert chain.layers[1].source == arrow.paste(globe)
 
 
 """ Tests for Shape subclasses """
@@ -427,12 +446,90 @@ def test_Cube():
 
 
 def test_ShapeMap_init():
-    point = Shape.point()
-    arrow = Shape.arrow()
+    point = OgPoset.point()
+    arrow = point >> point
+    ogmap = OgMap(
+            arrow, point,
+            [[El(0, 0), El(0, 0)], [El(0, 0)]])
+    with raises(TypeError) as err:
+        ShapeMap(ogmap)
+    assert str(err.value) == utils.type_err(Shape, arrow)
 
+    arrow = Shape.arrow()
+    ogmap = OgMap(
+            arrow, point,
+            [[El(0, 0), El(0, 0)], [El(0, 0)]])
+    with raises(TypeError) as err:
+        ShapeMap(ogmap)
+    assert str(err.value) == utils.type_err(Shape, point)
+
+    point = Shape.point()
     undefined = OgMap(point, arrow)
     with raises(ValueError) as err:
         ShapeMap(undefined)
     assert str(err.value) == utils.value_err(
             undefined,
             'a ShapeMap must be total')
+
+
+def test_ShapeMap_then():
+    point = Shape.point()
+    arrow = Shape.arrow()
+    terminal = arrow.terminal()
+    first_inj = arrow.atom_inclusion(El(0, 0))
+    assert isinstance(terminal.then(first_inj), ShapeMap)
+
+    ogmap = OgMap(
+            arrow, point,
+            [[El(0, 0), El(0, 0)], [El(0, 0)]])
+    assert not isinstance(ogmap.then(first_inj), ShapeMap)
+
+
+def test_ShapeMap_layers():
+    globe = Shape.globe(2)
+    cospan = globe.paste(globe, cospan=True)
+    twoglobes = cospan.target
+    cospanterminal = cospan.then(twoglobes.terminal())
+    assert twoglobes.terminal().layers == [
+            cospanterminal.fst, cospanterminal.snd]
+
+
+def test_ShapeMap_rewrite_steps():
+    arrow = Shape.arrow()
+    globe = Shape.globe(2)
+    twoglobes = globe.paste(globe)
+    assert twoglobes.terminal().rewrite_steps == [
+            arrow.terminal(), arrow.terminal(), arrow.terminal()]
+
+
+def test_ShapeMap_gray():
+    point = Shape.point()
+    arrow = Shape.arrow()
+    terminal = arrow.terminal()
+    first_inj = arrow.atom_inclusion(El(0, 0))
+    assert ShapeMap.gray() == point.id()
+    assert arrow.id() * arrow.id() == (arrow * arrow).id()
+    assert (terminal * arrow.id()).then(
+        first_inj * terminal) == terminal.then(first_inj) * terminal
+
+
+def test_ShapeMap_join():
+    empty = Shape.empty()
+    arrow = Shape.arrow()
+    terminal = arrow.terminal()
+    first_inj = arrow.atom_inclusion(El(0, 0))
+    assert ShapeMap.join() == empty.id()
+    assert arrow.id() >> arrow.id() == (arrow >> arrow).id()
+    assert (terminal >> arrow.id()).then(
+        first_inj >> terminal) == terminal.then(first_inj) >> terminal
+
+
+def test_ShapeMap_dual():
+    arrow = Shape.arrow()
+    degen0 = arrow.simplex_degeneracy(0)
+    degen1 = arrow.simplex_degeneracy(1)
+    assert degen0.op() == degen1
+
+    cdegen0 = arrow.cube_degeneracy(0)
+    cdegen1 = arrow.cube_degeneracy(1)
+    assert cdegen0.co() == cdegen1
