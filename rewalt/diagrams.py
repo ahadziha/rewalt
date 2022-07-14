@@ -255,8 +255,6 @@ class DiagSet:
         :class:`ValueError`
             If the name is already in use, or the input and output diagrams
             do not have round and matching boundaries.
-        :class:`AttributeError`
-            If the optional arguments use a private keyword.
         """
         if name in self.generators:
             raise ValueError(utils.value_err(
@@ -330,8 +328,6 @@ class DiagSet:
         :class:`ValueError`
             If the name is already in use, or the faces do not have
             matching boundaries.
-        :class:`AttributeError`
-            If the optional arguments use a private keyword.
         """
         if len(faces) <= 1:
             return self.add(name, **kwargs)
@@ -339,6 +335,8 @@ class DiagSet:
         if name in self.generators:
             raise ValueError(utils.value_err(
                 name, 'name already in use'))
+        for key in self._PRIVATE:
+            kwargs.pop(key, None)
 
         dim = len(faces) - 1
         for x in faces:
@@ -404,8 +402,6 @@ class DiagSet:
         :class:`ValueError`
             If the name is already in use, or the faces do not have
             matching boundaries.
-        :class:`AttributeError`
-            If the optional arguments use a private keyword.
         """
         if len(faces) % 2 == 1:
             raise ValueError(utils.value_err(
@@ -413,6 +409,8 @@ class DiagSet:
         if name in self.generators:
             raise ValueError(utils.value_err(
                 name, 'name already in use'))
+        for key in self._PRIVATE:
+            kwargs.pop(key, None)
 
         dim = int(len(faces) / 2)
         for x in faces:
@@ -895,7 +893,7 @@ class DiagSet:
         Raises
         ------
         :class:`AttributeError`
-            If the optional arguments use a private keyword.
+            If the optional argument uses a private keyword.
         """
         if isinstance(generatorname, Diagram):
             generatorname = generatorname.name
