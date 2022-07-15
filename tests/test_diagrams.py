@@ -36,7 +36,7 @@ runit = Mon.add(
         'runit',
         m.to_inputs(1, u),
         a.runitor('-'))
-assinv, linv, rinv = Mon.invert('assoc')
+assinv, rinv, linv = Mon.invert('assoc')
 
 RP3 = DiagSet()
 c0 = RP3.add_simplex('c0')
@@ -543,4 +543,139 @@ def test_Diagram_to_inputs():
     assert m.to_inputs(1, m).input == a.paste(a).paste(a)
 
 
+def test_Diagram_pullback():
+    arrow = Shape.arrow()
+    connection = arrow.cube_connection(0, '-')
 
+    fconn = f.pullback(connection)
+    assert fconn.shape == connection.source
+
+    with raises(ValueError) as err:
+        m.pullback(connection)
+    assert str(err.value) == utils.value_err(
+            connection, 'target does not match diagram shape')
+
+
+def test_Diagram_boundary():
+    assert m.input == a.paste(a)
+    assert m.output == a
+    assert m.boundary('-', 0) == pt
+    assert m.boundary('+', 0) == pt
+
+
+def test_Diagram_unit():
+    diagram = m.to_inputs(0, u)
+    unit = diagram.unit()
+    assert unit.shape == diagram.shape.inflate().source
+    assert unit.input == diagram
+    assert unit.output == diagram
+
+
+def test_Diagram_lunitor():
+    assert a.lunitor('-').input == pt.unit().paste(a)
+    assert a.lunitor('+') == a.lunitor('-').inverse
+    assert m.lunitor('-', 0).input == m.to_inputs(0, a.unit())
+
+
+def test_Diagram_runitor():
+    assert a.runitor('+').output == a.paste(pt.unit())
+    assert a.runitor('+') == a.runitor('-').inverse
+    assert c2.runitor('-', 2).input == c2.to_outputs(2, c1.unit())
+
+
+def test_Diagram_inverse():
+    assert assoc.inverse == assinv
+    assert a.unit().inverse == a.unit()
+    with raises(ValueError) as err:
+        m.inverse
+    assert str(err.value) == utils.value_err(
+            m, 'not an invertible cell')
+
+
+def test_Diagram_rinvertor():
+    assert assoc.rinvertor == assinv.linvertor
+    assert assoc.rinvertor == rinv
+    assert a.unit().rinvertor == a.unit().lunitor('-')
+    with raises(ValueError) as err:
+        m.rinvertor
+    assert str(err.value) == utils.value_err(
+            m, 'not an invertible cell')
+
+
+def test_Diagram_linvertor():
+    assert assoc.linvertor == linv
+    assert a.unit().linvertor == a.unit().lunitor('-')
+    with raises(ValueError) as err:
+        m.linvertor
+    assert str(err.value) == utils.value_err(
+            m, 'not an invertible cell')
+
+
+def test_Diagram_composite():
+    assert f.paste(g).composite == h
+    assert m.composite == m
+
+    aa = a.paste(a)
+    with raises(ValueError) as err:
+        aa.composite
+    assert str(err.value) == utils.value_err(
+        aa, 'does not have a composite')
+
+
+def test_Diagram_compositor():
+    assert f.paste(g).compositor == c_fg
+    assert m.compositor == m.unit()
+
+    aa = a.paste(a)
+    with raises(ValueError) as err:
+        aa.compositor
+    assert str(err.value) == utils.value_err(
+        aa, 'does not have a compositor')
+
+
+def test_Diagram_yoneda():
+    arrow = Shape.arrow()
+    connection = arrow.cube_connection(0, '-')
+    yoneda_conn = Diagram.yoneda(connection)
+
+    assert yoneda_conn.ambient.generators == \
+        DiagSet.yoneda(arrow).generators
+    assert yoneda_conn.shape == connection.source
+    assert yoneda_conn.mapping == connection.mapping
+
+
+def test_Diagram_with_layers():
+    layer1 = m.paste(pt.unit())
+    layer2 = a.paste(u)
+    layer3 = m
+
+    diagram = Diagram.with_layers(layer1, layer2, layer3)
+    assert diagram.layers == [layer1, layer2, layer3]
+    assert diagram == layer1.paste(
+            layer2.paste(layer3))
+
+
+""" Tests for Diagram subclasses """
+
+
+def test_SimplexDiagram():
+    assert isinstance(c3.simplex_face(2), diagrams.SimplexDiagram)
+    assert isinstance(
+            c1.simplex_degeneracy(1), diagrams.SimplexDiagram)
+
+    assert c1.simplex_degeneracy(1).simplex_degeneracy(2) == \
+        c1.simplex_degeneracy(1).simplex_degeneracy(1)
+    assert c2.simplex_degeneracy(2).simplex_face(2) == c2
+    assert c2.simplex_degeneracy(2).simplex_face(0) == \
+        c2.simplex_face(0).simplex_degeneracy(1)
+
+
+def test_CubeDiagram():
+    assert isinstance(s.cube_face(1, '+'), diagrams.CubeDiagram)
+    assert isinstance(e1.cube_degeneracy(1), diagrams.CubeDiagram)
+    assert isinstance(e0.cube_connection(0, '+'), diagrams.CubeDiagram)
+
+    assert e0.cube_degeneracy(1).cube_degeneracy(2) == \
+        e0.cube_degeneracy(1).cube_degeneracy(1)
+    assert e1.cube_connection(0, '-').cube_connection(1, '-') == \
+        e1.cube_connection(0, '-').cube_connection(0, '-')
