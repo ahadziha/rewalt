@@ -36,6 +36,7 @@ runit = Mon.add(
         'runit',
         m.to_inputs(1, u),
         a.runitor('-'))
+assinv, linv, rinv = Mon.invert('assoc')
 
 RP3 = DiagSet()
 c0 = RP3.add_simplex('c0')
@@ -68,7 +69,7 @@ h, c_fg = C.compose(f.paste(g), 'h', 'c_fg')
 
 
 def test_DiagSet_str():
-    assert str(Mon) == 'DiagSet with 7 generators'
+    assert str(Mon) == 'DiagSet with 10 generators'
 
 
 def test_DiagSet_getitem():
@@ -85,7 +86,7 @@ def test_DiagSet_contains():
 
 
 def test_DiagSet_len():
-    assert len(Mon) == 7
+    assert len(Mon) == 10
 
 
 def test_DiagSet_generators():
@@ -104,7 +105,8 @@ def test_DiagSet_by_dim():
             0: {'pt'},
             1: {'a'},
             2: {'m', 'u'},
-            3: {'assoc', 'lunit', 'runit'}}
+            3: {'assoc', 'lunit', 'runit', 'assoc⁻¹'},
+            4: {'inv(assoc, assoc⁻¹)', 'inv(assoc⁻¹, assoc)'}}
 
 
 def test_DiagSet_compositors():
@@ -115,7 +117,7 @@ def test_DiagSet_compositors():
 
 
 def test_DiagSet_dim():
-    assert Mon.dim == 3
+    assert Mon.dim == 4
     assert C.dim == 2
 
 
@@ -381,3 +383,164 @@ def test_Diagram_init():
     assert empty.shape == Shape.empty()
     assert empty.mapping == []
     assert empty.ambient == C
+
+
+def test_Diagram_str():
+    assert str(a) == 'a'
+    assert str(c1) == 'c1'
+
+
+def test_Diagram_eq():
+    assert a == Mon['a']
+    assert c2.output == c1.paste(c1)
+
+
+def test_Diagram_len():
+    assert len(a) == 3
+
+
+def test_Diagram_getitem():
+    assert c2[El(2, 0)] == 'c2'
+    assert c2[El(1, 0)] == 'c0'
+    assert c2[El(1, 1)] == 'c1'
+
+
+def test_Diagram_contains():
+    assert El(1, 2) in c2
+    assert El(1, 3) not in c2
+
+
+def test_Diagram_name():
+    assert assoc.name == 'assoc'
+
+
+def test_Diagram_shape():
+    binary = Shape.simplex(2).dual()
+    assoc_l = binary.to_inputs(0, binary)
+    assoc_r = binary.to_inputs(1, binary)
+    assert assoc.shape == assoc_l.atom(assoc_r)
+
+
+def test_Diagram_ambient():
+    assert a.ambient == Mon
+    assert c1.ambient == RP3
+
+
+def test_Diagram_mapping():
+    assert c2.mapping == [
+            ['c0', 'c0', 'c0'],
+            ['c0', 'c1', 'c1'],
+            ['c2']]
+
+
+def test_Diagram_layers():
+    diagram = u.paste(pt.unit()).paste(
+            a.paste(u))
+    assert diagram.layers == [
+            u.paste(pt.unit()), a.paste(u)]
+
+
+def test_Diagram_rewrite_steps():
+    diagram = u.paste(pt.unit()).paste(
+            a.paste(u))
+    assert diagram.rewrite_steps == [
+            pt.unit().paste(pt.unit()),
+            a.paste(pt.unit()),
+            a.paste(a)]
+
+
+def test_Diagram_dim():
+    assert c0.dim == 0
+    assert c1.dim == 1
+    assert c2.dim == 2
+    assert c3.dim == 3
+
+
+def test_Diagram_isdegenerate():
+    assert not Diagram(C).isdegenerate
+    assert a.lunitor('-').isdegenerate
+    assert not c2.isdegenerate
+
+
+def test_Diagram_isround():
+    assert not m.paste(m, 0).isround
+    assert m.paste(m, 0).paste(m).isround
+
+
+def test_Diagram_iscell():
+    assert m.iscell
+    assert a.unit().iscell
+    assert not m.paste(a).iscell
+
+
+def test_Diagram_isinvertiblecell():
+    assert a.lunitor('-').isinvertiblecell
+    assert assoc.isinvertiblecell
+    assert not m.isinvertiblecell
+
+
+def test_Diagram_hascomposite():
+    assert f.paste(g).hascomposite
+    assert m.hascomposite
+    assert not a.paste(a).hascomposite
+
+
+def test_Diagram_rename():
+    fpasteg = f.paste(g)
+    assert str(fpasteg) == '(f) #0 (g)'
+    fpasteg.rename('f #0 g')
+    assert str(fpasteg) == 'f #0 g'
+
+
+def test_Diagram_paste():
+    with raises(ValueError) as err:
+        f.paste(a)
+    assert str(err.value) == utils.value_err(
+            a, 'not the same ambient DiagSet')
+
+    assert f.paste(g).input == f.input
+    assert f.paste(g).output == g.output
+
+    assert f.paste(y, 0) == f
+    assert x.paste(f, 0) == f
+
+    with raises(ValueError) as err:
+        f.paste(f)
+    assert str(err.value) == utils.value_err(
+            f, 'boundary does not match boundary of {}'.format(
+                repr(f)))
+
+
+def test_Diagram_to_outputs():
+    with raises(ValueError) as err:
+        f.to_outputs(1, a)
+    assert str(err.value) == utils.value_err(
+            a, 'not the same ambient DiagSet')
+
+    with raises(ValueError) as err:
+        c2.to_outputs(1, c2)
+    assert str(err.value) == utils.value_err(
+            c2, 'boundary does not match boundary of {}'.format(
+                repr(c2)))
+
+    assert c2.to_outputs(1, c1.unit()).output == c2.output
+
+
+def test_Diagram_to_inputs():
+    with raises(ValueError) as err:
+        f.to_inputs(0, a)
+    assert str(err.value) == utils.value_err(
+            a, 'not the same ambient DiagSet')
+
+    pt2unit = pt.unit().unit()
+    with raises(ValueError) as err:
+        m.to_inputs(0, pt2unit)
+    assert str(err.value) == utils.value_err(
+            m,
+            'boundary does not match boundary of {}'.format(
+                repr(pt2unit)))
+
+    assert m.to_inputs(1, m).input == a.paste(a).paste(a)
+
+
+

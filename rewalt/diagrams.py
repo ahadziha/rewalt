@@ -1334,6 +1334,10 @@ class Diagram:
             a well-formed shape.
         """
         cospan = params.get('cospan', False)
+        utils.typecheck(other, {
+                'type': Diagram,
+                'st': lambda x: x.ambient == self.ambient,
+                'why': 'not the same ambient DiagSet'})
         if isinstance(positions, int):
             positions = [positions]
         if dim is None:
@@ -1395,6 +1399,11 @@ class Diagram:
             a well-formed shape.
         """
         cospan = params.get('cospan', False)
+
+        utils.typecheck(other, {
+                'type': Diagram,
+                'st': lambda x: x.ambient == self.ambient,
+                'why': 'not the same ambient DiagSet'})
         if isinstance(positions, int):
             positions = [positions]
         if dim is None:
