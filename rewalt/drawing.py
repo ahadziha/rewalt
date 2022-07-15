@@ -407,7 +407,8 @@ class MatBackend(DrawBackend):
                 xy[1],
                 s=40,
                 c=color,
-                edgecolors=stroke)
+                edgecolors=stroke,
+                zorder=2)
 
     def draw_arrow(self, xy0, xy1, **params):
         super().draw_arrow(xy0, xy1, **params)
