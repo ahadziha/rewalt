@@ -1,8 +1,9 @@
 from pytest import raises
 
 from rewalt import utils, diagrams
+from rewalt.ogposets import El
 from rewalt.shapes import Shape
-from rewalt.diagrams import DiagSet
+from rewalt.diagrams import (DiagSet, Diagram)
 
 
 """ Tests for DiagSet """
@@ -184,3 +185,199 @@ def test_DiagSet_add_simplex():
         S.add_simplex('x2', x1, y1, y1)
     assert str(err.value) == utils.value_err(
             y1, 'boundary of face does not match other faces')
+
+
+def test_DiagSet_add_cube():
+    K = DiagSet()
+    x0 = K.add_cube('x0')
+
+    with raises(ValueError) as err:
+        K.add_cube('x0')
+    assert str(err.value) == utils.value_err(
+            'x0', 'name already in use')
+
+    x1 = K.add_cube('x1', x0, x0)
+    paste = x1.paste(x1)
+    with raises(TypeError) as err:
+        K.add_cube('x2', paste, paste)
+    assert str(err.value) == utils.type_err(
+            diagrams.CubeDiagram, paste)
+
+    with raises(ValueError) as err:
+        K.add_cube('x2', x1, x1, x0, x1)
+    assert str(err.value) == utils.value_err(
+            x0, 'expecting a 1-cube in {}'.format(
+                repr(K)))
+
+    y0 = K.add_cube('y0')
+    y1 = K.add_cube('y1', x0, y0)
+    with raises(ValueError) as err:
+        K.add_cube('x2', x1, x1, y1, y1)
+    assert str(err.value) == utils.value_err(
+            y1, 'boundary of face does not match other faces')
+
+
+def test_DiagSet_invert():
+    X = DiagSet()
+    x = X.add('x')
+    y = X.add('y')
+    f = X.add('f', x, y)
+    g, rinv, linv = X.invert('f')
+
+    assert g.input == y
+    assert g.output == x
+    assert rinv.input == f.paste(g)
+    assert rinv.output == x.unit()
+    assert linv.input == g.paste(f)
+    assert linv.output == y.unit()
+    assert g.name == 'f⁻¹'
+    assert rinv.name == 'inv(f, f⁻¹)'
+    assert linv.name == 'inv(f⁻¹, f)'
+
+    with raises(ValueError) as err:
+        X.invert('x')
+    assert str(err.value) == utils.value_err(
+            'x', 'cannot invert 0-cell')
+
+    with raises(ValueError) as err:
+        X.invert('f⁻¹')
+    assert str(err.value) == utils.value_err(
+            'f⁻¹', 'already inverted')
+
+
+def test_DiagSet_make_inverses():
+    X = DiagSet()
+    x = X.add('x')
+    y = X.add('y')
+    f = X.add('f', x, y)
+    g = X.add('g', y, x)
+    rinv, linv = X.make_inverses('f', 'g')
+
+    assert rinv.input == f.paste(g)
+    assert rinv.output == x.unit()
+    assert linv.input == g.paste(f)
+    assert linv.output == y.unit()
+    assert rinv.name == 'inv(f, g)'
+    assert linv.name == 'inv(g, f)'
+
+    X.add('h', y, x)
+    with raises(ValueError) as err:
+        X.make_inverses('h', 'f')
+    assert str(err.value) == utils.value_err(
+            'f', 'already inverted')
+
+
+def test_DiagSet_compose():
+    X = DiagSet()
+    x = X.add('x')
+    y = X.add('y')
+    z = X.add('z')
+    f = X.add('f', x, y)
+    g = X.add('g', y, z)
+
+    fpasteg = f.paste(g)
+    fg, c_fg = X.compose(f.paste(g))
+    assert fg.input == x
+    assert fg.output == z
+    assert c_fg.input == f.paste(g)
+    assert c_fg.output == fg
+    assert fg.name == '⟨{}⟩'.format(f.paste(g).name)
+    assert c_fg.name == 'comp({})'.format(f.paste(g).name)
+
+    p = X.add('p', f, f)
+    q = X.add('q', g, g)
+
+    notround = p.paste(q, 0)
+    with raises(ValueError) as err:
+        X.compose(notround)
+    assert str(err.value) == utils.value_err(
+            notround, 'composable diagrams must have round shape')
+
+    with raises(ValueError) as err:
+        X.compose(fpasteg)
+    assert str(err.value) == utils.value_err(
+            fpasteg, 'already has a composite')
+
+
+def test_DiagSet_make_composite():
+    X = DiagSet()
+    x = X.add('x')
+    y = X.add('y')
+    z = X.add('z')
+    f = X.add('f', x, y)
+    g = X.add('g', y, z)
+    h = X.add('h', x, z)
+
+    c_fg = X.make_composite('h', f.paste(g))
+    assert c_fg.input == f.paste(g)
+    assert c_fg.output == h
+    assert c_fg.name == 'comp({})'.format(f.paste(g).name)
+
+    p = X.add('p', f, f)
+    q = X.add('q', g, g)
+    X.add('r', f.paste(g), f.paste(g))
+
+    notround = p.paste(q, 0)
+    with raises(ValueError) as err:
+        X.make_composite('r', notround)
+    assert str(err.value) == utils.value_err(
+            notround, 'composable diagrams must have round shape')
+
+    X.add('k', x, z)
+    fpasteg = f.paste(g)
+    with raises(ValueError) as err:
+        X.make_composite('k', fpasteg)
+    assert str(err.value) == utils.value_err(
+            fpasteg, 'already has a composite')
+
+
+def test_DiagSet_remove():
+    X = DiagSet()
+    x = X.add('x')
+    y = X.add('y')
+    X.add('f', x, y)
+    assert 'y' in X
+    assert 'f' in X
+
+    X.remove('y')
+    assert 'y' not in X
+    assert 'f' not in X
+    assert 'x' in X
+
+    a = X.add('a', x, x)
+    X.add('b', x, x)
+    rinv, linv = X.make_inverses('a', 'b')
+    assert a.isinvertiblecell
+    X.remove('b')
+    assert not a.isinvertiblecell
+
+
+def test_DiagSet_update():
+    X = DiagSet()
+    X.add('x', color='blue')
+    assert X.generators['x']['color'] == 'blue'
+    X.update('x', color='magenta')
+    assert X.generators['x']['color'] == 'magenta'
+
+    with raises(AttributeError) as err:
+        X.update('x', shape='circle')
+    assert str(err.value) == "('shape', 'private attribute')"
+
+
+def test_DiagSet_yoneda():
+    arrow = Shape.arrow()
+    embedarrow = DiagSet.yoneda(arrow)
+
+    assert embedarrow.by_dim == {
+            0: {El(0, 0), El(0, 1)},
+            1: {El(1, 0)}}
+
+
+""" Tests for Diagram """
+
+
+def test_Diagram_init():
+    empty = Diagram(C)
+    assert empty.shape == Shape.empty()
+    assert empty.mapping == []
+    assert empty.ambient == C

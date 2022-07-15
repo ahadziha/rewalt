@@ -615,7 +615,7 @@ class DiagSet:
         for x in (generator1, generator2):
             if x.isinvertiblecell:
                 raise ValueError(utils.value_err(
-                    x, 'already inverted'))
+                    x.name, 'already inverted'))
 
         rpaste = generator1.paste(generator2)
         if rinvertorname is None:
