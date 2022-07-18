@@ -655,7 +655,7 @@ def to_gif(diagram, *diagrams, **params):
     timestep : :class:`int`
         The time step for the animation (default is :code:`1000`).
     loop : :class:`bool`
-        Whether to loop around the animation (default is :code:`True`).
+        Whether to loop around the animation (default is :code:`False`).
     **params
         Passed to :meth:`StrDiag.draw`.
     """
