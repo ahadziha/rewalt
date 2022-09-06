@@ -442,8 +442,8 @@ class MatBackend(DrawBackend):
 
         self.fig.subplots_adjust(
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-        if path is None and show:
+        if show:
             plt.show()
-        if path is not None:
-            self.fig.savefig(path)
+            if path is not None:
+                self.fig.savefig(path)
             plt.close(self.fig)
