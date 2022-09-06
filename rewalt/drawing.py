@@ -4,9 +4,15 @@ Drawing backends.
 
 from abc import ABC
 
-import matplotlib.pyplot as plt
 from matplotlib.path import Path
 from matplotlib.patches import PathPatch
+import matplotlib.pyplot as plt
+
+import logging
+import matplotlib
+logger = logging.getLogger('matplotlib')
+logger.setLevel(logging.INFO)
+logging.basicConfig(filename='log.txt', encoding='utf-8', level=logging.INFO)
 
 
 DEFAULT = {
@@ -443,7 +449,11 @@ class MatBackend(DrawBackend):
         self.fig.subplots_adjust(
                 top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         if path is None and show:
-            plt.show()
+            try:
+                logger.info("info", stack_info=True)
+                plt.show()
+            except Exception as e:
+                logger.error("Exception occured", exc_info=True)
         if path is not None:
             self.fig.savefig(path)
             plt.close(self.fig)
